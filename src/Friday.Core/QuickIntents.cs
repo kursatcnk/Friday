@@ -17,7 +17,7 @@ public static partial class QuickIntents
     public static QuickCommand? Match(string text)
     {
         var sentence = Normalize(text);
-        foreach (var pattern in new[] { YouTubeFirst(), VideoLast() })
+        foreach (var pattern in new[] { YouTubeFirst(), YouTubeLast(), VideoLast() })
         {
             var match = pattern.Match(sentence);
             if (match.Success && match.Groups["q"].Value.Trim() is { Length: > 1 } query)
@@ -29,25 +29,34 @@ public static partial class QuickIntents
         return null;
     }
 
-    /// <summary>Hitap ("Friday,"), nezaket sözleri ve noktalama atılır; Türkçe küçük harfe çevrilir.</summary>
+    /// <summary>
+    /// Yalnızca son cümleye bakılır ("İyiyim. YouTube'dan X aç." → "YouTube'dan X aç"). Hitap, nezaket sözleri ve
+    /// noktalama atılır; "dinlemek istiyorum", "açar mısın", "çal" gibi biçimler "aç"a çevrilir.
+    /// </summary>
     private static string Normalize(string text)
     {
-        var sentence = text.Trim().TrimEnd('.', '!', '?', ' ').ToLower(Turkish);
+        var sentences = SentenceBreak().Split(text.Trim()).Where(part => part.Trim().Length > 0).ToArray();
+        var sentence = (sentences.Length > 0 ? sentences[^1] : text).Trim().TrimEnd('.', '!', '?', ' ').ToLower(Turkish);
         sentence = Address().Replace(sentence, "");
-        sentence = Politeness().Replace(sentence, "");
-        // "açar mısın", "açsana" → "aç"; "oynatır mısın" → "oynat"
-        sentence = PoliteOpen().Replace(sentence, " aç");
-        sentence = PolitePlay().Replace(sentence, " oynat");
+        sentence = Politeness().Replace(" " + sentence, " ");
+        sentence = OpenVerbs().Replace(sentence, " aç");
         return Whitespace().Replace(sentence, " ").Trim();
     }
 
-    // "youtube'da lofi aç", "youtube'dan tarkan kuzu kuzu oynat"
-    [GeneratedRegex(@"^youtube['’]?(?:da|ta|dan|tan)\s+(?<q>.+?)\s+(?:videosunu\s+|klibini\s+|şarkısını\s+)?(?:aç|oynat|başlat|izlet|çal)$")]
+    // "youtube'da lofi aç", "youtube'dan power to resist şarkısını aç"
+    [GeneratedRegex(@"^youtube['’]?(?:da|de|ta|te|dan|den|tan|ten)\s+(?<q>.+?)(?:\s+(?:videosunu|klibini|şarkısını|şarkısının klibini|parçasını|müziğini))?\s+aç$")]
     private static partial Regex YouTubeFirst();
 
-    // "tarkan'ın kuzu kuzu klibini aç", "kedi videosu aç", "x şarkısının klibini oynat"
-    [GeneratedRegex(@"^(?<q>.+?)\s+(?:videosunu|videosu|klibini|klibi|şarkısının klibini)\s+(?:aç|oynat|başlat|izlet)$")]
+    // "power to resist'i youtube'dan aç"
+    [GeneratedRegex(@"^(?<q>.+?)\s+youtube['’]?(?:da|de|ta|te|dan|den|tan|ten)\s+aç$")]
+    private static partial Regex YouTubeLast();
+
+    // "tarkan'ın kuzu kuzu klibini aç", "kedi videosu aç", "naruto kokuten şarkısını aç"
+    [GeneratedRegex(@"^(?<q>.+?)\s+(?:videosunu|videosu|klibini|klibi|şarkısını|şarkısının klibini|parçasını|müziğini)\s+aç$")]
     private static partial Regex VideoLast();
+
+    [GeneratedRegex(@"[.!?]+\s+")]
+    private static partial Regex SentenceBreak();
 
     [GeneratedRegex(@"^(?:hey\s+)?friday[,\s]+")]
     private static partial Regex Address();
@@ -55,11 +64,9 @@ public static partial class QuickIntents
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]
     private static partial Regex Politeness();
 
-    [GeneratedRegex(@"\s+(?:açar mısın|açabilir misin|açsana|açıver)$")]
-    private static partial Regex PoliteOpen();
-
-    [GeneratedRegex(@"\s+(?:oynatır mısın|oynatabilir misin|oynatsana)$")]
-    private static partial Regex PolitePlay();
+    // "aç" anlamına gelen söyleyişler: oynat, çal, başlat, dinlemek istiyorum, izlemek istiyorum, açar mısın…
+    [GeneratedRegex(@"\s+(?:açar mısın|açabilir misin|açsana|açıver|aç|oynatır mısın|oynatabilir misin|oynatsana|oynat|çalar mısın|çalabilir misin|çalsana|çal|başlat|dinlemek istiyorum|dinlemek isterim|dinleyelim|dinlet|izlemek istiyorum|izlemek isterim|izleyelim|izlet)$")]
+    private static partial Regex OpenVerbs();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();

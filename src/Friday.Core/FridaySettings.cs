@@ -79,7 +79,7 @@ public sealed class FridaySettings
     public string MicrophoneDevice { get; set; } = "";
 
     /// <summary>Konuşma bittikten sonra bu kadar sessizlik olursa kayıt durur.</summary>
-    public int SilenceMilliseconds { get; set; } = 900;
+    public int SilenceMilliseconds { get; set; } = 1200;
 
     public int MaxRecordSeconds { get; set; } = 20;
 
