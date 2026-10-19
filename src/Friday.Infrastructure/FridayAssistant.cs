@@ -349,6 +349,25 @@ public sealed class FridayAssistant : IDisposable
         return text;
     }
 
+    /// <summary>
+    /// Kalıbı belli komutlarda (ör. "YouTube'da X aç") araç modelsiz çalışır; model böyle komutlarda aracı çağırmadan
+    /// önce saniyelerce düşünebiliyor. Aracın sonucu doğrudan okunur ve sohbet hafızasına normal bir tur gibi yazılır.
+    /// </summary>
+    private async Task<string> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall(quick.Tool, quick.Arguments);
+        Report(AssistantState.Thinking, AssistantTools.DescribeActivity(call.Name) + "…");
+        ToolStarted?.Invoke(this, call.Name);
+        Say(Fillers[Random.Shared.Next(Fillers.Length)]);
+        var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+        _memory.Add(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [call] });
+        _memory.Add(new ChatMessage(ChatRole.Tool, result) { ToolName = call.Name });
+        _memory.Add(new ChatMessage(ChatRole.Assistant, result));
+        AssistantSaid?.Invoke(this, result);
+        Say(result);
+        return result;
+    }
+
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
     public async Task AskAsync(string text, CancellationToken cancellationToken)
     {
@@ -358,7 +377,9 @@ public sealed class FridayAssistant : IDisposable
         _tools.LastUserText = text;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context));
-        var reply = await AnswerAsync(cancellationToken).ConfigureAwait(false);
+        var reply = QuickIntents.Match(text) is { } quick
+            ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
+            : await AnswerAsync(cancellationToken).ConfigureAwait(false);
         _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {

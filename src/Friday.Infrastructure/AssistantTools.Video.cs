@@ -46,8 +46,9 @@ public sealed partial class AssistantTools
         }
 
         Launch($"https://www.youtube.com/watch?v={found.Id}");
-        ledger.Record(DataFlow.Outbound, "Tarayıcı", $"youtube.com · \"{found.Title}\" açıldı");
-        return $"\"{found.Title}\" videosu tarayıcıda açıldı.";
+        var title = found.Title.Length > 0 ? found.Title : text;
+        ledger.Record(DataFlow.Outbound, "Tarayıcı", $"youtube.com · \"{title}\" açıldı");
+        return found.Title.Length > 0 ? $"\"{found.Title}\" videosu tarayıcıda açıldı." : $"\"{text}\" için bulduğum ilk videoyu açtım.";
     }
 
     /// <summary>
@@ -73,9 +74,10 @@ public sealed partial class AssistantTools
         {
             page.Append(buffer, 0, read);
             var text = page.ToString();
-            var start = text.IndexOf("\"videoRenderer\"", StringComparison.Ordinal);
-            // Başlığın da gelmesi için ilk videonun ardından birkaç KB beklenir.
-            if (start >= 0 && text.Length - start > 6_000)
+            // İlk "videoRenderer" bazen bir kanal kartının parçasıdır; gerçek video kaydı videoId ile başlar.
+            var start = text.IndexOf(VideoAnchor, StringComparison.Ordinal);
+            // Başlık kaydın ilk ~500 karakterinde gelir; güvenle 3,5 KB beklenir.
+            if (start >= 0 && text.Length - start > 3_500)
             {
                 return FirstVideo(text[start..]);
             }
@@ -107,8 +109,12 @@ public sealed partial class AssistantTools
         return (match.Groups["id"].Value, title);
     }
 
+    private const string VideoAnchor = "\"videoRenderer\":{\"videoId\":\"";
+
+    // Başlık yalnızca aynı kaydın içinde (ilk 3.000 karakter) aranır; bulunamazsa başka bir videonun başlığını almak
+    // yerine başlıksız kalır.
     [GeneratedRegex("""
-        "videoRenderer":\{"videoId":"(?<id>[\w-]{11})".*?"title":\{"runs":\[\{"text":"(?<title>(?:[^"\\]|\\.)*)"
+        "videoRenderer":\{"videoId":"(?<id>[\w-]{11})"(?:.{0,3000}?"title":\{"runs":\[\{"text":"(?<title>(?:[^"\\]|\\.)*)")?
         """, RegexOptions.Singleline)]
     private static partial Regex VideoPattern();
 }

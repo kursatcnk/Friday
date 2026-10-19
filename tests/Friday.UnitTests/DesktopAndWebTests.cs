@@ -121,3 +121,22 @@ public class VideoSearchTests
     public void ReturnsNothingWhenThereIsNoVideo() =>
         Assert.Null(AssistantTools.FirstVideo("<html>consent</html>"));
 }
+
+public class VideoSearchEdgeTests
+{
+    [Fact]
+    public void SkipsChannelCardsThatAreNotRealVideos()
+    {
+        const string html = """{"universalWatchCardRenderer":{"videoRenderer":{"title":{"dynamicTextViewModel":{"text":{"content":"Kanal - Konu"}}}}},"videoRenderer":{"videoId":"3NycM9lYdRI","x":1,"title":{"runs":[{"text":"Rahatlatıcı Piyano Müziği"}]}}}""";
+        var video = AssistantTools.FirstVideo(html);
+        Assert.Equal(("3NycM9lYdRI", "Rahatlatıcı Piyano Müziği"), video);
+    }
+
+    [Fact]
+    public void NeverBorrowsTheTitleOfAnotherVideo()
+    {
+        var html = "\"videoRenderer\":{\"videoId\":\"AAAAAAAAAAA\"" + new string('x', 5000) +
+                   "\"videoRenderer\":{\"videoId\":\"BBBBBBBBBBB\",\"title\":{\"runs\":[{\"text\":\"İkinci video\"}]}";
+        Assert.Equal(("AAAAAAAAAAA", ""), AssistantTools.FirstVideo(html));
+    }
+}
