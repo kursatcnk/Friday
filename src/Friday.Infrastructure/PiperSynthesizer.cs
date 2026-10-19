@@ -115,8 +115,7 @@ internal sealed class PiperSynthesizer : IDisposable
             start.ArgumentList.Add(argument);
         }
 
-        var process = Process.Start(start) ?? throw new InvalidOperationException("Piper başlatılamadı.");
-        ChildProcessJob.Shared.TryAdd(process);
+        var process = ChildProcessJob.Shared.Start(start) ?? throw new InvalidOperationException("Piper başlatılamadı.");
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data?.Contains("Real-time factor", StringComparison.Ordinal) == true)

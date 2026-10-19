@@ -38,6 +38,21 @@ public sealed partial class ChildProcessJob : IDisposable
         }
     }
 
+    /// <summary>
+    /// Friday'in kendi yardımcı süreçleri (sunucular, komut satırı araçları) bununla başlatılır: süreç açılır açılmaz
+    /// işe eklenir. Yeni bir yardımcı da bu yoldan başlatılırsa Friday'le birlikte kapanır.
+    /// </summary>
+    public Process? Start(ProcessStartInfo start)
+    {
+        var process = Process.Start(start);
+        if (process is not null)
+        {
+            TryAdd(process);
+        }
+
+        return process;
+    }
+
     /// <summary>Süreci işe ekler. Süreç zaten kapanmışsa false döner; bu durumda kapatılacak bir şey kalmamıştır.</summary>
     public bool TryAdd(Process process) =>
         !process.HasExited && NativeMethods.AssignProcessToJobObject(_handle, process.SafeHandle);

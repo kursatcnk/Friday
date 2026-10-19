@@ -150,8 +150,7 @@ public sealed class XttsSynthesizer : IDisposable
             }
 
             _process?.Dispose();
-            _process = Process.Start(StartInfo()) ?? throw new InvalidOperationException("XTTS sunucusu başlatılamadı.");
-            ChildProcessJob.Shared.TryAdd(_process);
+            _process = ChildProcessJob.Shared.Start(StartInfo()) ?? throw new InvalidOperationException("XTTS sunucusu başlatılamadı.");
             var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var errors = new System.Text.StringBuilder();
             _process.OutputDataReceived += (_, e) =>

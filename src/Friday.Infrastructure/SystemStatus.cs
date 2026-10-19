@@ -90,7 +90,7 @@ public static partial class SystemStatus
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
-            using var process = Process.Start(start);
+            using var process = ChildProcessJob.Shared.Start(start);
             if (process is null)
             {
                 return null;
