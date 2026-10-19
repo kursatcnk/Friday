@@ -72,6 +72,12 @@ public sealed class FridaySettings
     /// <summary>Hava durumu sorulurken şehir söylenmezse kullanılır.</summary>
     public string City { get; set; } = "İstanbul";
 
+    /// <summary>
+    /// Kullanılacak mikrofonun adında geçen sözcük (ör. "Headset"). Boşsa Windows varsayılanı denenir; ondan hiç ses
+    /// gelmiyorsa (sanal cihazlar) Friday çalışan mikrofonu kendisi bulur.
+    /// </summary>
+    public string MicrophoneDevice { get; set; } = "";
+
     /// <summary>Konuşma bittikten sonra bu kadar sessizlik olursa kayıt durur.</summary>
     public int SilenceMilliseconds { get; set; } = 900;
 

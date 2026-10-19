@@ -223,6 +223,12 @@ public sealed partial class PanelViewModel : ObservableObject
     [ObservableProperty]
     private string _city = "";
 
+    /// <summary>"Otomatik" ve bilgisayardaki kayıt cihazları.</summary>
+    public IReadOnlyList<string> Microphones { get; } = ["Otomatik", .. MicrophoneRecorder.DeviceNames()];
+
+    [ObservableProperty]
+    private string _selectedMicrophone = "Otomatik";
+
     [ObservableProperty]
     private string _userName = "";
 
@@ -375,6 +381,7 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings.Personality = PersonalityPlain ? "sade" : PersonalityFormal ? "resmi" : "esprili";
         _settings.FollowUpSeconds = FollowUpOff ? 0 : FollowUpLong ? 7 : 4;
         _settings.City = City.Trim();
+        _settings.MicrophoneDevice = SelectedMicrophone == "Otomatik" ? "" : SelectedMicrophone;
         _settings.UserName = UserName.Trim();
         _actions.Save(_settings);
         SavedMessage = $"Kaydedildi · {DateTime.Now:HH:mm}";
@@ -398,6 +405,8 @@ public sealed partial class PanelViewModel : ObservableObject
         FollowUpLong = _settings.FollowUpSeconds > 5;
         FollowUpShort = !FollowUpOff && !FollowUpLong;
         City = _settings.City;
+        SelectedMicrophone = Microphones.FirstOrDefault(name => _settings.MicrophoneDevice.Length > 0
+            && name.Contains(_settings.MicrophoneDevice, StringComparison.OrdinalIgnoreCase)) ?? "Otomatik";
         UserName = _settings.UserName;
     }
 

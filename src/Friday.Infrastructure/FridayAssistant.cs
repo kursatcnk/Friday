@@ -316,18 +316,25 @@ public sealed class FridayAssistant : IDisposable
     /// <returns>Yazıya dökülmüş konuşma; konuşulmadıysa null.</returns>
     private async Task<string?> ListenAsync(bool followUp, CancellationToken stopListening, CancellationToken cancellationToken)
     {
-        Report(AssistantState.Listening, followUp ? "Devam edebilirsin…" : "Dinliyorum…");
+        var device = _microphone.LastDeviceName.Length > 0 ? $" · {_microphone.LastDeviceName}" : "";
+        Report(AssistantState.Listening, (followUp ? "Devam edebilirsin…" : "Dinliyorum…") + device);
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
         var timeout = followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout;
         var audio = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken).ConfigureAwait(false);
         AudioCues.PlayDone();
+        var turkish = CultureInfo.GetCultureInfo("tr-TR");
         _ledger.Record(DataFlow.Local, "Mikrofon",
-            $"{opened.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.GetCultureInfo("tr-TR"))} sn açık kaldı · ses bellekte işlendi, kaydedilmedi");
+            $"{_microphone.LastDeviceName} · {opened.Elapsed.TotalSeconds.ToString("0.0", turkish)} sn açık kaldı · " +
+            $"en yüksek seviye %{(_microphone.LastPeak * 100).ToString("0", turkish)} · ses bellekte işlendi, kaydedilmedi");
 
         if (audio.Length == 0)
         {
-            Report(AssistantState.Idle, followUp ? "Hazır" : "Bir şey duymadım.");
+            // Hiç sinyal gelmediyse sorun büyük ihtimalle mikrofon seçimidir; kullanıcıya bunu söylemek işe yarar.
+            var hint = _microphone.LastPeak < 0.001f
+                ? $"{_microphone.LastDeviceName} hiç ses vermiyor; Ayarlar'dan mikrofonu seç."
+                : "Bir şey duymadım.";
+            Report(AssistantState.Idle, followUp ? "Hazır" : hint);
             return null;
         }
 
