@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Friday.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Friday.Core\Friday.Core.csproj" />
+    <PackageReference Include="NAudio" Version="3.1.0" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <!-- Vulkan: NVIDIA/AMD/Intel GPU'larda ek kurulum gerektirmeden hızlandırma; yoksa CPU çalışma zamanına düşer. -->
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+</Project>

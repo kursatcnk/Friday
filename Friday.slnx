@@ -1,5 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Friday.Core/Friday.Core.csproj" />
+    <Project Path="src/Friday.Infrastructure/Friday.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Friday.UnitTests/Friday.UnitTests.csproj" />
   </Folder>
 </Solution>
