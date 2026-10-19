@@ -104,3 +104,20 @@ public class FocusedExtractionTests
         Assert.Contains("49,55", text, StringComparison.Ordinal);
     }
 }
+
+public class VideoSearchTests
+{
+    [Fact]
+    public void FindsTheFirstVideoAndDecodesItsTitle()
+    {
+        const string html = """{"contents":[{"videoRenderer":{"videoId":"rFZHOHl-L8A","thumbnail":{"x":1},"title":{"runs":[{"text":"lofi hip hop radio \u0026 beats \"live\""}]}}},{"videoRenderer":{"videoId":"n61ULEU7CO0","title":{"runs":[{"text":"Best of lofi"}]}}}]}""";
+        var video = AssistantTools.FirstVideo(html);
+        Assert.NotNull(video);
+        Assert.Equal("rFZHOHl-L8A", video.Value.Id);
+        Assert.Equal("lofi hip hop radio & beats \"live\"", video.Value.Title);
+    }
+
+    [Fact]
+    public void ReturnsNothingWhenThereIsNoVideo() =>
+        Assert.Null(AssistantTools.FirstVideo("<html>consent</html>"));
+}

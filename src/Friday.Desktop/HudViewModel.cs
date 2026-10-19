@@ -35,6 +35,7 @@ public sealed partial class HudViewModel : ObservableObject
         ["internette_ara"] = "",
         ["sayfayi_oku"] = "",
         ["doviz"] = "\uE825",
+        ["video_ac"] = "\uE714",
     };
 
     [ObservableProperty]

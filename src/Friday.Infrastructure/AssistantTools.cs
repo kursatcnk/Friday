@@ -46,6 +46,7 @@ public sealed partial class AssistantTools(
         ["internette_ara"] = "İnternette araştırıyorum",
         ["sayfayi_oku"] = "Sayfayı okuyorum",
         ["doviz"] = "Kurlara bakıyorum",
+        ["video_ac"] = "Videoyu buluyorum",
     };
 
     private readonly List<(DateTime Due, string Note)> _timers = [];
@@ -66,6 +67,8 @@ public sealed partial class AssistantTools(
             [("adres", "string", "Site adresi, ör. youtube.com", true)]),
         Tool("web_ara", "Tarayıcıda Google arama sayfasını açar. Yalnızca kullanıcı aramayı tarayıcıda görmek isterse kullan; bilgi gerekiyorsa internette_ara kullan.",
             [("sorgu", "string", "Aranacak metin", true)]),
+        Tool("video_ac", "YouTube'da video arar ve ilk sonucu tarayıcıda açar; video adresi verilirse onu açar. 'X videosunu aç', 'YouTube'da Y aç', 'Z şarkısının klibini aç' için.",
+            [("arama", "string", "Aranacak video ya da video adresi", true)]),
         Tool("doviz", "Güncel döviz kuru (dolar, euro, sterlin…) Merkez Bankası'nın resmî günlük kurlarından. 'Dolar kaç lira' gibi sorular için önce bunu kullan.",
             [("birim", "string", "dolar, euro, sterlin… ya da boş (hepsi)", false)]),
         Tool("internette_ara", "İnternette arar, sonuç sayfalarını kendisi okur ve bilgiyi getirir. Güncel bilgi, haber, fiyat, kur, maç sonucu, tarifler ve bilmediğin her şey için kullan.",
@@ -134,6 +137,7 @@ public sealed partial class AssistantTools(
                 "gunluk_ozet" => await BriefingAsync(cancellationToken).ConfigureAwait(false),
                 "gecmis" => History(Argument(call, "gun")),
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
+                "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),
                 "doviz" => await ExchangeRatesAsync(Argument(call, "birim"), cancellationToken).ConfigureAwait(false),
                 "internette_ara" => await SearchWebAsync(Argument(call, "soru"), cancellationToken).ConfigureAwait(false),
                 "sayfayi_oku" => await ReadPageAsync(Argument(call, "adres"), cancellationToken).ConfigureAwait(false),

@@ -25,7 +25,7 @@ public sealed class FridayAssistant : IDisposable
 {
     private const int MaxToolRounds = 4;
     private static readonly HashSet<string> SlowTools =
-        ["internette_ara", "sayfayi_oku", "ekrana_bak", "sistem_durumu", "dosya_bul", "pano", "gunluk_ozet"];
+        ["internette_ara", "sayfayi_oku", "ekrana_bak", "sistem_durumu", "dosya_bul", "pano", "gunluk_ozet", "video_ac"];
 
     private static readonly string[] Fillers = ["Hemen bakıyorum.", "Bir saniye, bakıyorum.", "Hemen kontrol ediyorum.", "Bakayım."];
     private static readonly TimeSpan FirstListenTimeout = TimeSpan.FromSeconds(5);
