@@ -41,6 +41,11 @@ public sealed partial class AssistantTools(
         ["gunluk_ozet"] = "Günün özetini hazırlıyorum",
         ["gecmis"] = "Sohbet geçmişine bakıyorum",
         ["linguaflow"] = "LinguaFlow'a bağlanıyorum",
+        ["masaustu"] = "Masaüstüne bakıyorum",
+        ["masaustu_kontrol"] = "Masaüstünde işlem yapıyorum",
+        ["internette_ara"] = "İnternette araştırıyorum",
+        ["sayfayi_oku"] = "Sayfayı okuyorum",
+        ["doviz"] = "Kurlara bakıyorum",
     };
 
     private readonly List<(DateTime Due, string Note)> _timers = [];
@@ -59,8 +64,19 @@ public sealed partial class AssistantTools(
             [("ad", "string", "Uygulamanın adı", true)]),
         Tool("web_sitesi_ac", "Varsayılan tarayıcıda bir web sitesini açar.",
             [("adres", "string", "Site adresi, ör. youtube.com", true)]),
-        Tool("web_ara", "Tarayıcıda Google araması açar. Güncel bilgi, haber ya da bilmediğin konular için kullan.",
+        Tool("web_ara", "Tarayıcıda Google arama sayfasını açar. Yalnızca kullanıcı aramayı tarayıcıda görmek isterse kullan; bilgi gerekiyorsa internette_ara kullan.",
             [("sorgu", "string", "Aranacak metin", true)]),
+        Tool("doviz", "Güncel döviz kuru (dolar, euro, sterlin…) Merkez Bankası'nın resmî günlük kurlarından. 'Dolar kaç lira' gibi sorular için önce bunu kullan.",
+            [("birim", "string", "dolar, euro, sterlin… ya da boş (hepsi)", false)]),
+        Tool("internette_ara", "İnternette arar, sonuç sayfalarını kendisi okur ve bilgiyi getirir. Güncel bilgi, haber, fiyat, kur, maç sonucu, tarifler ve bilmediğin her şey için kullan.",
+            [("soru", "string", "Aranacak soru ya da anahtar sözcükler", true)]),
+        Tool("sayfayi_oku", "Bir web sayfasının metnini okur. Adres verilmezse tarayıcıda açık olan sekmeyi okur (ör. 'bu sayfayı özetle', 'bu makalede ne diyor').",
+            [("adres", "string", "Sayfa adresi; açık sekme için boş bırak", false)]),
+        Tool("masaustu", "Bilgisayarda açık olanları gerçek verilerle okur: hangi pencereler/programlar açık, tarayıcıda hangi sekmeler açık, öndeki pencere ne, bir penceredeki yazılar.",
+            [("islem", "string", "pencereler, sekmeler, aktif ya da oku", true), ("uygulama", "string", "oku için uygulama adı, ör. Outlook", false)]),
+        Tool("masaustu_kontrol", "Masaüstünde işlem yapar: sekmeye_gec, sekmeyi_kapat, one_getir (pencereyi öne al), tikla (hedef 'Uygulama > düğme adı'), yaz (hedef pencereye metin yazar). Araç onay isterse kullanıcıya sor.",
+            [("islem", "string", "sekmeye_gec, sekmeyi_kapat, one_getir, tikla ya da yaz", true), ("hedef", "string", "Sekme adı, uygulama adı ya da 'Uygulama > düğme'", true),
+             ("metin", "string", "yaz için metin", false)]),
         Tool("medya", "Müzik/videoyu ve sesi kontrol eder; ne_caliyor ile o an çalan şarkıyı/videoyu söyler.",
             [("komut", "string", "oynat_duraklat, sonraki, onceki, ses_ac, ses_kis, sessiz ya da ne_caliyor", true)]),
         Tool("hava_durumu", "Bir şehrin şu anki hava durumunu ve bugün/yarın tahminini verir.",
@@ -83,7 +99,7 @@ public sealed partial class AssistantTools(
              ("ac", "boolean", "En uygun sonucu hemen aç", false)]),
         Tool("dosya_ac", "dosya_bul sonuçlarından birini açar.",
             [("numara", "number", "Sonuç numarası", true), ("klasorde_goster", "boolean", "Dosyayı açmak yerine klasörünü göster", false)]),
-        Tool("sistem_durumu", "Bilgisayarın işlemci, bellek, disk ve ekran kartı durumunu ve en çok kaynak kullanan uygulamaları verir.", []),
+        Tool("sistem_durumu", "Bilgisayarın durumu: işlemci, bellek, disk, ekran kartı sıcaklığı (derece), fan ve güç, en çok kaynak kullanan uygulamalar. 'Bilgisayar kaç derece', 'neden yavaş' için.", []),
         Tool("rutin", "Tanımlı bir rutini çalıştırır (ör. çalışma modu, mola).", [("ad", "string", "Rutinin adı", true)]),
         Tool("gunluk_ozet", "Günaydın brifingi: tarih, hava, zamanlayıcılar ve hatırlatmalar.", []),
         Tool("gecmis", "Belirli bir günde kullanıcıyla neler konuşulduğunu verir.",
@@ -116,6 +132,12 @@ public sealed partial class AssistantTools(
                 "gunluk_ozet" => await BriefingAsync(cancellationToken).ConfigureAwait(false),
                 "gecmis" => History(Argument(call, "gun")),
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
+                "doviz" => await ExchangeRatesAsync(Argument(call, "birim"), cancellationToken).ConfigureAwait(false),
+                "internette_ara" => await SearchWebAsync(Argument(call, "soru"), cancellationToken).ConfigureAwait(false),
+                "sayfayi_oku" => await ReadPageAsync(Argument(call, "adres"), cancellationToken).ConfigureAwait(false),
+                // UI Automation çağrıları zaman alabilir; asistanın akışını bekletmesin diye arka planda çalışır.
+                "masaustu" => await Task.Run(() => DesktopInfo(Argument(call, "islem"), Argument(call, "uygulama")), cancellationToken).ConfigureAwait(false),
+                "masaustu_kontrol" => await Task.Run(() => DesktopControl(Argument(call, "islem"), Argument(call, "hedef"), Argument(call, "metin")), cancellationToken).ConfigureAwait(false),
                 _ => $"Böyle bir araç yok: {call.Name}"
             };
         }

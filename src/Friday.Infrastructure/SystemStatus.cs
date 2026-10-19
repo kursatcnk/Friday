@@ -84,7 +84,7 @@ public static partial class SystemStatus
     {
         try
         {
-            var start = new ProcessStartInfo("nvidia-smi", "--query-gpu=name,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits")
+            var start = new ProcessStartInfo("nvidia-smi", "--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu,fan.speed,power.draw --format=csv,noheader,nounits")
             {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -98,7 +98,9 @@ public static partial class SystemStatus
 
             var output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             var parts = output.Split(',', StringSplitOptions.TrimEntries);
-            return parts.Length < 4 ? null : $"Ekran kartı {parts[0]}: yüzde {parts[1]} meşgul, {parts[2]} / {parts[3]} MB bellek dolu (Friday'in modelleri dahil).";
+            return parts.Length < 7 ? null :
+                $"Ekran kartı {parts[0]}: {parts[4]} derece, fan yüzde {parts[5]}, {parts[6]} watt, yüzde {parts[1]} meşgul, {parts[2]} / {parts[3]} MB bellek dolu (Friday'in modelleri dahil). " +
+                "İşlemci ve disk sıcaklığını Windows yönetici izni olmadan vermiyor.";
         }
         catch (System.ComponentModel.Win32Exception)
         {

@@ -22,7 +22,11 @@ public static class SystemPrompt
             Bilgisayarda bir şey yapman istenirse uygun aracı çağır, sonra sonucu tek cümleyle söyle.
             Saat, hava durumu, ekrandakiler, panodaki metin, çalan şarkı, dosyalar ve bilgisayarın durumu gibi bilgileri asla tahmin etme; aracını kullan.
             Kullanıcı kendisi ya da hayatı hakkında kalıcı bir bilgi verip hatırlamanı isterse hatirla aracını kullan.
-            Bilmediğin güncel bilgileri uydurma; gerekiyorsa web araması aç.
+            Güncel bilgi, haber, fiyat ya da bilmediğin bir şey sorulursa internette_ara ile kendin araştır ve kaynağını söyle; uydurma.
+            Açık pencereler, sekmeler ya da bir penceredeki yazılar sorulursa masaustu aracını kullan; ekran görüntüsünden tahmin etme.
+            Bir işi yapacak aracın yoksa ya da araç bilgiyi veremediyse bunu açıkça söyle; asla tahmin yürütme ya da sonuç uydurma.
+            masaustu_kontrol onay isterse işlemi kısaca söyleyip kullanıcıya sor; kullanıcı "evet" derse aynı çağrıyı tekrarla.
+            Kullanıcının mesajının sonundaki [Bağlam: …] satırı, kısayola bastığı anda hangi pencerede olduğunu gösterir; "bu", "bunu" gibi sözler çoğunlukla o pencereyi kasteder.
             """);
 
         if (memories.Count > 0)

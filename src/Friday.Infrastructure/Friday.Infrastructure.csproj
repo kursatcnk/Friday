@@ -7,10 +7,18 @@
     <Nullable>enable</Nullable>
     <!-- LibraryImport kaynak üreticisi için (medya tuşları, pano, ekran görüntüsü). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- UI Automation: pencereleri, sekmeleri ve düğmeleri okumak/kullanmak için. -->
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Friday.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- UseWPF bu ikisini örtük using listesinden çıkarıyor. -->
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,8 +33,6 @@
     <!-- Vulkan: NVIDIA/AMD/Intel GPU'larda ek kurulum gerektirmeden hızlandırma; yoksa CPU çalışma zamanına düşer. -->
     <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
-    <!-- Ekran görüntüsü (yalnızca istenince, bellekte). -->
-    <PackageReference Include="System.Drawing.Common" Version="10.0.13" />
     <!-- Windows Arama dizini (dosya bulucu). -->
     <PackageReference Include="System.Data.OleDb" Version="10.0.13" />
     <!-- Azure nöral ses (Emel/Ahmet), isteğe bağlı. -->

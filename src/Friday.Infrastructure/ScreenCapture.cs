@@ -18,12 +18,16 @@ public static partial class ScreenCapture
 
     public static CapturedScreen Capture(bool wholeScreen)
     {
-        var window = NativeMethods.GetForegroundWindow();
+        // Friday'in kendi penceresi öndeyse ondan sonraki pencere alınır; Friday kendini görmez.
+        var window = Desktop.Foreground()?.Handle ?? IntPtr.Zero;
         Rectangle bounds;
         var title = "Ekran";
+        Bitmap? bitmap = null;
         if (!wholeScreen && window != IntPtr.Zero && TryGetBounds(window, out bounds))
         {
             title = WindowTitle(window);
+            // Pencere, üstünü başka bir pencere (ör. Friday'in paneli) kapatsa bile kendi içeriğiyle çizdirilir.
+            bitmap = RenderWindow(window, bounds);
         }
         else
         {
@@ -33,11 +37,14 @@ public static partial class ScreenCapture
             bounds = Rectangle.FromLTRB(info.Monitor.Left, info.Monitor.Top, info.Monitor.Right, info.Monitor.Bottom);
         }
 
-        using var bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format24bppRgb);
-        using (var graphics = Graphics.FromImage(bitmap))
+        if (bitmap is null)
         {
+            bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format24bppRgb);
+            using var graphics = Graphics.FromImage(bitmap);
             graphics.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
         }
+
+        using var _ = bitmap;
 
         // Model için 1280 piksel yeter; büyük görüntü yalnızca gecikme ve VRAM demektir.
         var scale = Math.Min(1.0, (double)MaxSide / Math.Max(bounds.Width, bounds.Height));
@@ -55,6 +62,36 @@ public static partial class ScreenCapture
         parameters.Param[0] = new EncoderParameter(Encoder.Quality, 85L);
         resized.Save(stream, encoder, parameters);
         return new CapturedScreen(stream.ToArray(), title, size.Width, size.Height);
+    }
+
+    /// <summary>
+    /// PrintWindow (PW_RENDERFULLCONTENT) pencereyi kendi içeriğiyle çizer; GPU ile çizilen tarayıcılar da dahil.
+    /// Pencere çerçevesi gölgeyle birlikte çizildiği için görünen sınırlara kırpılır.
+    /// </summary>
+    private static Bitmap? RenderWindow(IntPtr window, Rectangle visible)
+    {
+        if (!NativeMethods.GetWindowRect(window, out var full))
+        {
+            return null;
+        }
+
+        var width = full.Right - full.Left;
+        var height = full.Bottom - full.Top;
+        using var whole = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+        using (var graphics = Graphics.FromImage(whole))
+        {
+            var hdc = graphics.GetHdc();
+            var ok = NativeMethods.PrintWindow(window, hdc, 2);
+            graphics.ReleaseHdc(hdc);
+            if (!ok)
+            {
+                return null;
+            }
+        }
+
+        var crop = new Rectangle(visible.Left - full.Left, visible.Top - full.Top, visible.Width, visible.Height);
+        crop.Intersect(new Rectangle(0, 0, width, height));
+        return crop.Width > 0 && crop.Height > 0 ? whole.Clone(crop, PixelFormat.Format24bppRgb) : null;
     }
 
     private static bool TryGetBounds(IntPtr window, out Rectangle bounds)
@@ -112,5 +149,13 @@ public static partial class ScreenCapture
 
         [LibraryImport("dwmapi.dll")]
         internal static partial int DwmGetWindowAttribute(IntPtr window, int attribute, out NativeRect value, int size);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetWindowRect(IntPtr window, out NativeRect rect);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool PrintWindow(IntPtr window, IntPtr hdc, uint flags);
     }
 }
