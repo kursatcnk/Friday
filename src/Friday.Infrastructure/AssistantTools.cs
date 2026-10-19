@@ -79,8 +79,9 @@ public sealed partial class AssistantTools(
              ("metin", "string", "yaz için metin", false)]),
         Tool("medya", "Müzik/videoyu ve sesi kontrol eder; ne_caliyor ile o an çalan şarkıyı/videoyu söyler.",
             [("komut", "string", "oynat_duraklat, sonraki, onceki, ses_ac, ses_kis, sessiz ya da ne_caliyor", true)]),
-        Tool("hava_durumu", "Bir şehrin şu anki hava durumunu ve bugün/yarın tahminini verir.",
-            [("sehir", "string", "Şehir adı; söylenmediyse boş bırak", false)]),
+        Tool("hava_durumu", "Bir şehrin şu anki hava durumu ve gün gün tahmini (en fazla 7 gün): sıcaklık, yağış ihtimali ve miktarı. Hava ve yağmur soruları için internette_ara yerine bunu kullan.",
+            [("sehir", "string", "Şehir adı; söylenmediyse boş bırak", false),
+             ("gun", "number", "Kaç günlük tahmin: bugün/yarın için 2, hafta için 7", false)]),
         Tool("zamanlayici", "Belirtilen süre sonra kullanıcıya sesli hatırlatma yapar.",
             [("dakika", "number", "Kaç dakika sonra", true), ("not", "string", "Hatırlatılacak şey", false)]),
         Tool("ekrana_bak", "Kullanıcının ekranına bakar ve soruyu ekranda görünene göre cevaplar (ör. bu hata ne, burada ne yazıyor, bunu çevir).",
@@ -119,7 +120,8 @@ public sealed partial class AssistantTools(
                 "web_sitesi_ac" => OpenWebsite(Argument(call, "adres")),
                 "web_ara" => Search(Argument(call, "sorgu")),
                 "medya" => await MediaAsync(Argument(call, "komut")).ConfigureAwait(false),
-                "hava_durumu" => await WeatherAsync(Argument(call, "sehir"), cancellationToken).ConfigureAwait(false),
+                "hava_durumu" => await WeatherAsync(Argument(call, "sehir"), cancellationToken,
+                    int.TryParse(Argument(call, "gun"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var days) ? days : 2).ConfigureAwait(false),
                 "zamanlayici" => StartTimer(Argument(call, "dakika"), Argument(call, "not")),
                 "ekrana_bak" => await LookAtScreenAsync(Argument(call, "soru"), Flag(call, "tum_ekran"), cancellationToken).ConfigureAwait(false),
                 "pano" => await ClipboardAsync(Argument(call, "islem"), Argument(call, "dil"), cancellationToken).ConfigureAwait(false),
@@ -248,8 +250,10 @@ public sealed partial class AssistantTools(
         return "Tamam.";
     }
 
-    private async Task<string> WeatherAsync(string city, CancellationToken cancellationToken)
+    /// <param name="days">Tahmin günü sayısı (2–7); haftalık sorular için 7.</param>
+    private async Task<string> WeatherAsync(string city, CancellationToken cancellationToken, int days = 2)
     {
+        days = Math.Clamp(days, 2, 7);
         var place = string.IsNullOrWhiteSpace(city) ? Settings.City : city.Trim();
         ledger.Record(DataFlow.Outbound, "Hava durumu", $"open-meteo.com · şehir: {place}");
         var geo = await GetJsonAsync(
@@ -266,20 +270,28 @@ public sealed partial class AssistantTools(
         var forecast = await GetJsonAsync(
             $"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}" +
             "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m" +
-            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
-            "&timezone=auto&forecast_days=2",
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum" +
+            $"&timezone=auto&forecast_days={days}",
             cancellationToken).ConfigureAwait(false);
 
         var current = forecast!["current"]!;
         var daily = forecast["daily"]!;
-        string Day(int index) =>
-            $"{WeatherCodes.Describe(daily["weather_code"]![index]!.GetValue<int>())}, " +
-            $"en düşük {Round(daily["temperature_2m_min"]![index])}, en yüksek {Round(daily["temperature_2m_max"]![index])} derece, " +
-            $"yağış ihtimali yüzde {Round(daily["precipitation_probability_max"]![index])}";
+        string Day(int index)
+        {
+            var date = DateTime.Parse(daily["time"]![index]!.GetValue<string>(), CultureInfo.InvariantCulture);
+            var label = index switch { 0 => "Bugün", 1 => "Yarın", _ => date.ToString("dddd d MMMM", Turkish) };
+            var rain = daily["precipitation_sum"]![index]?.GetValue<double>() ?? 0;
+            return $"{label}: {WeatherCodes.Describe(daily["weather_code"]![index]!.GetValue<int>())}, " +
+                   $"{Round(daily["temperature_2m_min"]![index])}–{Round(daily["temperature_2m_max"]![index])} derece, " +
+                   $"yağış ihtimali yüzde {Round(daily["precipitation_probability_max"]![index])}" +
+                   (rain >= 0.1 ? $", {rain.ToString("0.#", Turkish)} mm yağış" : "");
+        }
 
+        var count = daily["time"]!.AsArray().Count;
         return $"{location["name"]}: şu an {Round(current["temperature_2m"])} derece " +
                $"(hissedilen {Round(current["apparent_temperature"])}), {WeatherCodes.Describe(current["weather_code"]!.GetValue<int>())}, " +
-               $"rüzgâr {Round(current["wind_speed_10m"])} km/sa. Bugün: {Day(0)}. Yarın: {Day(1)}.";
+               $"rüzgâr {Round(current["wind_speed_10m"])} km/sa.\n" +
+               string.Join('\n', Enumerable.Range(0, count).Select(Day));
     }
 
     private string StartTimer(string minutesText, string note)
