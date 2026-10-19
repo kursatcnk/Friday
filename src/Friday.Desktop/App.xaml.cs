@@ -176,11 +176,7 @@ public sealed partial class App : Application, IDisposable
         }
     }
 
-    private void ExitFriday()
-    {
-        _window?.PrepareExit();
-        Shutdown();
-    }
+    private void ExitFriday() => Shutdown();
 
     private static void Open(string path) =>
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
@@ -197,7 +193,8 @@ public sealed partial class App : Application, IDisposable
         _startup?.Dispose();
         _tray?.Dispose();
         _hud?.Close();
-        // Friday'in başlattığı Ollama sunucusu da burada kapanır.
+        // Friday'in başlattığı Piper, XTTS ve Ollama (llama-server ile birlikte) burada kapanır ve beklenir.
+        // Friday bu satıra gelemeden ölürse aynı süreçleri ChildProcessJob kapatır.
         _assistant?.Dispose();
         _http?.Dispose();
         _http = null;

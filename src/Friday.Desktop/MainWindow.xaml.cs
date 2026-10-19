@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -12,7 +11,6 @@ public sealed partial class MainWindow : Window, IDisposable
 
     private readonly GlobalHotkey _hotkey;
     private readonly IReadOnlyList<HotkeyGesture> _candidates;
-    private bool _exiting;
 
     /// <param name="candidates">Sırayla denenecek kısayollar; ilki ayarlardaki, diğerleri o doluysa yedekler.</param>
     public MainWindow(PanelViewModel viewModel, IReadOnlyList<HotkeyGesture> candidates, Action onHotkey)
@@ -37,9 +35,6 @@ public sealed partial class MainWindow : Window, IDisposable
         Activate();
     }
 
-    /// <summary>Uygulamadan çıkarken pencerenin tepsiye saklanmak yerine gerçekten kapanmasını sağlar.</summary>
-    public void PrepareExit() => _exiting = true;
-
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -50,18 +45,6 @@ public sealed partial class MainWindow : Window, IDisposable
 
         // Uyarı kutusu açılmaz: kutu açıkken başlatma bekler. Hangi kısayolun alındığı pencerede gösterilir.
         ActiveHotkey = _candidates.FirstOrDefault(_hotkey.Register);
-    }
-
-    /// <summary>Pencereyi kapatmak Friday'i kapatmaz; tepsiye küçülür. Çıkış tepsi menüsündedir.</summary>
-    protected override void OnClosing(CancelEventArgs e)
-    {
-        if (!_exiting)
-        {
-            e.Cancel = true;
-            Hide();
-        }
-
-        base.OnClosing(e);
     }
 
     protected override void OnClosed(EventArgs e)

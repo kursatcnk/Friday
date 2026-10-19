@@ -116,6 +116,7 @@ internal sealed class PiperSynthesizer : IDisposable
         }
 
         var process = Process.Start(start) ?? throw new InvalidOperationException("Piper başlatılamadı.");
+        ChildProcessJob.Shared.TryAdd(process);
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data?.Contains("Real-time factor", StringComparison.Ordinal) == true)
@@ -160,6 +161,7 @@ internal sealed class PiperSynthesizer : IDisposable
             if (_process is { HasExited: false })
             {
                 _process.Kill();
+                _process.WaitForExit(TimeSpan.FromSeconds(2));
             }
 
             _process?.Dispose();

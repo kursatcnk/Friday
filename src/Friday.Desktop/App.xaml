@@ -1,7 +1,7 @@
 <Application x:Class="Friday.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             ShutdownMode="OnExplicitShutdown">
+             ShutdownMode="OnMainWindowClose">
     <Application.Resources>
         <!-- Renkler: koyu lacivert zemin, elektrik camgöbeği vurgu. Durum renkleri halka ve göstergelerde ortak. -->
         <Color x:Key="AccentColor">#38E1FF</Color>

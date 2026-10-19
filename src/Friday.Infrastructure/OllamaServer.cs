@@ -30,6 +30,8 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
         }
 
         _process = Process.Start(StartInfo("serve")) ?? throw new InvalidOperationException("Ollama başlatılamadı.");
+        // Ollama'nın sonradan açtığı llama-server da işe girer; Friday çökse bile hepsi onunla kapanır.
+        ChildProcessJob.Shared.TryAdd(_process);
         // Çıktılar okunmazsa tampon dolar ve sunucu kilitlenir.
         _process.OutputDataReceived += (_, _) => { };
         _process.ErrorDataReceived += (_, _) => { };
@@ -119,6 +121,7 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
     private async Task<string> RunCliAsync(string arguments, CancellationToken cancellationToken)
     {
         using var process = Process.Start(StartInfo(arguments)) ?? throw new InvalidOperationException("Ollama çalıştırılamadı.");
+        ChildProcessJob.Shared.TryAdd(process);
         var error = process.StandardError.ReadToEndAsync(cancellationToken);
         var output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
@@ -157,6 +160,8 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
         if (_process is { HasExited: false })
         {
             _process.Kill(entireProcessTree: true);
+            // Friday kapanmadan önce sunucu ve llama-server gerçekten bitmiş olsun.
+            _process.WaitForExit(TimeSpan.FromSeconds(5));
         }
 
         _process?.Dispose();

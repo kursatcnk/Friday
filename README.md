@@ -128,7 +128,7 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 1. `.\run.ps1` ile başlat; ~8 sn sonra durum **Hazır** olur.
 2. **Ctrl+Alt+F**'e bas, bipten sonra konuş ve sus. Bu kısayol başka bir uygulamadaysa Friday sırayla Ctrl+Alt+J, Ctrl+Shift+Space ve Win+Shift+F'yi dener ve hangisini kullandığını panelin sağ üstünde gösterir.
 3. Ekranın altında cam bir kapsül belirir. Halkanın rengi durumu gösterir: **kırmızı** dinliyor, **mor** düşünüyor, **yeşil** konuşuyor. Kapsül tıklamaları geçirir, odağı çalmaz ve ekran görüntülerine girmez.
-4. Pencereyi kapatınca Friday sistem tepsisine küçülür ve kısayol çalışmaya devam eder. Çıkmak için tepsi simgesine sağ tıkla → **Çıkış**.
+4. Pencereyi kapatınca (ya da tepsi simgesi → **Çıkış**) Friday tamamen kapanır; başlattığı Ollama, llama-server ve Piper süreçleri de onunla biter. Friday Görev Yöneticisi'nden sonlandırılsa ya da çökse bile bu süreçler açık kalmaz. Kısayolun çalışmaya devam etmesi için pencereyi kapatma, simge durumuna küçült.
 
 ![Sohbet](docs/images/panel-chat.png)
 ![Gizlilik defteri](docs/images/panel-privacy.png)
