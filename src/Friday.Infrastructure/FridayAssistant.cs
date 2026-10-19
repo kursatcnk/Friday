@@ -24,6 +24,10 @@ public sealed record AssistantStatus(AssistantState State, string Message);
 public sealed class FridayAssistant : IDisposable
 {
     private const int MaxToolRounds = 4;
+    private static readonly HashSet<string> SlowTools =
+        ["internette_ara", "sayfayi_oku", "ekrana_bak", "sistem_durumu", "dosya_bul", "pano", "gunluk_ozet"];
+
+    private static readonly string[] Fillers = ["Hemen bakıyorum.", "Bir saniye, bakıyorum.", "Hemen kontrol ediyorum.", "Bakayım."];
     private static readonly TimeSpan FirstListenTimeout = TimeSpan.FromSeconds(5);
 
     private readonly FridayPaths _paths;
@@ -44,6 +48,7 @@ public sealed class FridayAssistant : IDisposable
     private CancellationTokenSource? _stopListening;
     private Task _currentTurn = Task.CompletedTask;
     private Timer? _idleTimer;
+    private OpenWindow? _activeWindow;
 
     public FridayAssistant(
         FridayPaths paths,
@@ -251,6 +256,8 @@ public sealed class FridayAssistant : IDisposable
             }
 
             Prewarm();
+            // Kısayola basıldığı andaki pencere: "bunu özetle" gibi isteklerin neyi kastettiği buradan anlaşılır.
+            _activeWindow = Desktop.Foreground();
             var previous = _currentTurn;
             _turn?.Dispose();
             _turn = new CancellationTokenSource();
@@ -341,8 +348,11 @@ public sealed class FridayAssistant : IDisposable
         UserSaid?.Invoke(this, text);
         Report(AssistantState.Thinking, "Düşünüyor…");
         _memory.BeginTurn();
-        _memory.Add(new ChatMessage(ChatRole.User, text));
+        _tools.LastUserText = text;
+        var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
+        _memory.Add(new ChatMessage(ChatRole.User, text + context));
         var reply = await AnswerAsync(cancellationToken).ConfigureAwait(false);
+        _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {
             _history.Append(text, reply);
@@ -357,6 +367,7 @@ public sealed class FridayAssistant : IDisposable
     {
         var reply = new StringBuilder();
         var retried = false;
+        var filled = false;
         for (var round = 0; round <= MaxToolRounds; round++)
         {
             var messages = new List<ChatMessage>
@@ -428,6 +439,13 @@ public sealed class FridayAssistant : IDisposable
             {
                 Report(AssistantState.Thinking, AssistantTools.DescribeActivity(call.Name) + "…");
                 ToolStarted?.Invoke(this, call.Name);
+                // Uzun süren işlerde sessiz beklemek yerine kısa bir cümle: gerçek bir asistan gibi "bakıyorum" der.
+                if (!filled && reply.Length == 0 && SlowTools.Contains(call.Name))
+                {
+                    filled = true;
+                    Say(Fillers[Random.Shared.Next(Fillers.Length)]);
+                }
+
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
                 _memory.Add(new ChatMessage(ChatRole.Tool, result) { ToolName = call.Name });
 

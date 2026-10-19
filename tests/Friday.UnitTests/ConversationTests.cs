@@ -100,3 +100,21 @@ public class FridayPathsTests
     public void AcceptsDDrive() =>
         Assert.Equal(@"D:\Friday\data\settings.json", new FridayPaths(@"D:\Friday").SettingsFile);
 }
+
+public class ToolResultCompactionTests
+{
+    [Fact]
+    public void LongToolResultsAreShortenedAfterTheTurn()
+    {
+        var memory = new ConversationMemory(TimeSpan.FromMinutes(10));
+        memory.Add(new ChatMessage(ChatRole.User, "Dolar kaç lira?"));
+        memory.Add(new ChatMessage(ChatRole.Tool, new string('x', 5000)) { ToolName = "internette_ara" });
+        memory.Add(new ChatMessage(ChatRole.Assistant, "49,55 lira."));
+
+        memory.CompactToolResults(400);
+
+        Assert.True(memory.Messages[1].Content.Length < 450);
+        Assert.Equal("internette_ara", memory.Messages[1].ToolName);
+        Assert.Equal("49,55 lira.", memory.Messages[2].Content);
+    }
+}
