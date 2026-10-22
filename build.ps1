@@ -1,7 +1,14 @@
 ﻿$ErrorActionPreference = 'Stop'
-# .NET ve NuGet önbellekleri C: yerine D: üzerinde tutulur.
-$env:DOTNET_CLI_HOME = 'D:\CodexCache\Friday\dotnet-home'
-$env:NUGET_PACKAGES = 'D:\CodexCache\Friday\nuget-packages'
+# .NET ve NuGet'in bütün önbellekleri ve geçici dosyaları C: yerine D: üzerinde tutulur.
+$cache = 'D:\CodexCache\Friday'
+$env:DOTNET_CLI_HOME = "$cache\dotnet-home"
+$env:NUGET_PACKAGES = "$cache\nuget-packages"
+$env:NUGET_HTTP_CACHE_PATH = "$cache\nuget-http"
+$env:NUGET_PLUGINS_CACHE_PATH = "$cache\nuget-plugins"
+$env:NUGET_SCRATCH = "$cache\nuget-scratch"
+$env:TEMP = "$cache\tmp"
+$env:TMP = "$cache\tmp"
+New-Item -ItemType Directory -Force $env:TEMP | Out-Null
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_GENERATE_ASPNET_CERTIFICATE = 'false'
 
