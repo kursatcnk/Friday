@@ -23,8 +23,9 @@ public sealed class JsonSettingsStore(FridayPaths paths)
             return defaults;
         }
 
-        var settings = JsonSerializer.Deserialize<FridaySettings>(File.ReadAllText(paths.SettingsFile), Options)
-            ?? new FridaySettings();
+        // Dosya bir araçla yanlış kodlamada kaydedildiyse "Ä°stanbul" gibi bozulan harfler düzeltilip geri yazılır.
+        var text = TextRepair.FixMojibake(File.ReadAllText(paths.SettingsFile));
+        var settings = JsonSerializer.Deserialize<FridaySettings>(text, Options) ?? new FridaySettings();
         settings.Apps = new Dictionary<string, string>(settings.Apps, StringComparer.OrdinalIgnoreCase);
         settings.Routines = new Dictionary<string, List<string>>(settings.Routines, StringComparer.OrdinalIgnoreCase);
         // Yeni sürümde eklenen ayarlar dosyaya varsayılan değerleriyle yazılır; kullanıcı hepsini dosyada görür.
