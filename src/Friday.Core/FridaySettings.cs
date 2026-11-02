@@ -25,8 +25,11 @@ public sealed class FridaySettings
     /// <summary>"Ekrana bak" için görme yetenekli model; yalnızca o an yüklenir, sonra boşaltılır.</summary>
     public string VisionModel { get; set; } = "gemma4:e4b";
 
-    /// <summary>Bu kadar dakika kullanılmazsa dil modeli ve Whisper GPU'dan boşaltılır (VRAM 0'a iner).</summary>
-    public int GpuIdleMinutes { get; set; } = 5;
+    /// <summary>
+    /// Bu kadar dakika kullanılmazsa dil modeli, Whisper ve Piper kapanır: VRAM 0'a iner, dil modelinin ~3 GB'lık RAM
+    /// payı da boşalır. Yeniden yükleme ~3 sn sürer ve kullanıcı konuşurken biter.
+    /// </summary>
+    public int GpuIdleMinutes { get; set; } = 2;
 
     /// <summary>
     /// "auto": XTTS kuruluysa XTTS (doğal, yerel), değilse Azure anahtarı varsa Azure, o da yoksa Piper.

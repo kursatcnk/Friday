@@ -153,6 +153,9 @@ internal sealed class PiperSynthesizer : IDisposable
         }
     }
 
+    /// <summary>Boştayken Piper süreci kapatılır; bir sonraki cümlede ya da kısayolda yeniden açılır.</summary>
+    public void Sleep() => Kill();
+
     private void Kill()
     {
         lock (_gate)

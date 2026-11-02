@@ -117,9 +117,10 @@ public sealed class Speaker : IDisposable
         }
     }
 
-    /// <summary>Kısayola basılınca XTTS'i GPU'ya alır (RAM'den ~1 sn).</summary>
+    /// <summary>Kısayola basılınca Piper'ı başlatır (~0,3 sn) ve XTTS'i GPU'ya alır (RAM'den ~1 sn).</summary>
     public void Prewarm()
     {
+        _piper?.WarmUp();
         if (_xtts is { } xtts)
         {
             _ = Task.Run(async () =>
@@ -136,8 +137,12 @@ public sealed class Speaker : IDisposable
         }
     }
 
-    /// <summary>Boşta kalınca XTTS'i RAM'e taşır; VRAM boşalır.</summary>
-    public Task SleepAsync() => _xtts?.UnloadAsync() ?? Task.CompletedTask;
+    /// <summary>Boşta kalınca Piper kapanır (~100 MB RAM) ve XTTS RAM'e taşınır (VRAM boşalır).</summary>
+    public Task SleepAsync()
+    {
+        _piper?.Sleep();
+        return _xtts?.UnloadAsync() ?? Task.CompletedTask;
+    }
 
     public void Speak(string sentence)
     {

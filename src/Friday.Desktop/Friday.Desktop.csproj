@@ -13,6 +13,9 @@
     <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Friday</AssemblyName>
+    <!-- Arka planda bekleyen bir asistan: eşzamanlı GC'nin ayrı yığını ve iş parçacığı gereksiz; bellek sıkı tutulur. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +28,11 @@
     <ProjectReference Include="..\Friday.Core\Friday.Core.csproj" />
     <ProjectReference Include="..\Friday.Infrastructure\Friday.Infrastructure.csproj" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 0–9: yüksek değer, biraz daha sık GC karşılığında yığının boşta daha az RAM tutması demek. -->
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
   </ItemGroup>
 
 </Project>

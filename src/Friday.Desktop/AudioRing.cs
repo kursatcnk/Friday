@@ -27,6 +27,9 @@ public sealed class AudioRing : FrameworkElement
     private Color _color = Palette(AssistantState.Idle);
     private double _smoothedLevel;
     private bool _animating;
+    private TimeSpan _lastFrame;
+
+    private static readonly TimeSpan IdleFrame = TimeSpan.FromMilliseconds(66);
 
     public AudioRing()
     {
@@ -175,7 +178,28 @@ public sealed class AudioRing : FrameworkElement
         }
     }
 
-    private void OnFrame(object? sender, EventArgs e) => InvalidateVisual();
+    private void OnFrame(object? sender, EventArgs e)
+    {
+        var window = Window.GetWindow(this);
+        if (window is { WindowState: WindowState.Minimized })
+        {
+            return;
+        }
+
+        // Boştayken yalnızca yavaş bir nefes alma var: pencere öndeyse saniyede 15 kare, arka plandaysa hiç çizilmez.
+        // Friday günün çoğunu boşta geçirir; bu sayede beklerken işlemciye neredeyse hiç dokunmaz.
+        if (State is AssistantState.Idle or AssistantState.Starting or AssistantState.Error && e is RenderingEventArgs frame)
+        {
+            if (window is { IsActive: false } || frame.RenderingTime - _lastFrame < IdleFrame)
+            {
+                return;
+            }
+
+            _lastFrame = frame.RenderingTime;
+        }
+
+        InvalidateVisual();
+    }
 
     private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);
 
