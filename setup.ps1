@@ -8,6 +8,7 @@
   D:\Friday\models\ollama    Dil modeli (varsayılan gemma4:e4b)
   D:\Friday\models\piper     Türkçe ses modeli
   D:\Friday\models\whisper   Whisper (yalnızca D:\LinguaFlowModels'te yoksa iner)
+  D:\Friday\models\wakeword  "Hey Jarvis" uyandırma kelimesi (openWakeWord, ~4 MB)
 #>
 param(
     [string]$FridayHome = $(if ($env:FRIDAY_HOME) { $env:FRIDAY_HOME } else { 'D:\Friday' }),
@@ -43,7 +44,7 @@ function Get-File([string]$Url, [string]$Destination) {
     Move-Item $part $Destination
 }
 
-Write-Host "[1/5] Ollama $OllamaVersion"
+Write-Host "[1/6] Ollama $OllamaVersion"
 $ollamaDir = Join-Path $tools 'ollama'
 $ollamaExe = Join-Path $ollamaDir 'ollama.exe'
 if (-not (Test-Path $ollamaExe)) {
@@ -55,7 +56,7 @@ if (-not (Test-Path $ollamaExe)) {
     Remove-Item $zip
 }
 
-Write-Host "[2/5] Piper $PiperVersion"
+Write-Host "[2/6] Piper $PiperVersion"
 $piperExe = Join-Path $tools 'piper\piper.exe'
 if (-not (Test-Path $piperExe)) {
     $zip = Join-Path $downloads "piper-$PiperVersion-windows-amd64.zip"
@@ -66,7 +67,7 @@ if (-not (Test-Path $piperExe)) {
     Remove-Item $zip
 }
 
-Write-Host "[3/5] Türkçe sesler"
+Write-Host "[3/6] Türkçe sesler"
 $voiceDir = Join-Path $models 'piper'
 New-Item -ItemType Directory -Force $voiceDir | Out-Null
 # Varsayılan: topluluğun Türkçe verilerle eğittiği daha doğal ses (99eren99/piper-turkish-tts).
@@ -77,7 +78,7 @@ $voiceBase = "https://huggingface.co/rhasspy/piper-voices/resolve/main/tr/tr_TR/
 Get-File "$voiceBase.onnx" (Join-Path $voiceDir "$Voice.onnx")
 Get-File "$voiceBase.onnx.json" (Join-Path $voiceDir "$Voice.onnx.json")
 
-Write-Host "[4/5] Whisper"
+Write-Host "[4/6] Whisper"
 if (Test-Path (Join-Path 'D:\LinguaFlowModels' $WhisperFile)) {
     Write-Host "  LinguaFlow'un modeli kullanılacak: D:\LinguaFlowModels\$WhisperFile"
 } else {
@@ -86,7 +87,16 @@ if (Test-Path (Join-Path 'D:\LinguaFlowModels' $WhisperFile)) {
     Get-File "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$WhisperFile" (Join-Path $whisperDir $WhisperFile)
 }
 
-Write-Host "[5/5] Dil modeli ($Model)"
+Write-Host "[5/6] Uyandırma kelimesi (Hey Jarvis)"
+$wakeDir = Join-Path $models 'wakeword'
+New-Item -ItemType Directory -Force $wakeDir | Out-Null
+# openWakeWord'ün hazır modelleri; ses yalnızca bu bilgisayarda işlenir. Lisans: CC BY-NC-SA 4.0 (ticari olmayan).
+$wakeBase = 'https://github.com/dscripka/openWakeWord/releases/download/v0.5.1'
+foreach ($file in 'melspectrogram.onnx', 'embedding_model.onnx', 'hey_jarvis_v0.1.onnx') {
+    Get-File "$wakeBase/$file" (Join-Path $wakeDir $file)
+}
+
+Write-Host "[6/6] Dil modeli ($Model)"
 # Bu değişkenler yalnızca bu süreç ve alt süreçleri içindir; Ollama'nın C:\Users\...\.ollama'ya
 # yazmasını engeller.
 $ollamaHome = Join-Path $data 'ollama-home'

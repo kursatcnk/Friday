@@ -37,6 +37,8 @@
     <PackageReference Include="System.Data.OleDb" Version="10.0.13" />
     <!-- Azure nöral ses (Emel/Ahmet), isteğe bağlı. -->
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.52.0" />
+    <!-- "Hey Jarvis": openWakeWord modelleri bu bilgisayarda, CPU üzerinde çalışır. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.22.0" />
   </ItemGroup>
 
 </Project>

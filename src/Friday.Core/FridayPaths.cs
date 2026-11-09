@@ -39,6 +39,11 @@ public sealed class FridayPaths
 
     public string Temp => Path.Combine(Data, "tmp");
 
+    /// <summary>openWakeWord modelleri ("Hey Jarvis").</summary>
+    public string WakeWordModels => Path.Combine(Models, "wakeword");
+
+    public string Logs => Path.Combine(Data, "logs");
+
     public string PiperExe => Path.Combine(Tools, "piper", "piper.exe");
 
     /// <summary>Topluluğun eğittiği daha doğal Türkçe Piper sesi; yoksa eski dfki sesi.</summary>
