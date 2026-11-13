@@ -18,6 +18,8 @@ public sealed partial class App : Application, IDisposable
     private HudWindow? _hud;
     private MainWindow? _window;
     private CancellationTokenSource? _startup;
+    private EventWaitHandle? _showSignal;
+    private RegisteredWaitHandle? _showWait;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -30,20 +32,54 @@ public sealed partial class App : Application, IDisposable
             return;
         }
 
+        // Tek Friday: ikinci kopya Ollama portu, mikrofon ve kısayol için ilkiyle yarışırdı. İkinci açılış yalnızca
+        // çalışan Friday'in panelini öne getirir.
+        _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Friday.Assistant.Show", out var first);
+        if (!first)
+        {
+            _showSignal.Set();
+            Shutdown();
+            return;
+        }
+
         try
         {
-            Start();
+            var paths = FridayPaths.Resolve();
+            FridayLog.Initialize(paths.Logs);
+            FridayLog.Info("Friday başlıyor");
+            // Beklenmeyen bir hata Friday'i kapatmaz; günlüğe yazılır ve asistan çalışmaya devam eder.
+            DispatcherUnhandledException += (_, args) =>
+            {
+                FridayLog.Error("Arayüz hatası", args.Exception);
+                args.Handled = true;
+            };
+            TaskScheduler.UnobservedTaskException += (_, args) =>
+            {
+                FridayLog.Error("Arka plan görevi hatası", args.Exception);
+                args.SetObserved();
+            };
+            AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            {
+                if (args.ExceptionObject is Exception exception)
+                {
+                    FridayLog.Error("Ölümcül hata", exception);
+                }
+            };
+
+            Start(paths);
+            _showWait = ThreadPool.RegisterWaitForSingleObject(_showSignal, (_, _) =>
+                Dispatcher.BeginInvoke(() => _window?.ShowFromTray()), null, Timeout.Infinite, executeOnlyOnce: false);
         }
         catch (Exception exception)
         {
+            FridayLog.Error("Başlatılamadı", exception);
             MessageBox.Show(exception.Message, "Friday başlatılamadı", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(-1);
         }
     }
 
-    private void Start()
+    private void Start(FridayPaths paths)
     {
-        var paths = FridayPaths.Resolve();
         var store = new JsonSettingsStore(paths);
         var settings = store.Load();
         var memory = new MemoryStore(Path.Combine(paths.Data, "memory.json"));
@@ -202,5 +238,9 @@ public sealed partial class App : Application, IDisposable
         _tray = null;
         _hud = null;
         _startup = null;
+        _showWait?.Unregister(null);
+        _showSignal?.Dispose();
+        _showWait = null;
+        _showSignal = null;
     }
 }
