@@ -3,6 +3,9 @@ using NAudio.Wave;
 
 namespace Friday.Infrastructure;
 
+/// <summary>Bir kaydın sesi ve, kullanıcı tahminden sonra konuşmadıysa, hazır yazısı.</summary>
+public sealed record Recording(float[] Audio, string? Transcript);
+
 /// <summary>
 /// Mikrofonu yalnızca bir soru boyunca açar. Kısayola basılınca açılır, konuşma bitince ya da kısayola tekrar
 /// basılınca kapanır; aradaki zamanda mikrofon cihazı hiç açık değildir. Ses yalnızca bellekte tutulur.
@@ -26,14 +29,24 @@ public sealed class MicrophoneRecorder
     /// <summary>Son kayıttaki en yüksek seviye (0–1).</summary>
     public float LastPeak { get; private set; }
 
-    /// <summary>Kaydı yapar ve konuşma yoksa boş dizi döndürür.</summary>
+    /// <summary>Kullanıcı bu kadar susunca o ana kadarki ses tahminen yazıya dökülür.</summary>
+    private static readonly TimeSpan SpeculateAfter = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>Kaydı yapar; konuşma yoksa ses boştur.</summary>
     /// <param name="noSpeechTimeout">Bu sürede konuşma başlamazsa mikrofon kapanır.</param>
     /// <param name="stopRequested">İptal edilirse kayıt o ana kadar duyulanla biter (kısayola ikinci basış).</param>
     /// <param name="onlyDevice">Uyandırma kelimesini duyan mikrofon; verilirse yalnızca o açılır.</param>
-    public async Task<float[]> RecordAsync(
+    /// <param name="speculate">
+    /// Kullanıcı yarım saniye susunca o ana kadarki ses buna verilir (yazıya dökme). Yazı tamamlanmış bir komutsa
+    /// (Complete) kayıt, 1,2 sn'lik sessizliği beklemeden hemen biter. Kullanıcı sonra konuşmazsa aynı yazı kayıtla
+    /// birlikte döner ve yeniden yazıya dökülmez; konuşursa atılır.
+    /// </param>
+    public async Task<Recording> RecordAsync(
         FridaySettings settings, TimeSpan noSpeechTimeout, CancellationToken stopRequested, CancellationToken cancellationToken,
-        string? onlyDevice = null)
+        string? onlyDevice = null, Func<float[], CancellationToken, Task<(string Text, bool Complete)>>? speculate = null)
     {
+        Task<string?>? speculation = null;
+        long speculatedAt = -1;
         if (WaveIn.DeviceCount == 0)
         {
             throw new InvalidOperationException("Mikrofon bulunamadı.");
@@ -83,6 +96,33 @@ public sealed class MicrophoneRecorder
                     {
                         completion.TrySetResult();
                     }
+                    else if (speculate is not null && lead == channel && channel.Detector.State == EndpointState.Speaking
+                             && channel.Detector.TrailingSilence >= SpeculateAfter && channel.Detector.LastSpeechAt != speculatedAt)
+                    {
+                        var at = speculatedAt = channel.Detector.LastSpeechAt;
+                        var snapshot = Normalize([.. channel.Samples]);
+                        speculation = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var (text, complete) = await speculate(snapshot, cancellationToken).ConfigureAwait(false);
+                                lock (gate)
+                                {
+                                    if (complete && channel.Detector.LastSpeechAt == at)
+                                    {
+                                        completion.TrySetResult();
+                                    }
+                                }
+
+                                return text;
+                            }
+                            catch (Exception exception) when (exception is not OutOfMemoryException)
+                            {
+                                // Tahmin başarısızsa kayıt normal biter ve ses yeniden yazıya dökülür.
+                                return null;
+                            }
+                        }, CancellationToken.None);
+                    }
                 }
             };
             channel.Input.RecordingStopped += (_, e) =>
@@ -127,16 +167,22 @@ public sealed class MicrophoneRecorder
             LevelChanged?.Invoke(this, 0);
         }
 
+        float[] audio;
+        bool reusable;
         lock (gate)
         {
             var chosen = lead ?? channels.OrderByDescending(channel => channel.Peak).First();
             LastDeviceName = chosen.Name;
             LastPeak = chosen.Peak;
             // Tuşla erken bitirilen kayıtta dedektör henüz "konuşuyor" diyor olabilir; bu da geçerli bir kayıttır.
-            return lead is not null && lead.Detector.State is EndpointState.Speaking or EndpointState.Finished
+            audio = lead is not null && lead.Detector.State is EndpointState.Speaking or EndpointState.Finished
                 ? Normalize([.. lead.Samples])
                 : [];
+            reusable = audio.Length > 0 && lead!.Detector.LastSpeechAt == speculatedAt;
         }
+
+        var transcript = reusable && speculation is not null ? await speculation.ConfigureAwait(false) : null;
+        return new Recording(audio, transcript);
     }
 
     /// <summary>Ayarda adı verilen mikrofon; yoksa bilgisayardaki bütün mikrofonlar.</summary>

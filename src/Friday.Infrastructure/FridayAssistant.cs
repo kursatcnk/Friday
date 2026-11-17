@@ -41,6 +41,7 @@ public sealed class FridayAssistant : IDisposable
     private readonly PrivacyLedger _ledger;
     private readonly ConversationLog _history;
     private readonly WakeWordListener _wakeWord;
+    private readonly RhythmCoach _rhythm;
     private readonly object _gate = new();
 
     private FridaySettings _settings = new();
@@ -51,6 +52,7 @@ public sealed class FridayAssistant : IDisposable
     private Timer? _idleTimer;
     private OpenWindow? _activeWindow;
     private string? _wakeDevice;
+    private CancellationTokenSource? _announcement;
 
     public FridayAssistant(
         FridayPaths paths,
@@ -63,7 +65,8 @@ public sealed class FridayAssistant : IDisposable
         MemoryStore longTermMemory,
         PrivacyLedger ledger,
         ConversationLog history,
-        WakeWordListener wakeWord)
+        WakeWordListener wakeWord,
+        RhythmCoach rhythm)
     {
         _paths = paths;
         _microphone = microphone;
@@ -78,6 +81,12 @@ public sealed class FridayAssistant : IDisposable
         _wakeWord = wakeWord;
         _wakeWord.Detected += (_, device) => OnWake(device);
         _wakeWord.Problem += (_, problem) => FridayLog.Warn($"Uyandırma kelimesi: {problem}");
+        _rhythm = rhythm;
+        _tools.Rhythm = rhythm;
+        // Koç yalnızca Friday boştayken konuşur; konuşma ya da dinleme sırasında öneri bir sonraki yoklamaya kalır.
+        _rhythm.CanSpeak = () => State is AssistantState.Idle or AssistantState.Error;
+        _rhythm.Speak += (_, script) => Announce(script);
+        _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _speaker.FellBack += (_, reason) =>
             _ledger.Record(DataFlow.Local, "Ses", $"Azure kullanılamadı, yerel Piper'a geçildi ({reason})");
@@ -91,6 +100,7 @@ public sealed class FridayAssistant : IDisposable
     {
         ReconfigureVoice();
         StartWakeWord();
+        _rhythm.Apply(_settings);
     }
 
     /// <summary>"Hey Jarvis" açıksa bekleme metni bunu hatırlatır.</summary>
@@ -218,6 +228,7 @@ public sealed class FridayAssistant : IDisposable
 
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
         StartWakeWord();
+        _rhythm.Apply(settings);
         Report(AssistantState.Idle, $"{ReadyText} · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
     }
 
@@ -316,6 +327,7 @@ public sealed class FridayAssistant : IDisposable
             }
 
             _wakeDevice = device;
+            _announcement?.Cancel();
 
             if (State is AssistantState.Thinking or AssistantState.Speaking or AssistantState.Listening)
             {
@@ -391,7 +403,9 @@ public sealed class FridayAssistant : IDisposable
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
         var timeout = followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout;
-        var audio = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice).ConfigureAwait(false);
+        var recording = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice, SpeculateAsync)
+            .ConfigureAwait(false);
+        var audio = recording.Audio;
         AudioCues.PlayDone();
         var turkish = CultureInfo.GetCultureInfo("tr-TR");
         _ledger.Record(DataFlow.Local, "Mikrofon",
@@ -409,7 +423,10 @@ public sealed class FridayAssistant : IDisposable
         }
 
         Report(AssistantState.Thinking, "Anlamaya çalışıyorum…");
-        var text = await _whisper.TranscribeAsync(audio, cancellationToken).ConfigureAwait(false);
+        var clock = Stopwatch.StartNew();
+        var text = recording.Transcript ?? await _whisper.TranscribeAsync(audio, cancellationToken).ConfigureAwait(false);
+        Diagnostics?.Invoke(this, string.Create(CultureInfo.InvariantCulture,
+            $"yazıya dökme: {(recording.Transcript is null ? $"{clock.ElapsedMilliseconds} ms" : "tahmin hazırdı, 0 ms")}"));
         if (text.Length == 0)
         {
             Report(AssistantState.Idle, "Anlayamadım, tekrar dener misin?");
@@ -420,22 +437,65 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>
+    /// Kullanıcı yarım saniye susunca o ana kadarki ses yazıya dökülür. Yazı tamamlanmış bir komut ya da soruysa kayıt
+    /// 1,2 sn'lik sessizliği beklemeden biter; değilse yazı hazır bekler ve kullanıcı devam etmezse yeniden dökülmez.
+    /// </summary>
+    private async Task<(string Text, bool Complete)> SpeculateAsync(float[] audio, CancellationToken cancellationToken)
+    {
+        var text = await _whisper.TranscribeAsync(audio, cancellationToken).ConfigureAwait(false);
+        var complete = text.Length > 0
+            && (QuickIntents.Match(text, _settings.Routines.Keys) is { Tentative: false } || text.TrimEnd().EndsWith('?'));
+        return (text, complete);
+    }
+
+    /// <summary>
     /// Kalıbı belli komutlarda (ör. "YouTube'da X aç") araç modelsiz çalışır; model böyle komutlarda aracı çağırmadan
     /// önce saniyelerce düşünebiliyor. Aracın sonucu doğrudan okunur ve sohbet hafızasına normal bir tur gibi yazılır.
     /// </summary>
-    private async Task<string> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
+    /// <returns>Söylenen cevap; komut hızlı yolda yapılamadıysa null (soru dil modeline gider).</returns>
+    private async Task<string?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
     {
         var call = new ToolCall(quick.Tool, quick.Arguments);
-        Report(AssistantState.Thinking, AssistantTools.DescribeActivity(call.Name) + "…");
-        ToolStarted?.Invoke(this, call.Name);
-        Say(Fillers[Random.Shared.Next(Fillers.Length)]);
-        var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+        var clock = Stopwatch.StartNew();
+        var work = _tools.RunQuickAsync(quick, cancellationToken);
+        if (!quick.Tentative)
+        {
+            Report(AssistantState.Thinking, AssistantTools.DescribeActivity(call.Name) + "…");
+            ToolStarted?.Invoke(this, call.Name);
+        }
+
+        // Çoğu hızlı cevap 50 ms'de hazır; internete çıkan biri uzarsa sessiz beklemek yerine kısa bir söz.
+        if (await Task.WhenAny(work, Task.Delay(700, cancellationToken)).ConfigureAwait(false) != work)
+        {
+            Say(Fillers[Random.Shared.Next(Fillers.Length)]);
+        }
+
+        if (await work.ConfigureAwait(false) is not { } reply)
+        {
+            return null;
+        }
+
+        Diagnostics?.Invoke(this, string.Create(CultureInfo.InvariantCulture, $"hızlı yol: {call.Name} {clock.ElapsedMilliseconds} ms"));
         _memory.Add(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [call] });
-        _memory.Add(new ChatMessage(ChatRole.Tool, result) { ToolName = call.Name });
-        _memory.Add(new ChatMessage(ChatRole.Assistant, result));
-        AssistantSaid?.Invoke(this, result);
-        Say(result);
-        return result;
+        _memory.Add(new ChatMessage(ChatRole.Tool, reply.Text) { ToolName = call.Name });
+        _memory.Add(new ChatMessage(ChatRole.Assistant, reply.Text));
+        if (reply.Script is { } script)
+        {
+            await PlayScriptAsync(script, cancellationToken).ConfigureAwait(false);
+            return string.Join(" ", script.Select(step => step.Text));
+        }
+
+        AssistantSaid?.Invoke(this, reply.Text);
+        if (reply.Silent)
+        {
+            AudioCues.PlayDone();
+        }
+        else
+        {
+            Say(reply.Text);
+        }
+
+        return reply.Text;
     }
 
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
@@ -447,16 +507,14 @@ public sealed class FridayAssistant : IDisposable
         _tools.LastUserText = text;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context));
-        string reply;
-        if (QuickIntents.Match(text) is { } quick)
-        {
-            reply = await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false);
-        }
-        else
+        var reply = QuickIntents.Match(text, _settings.Routines.Keys) is { } quick
+            ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
+            : null;
+        if (reply is null)
         {
             // Ollama bir sebeple kapandıysa (çökme, elle kapatma) sessizce yeniden başlatılır; soru boşa gitmez.
             await _ollama.EnsureRunningAsync(_settings.OllamaPort, cancellationToken).ConfigureAwait(false);
-            reply = await AnswerAsync(cancellationToken).ConfigureAwait(false);
+            reply = await AnswerAsync(text, cancellationToken).ConfigureAwait(false);
         }
 
         _memory.CompactToolResults();
@@ -470,11 +528,14 @@ public sealed class FridayAssistant : IDisposable
         Report(AssistantState.Idle, ReadyText);
     }
 
-    private async Task<string> AnswerAsync(CancellationToken cancellationToken)
+    private async Task<string> AnswerAsync(string question, CancellationToken cancellationToken)
     {
         var reply = new StringBuilder();
         var retried = false;
         var filled = false;
+        // Düşünme adımı yalnızca hangi aracın çağrılacağına karar verirken gerekir. Selamlaşma ve sohbette, ya da araç
+        // sonucu geldikten sonra cevabı cümleye dökerken kapalıdır: bu ikisi cevap başına 0,5–2 sn kazandırıyor.
+        var smallTalk = ConversationStyle.IsSmallTalk(question);
         for (var round = 0; round <= MaxToolRounds; round++)
         {
             var messages = new List<ChatMessage>
@@ -488,9 +549,10 @@ public sealed class FridayAssistant : IDisposable
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
             var tools = round < MaxToolRounds ? _tools.Definitions : [];
+            var think = round == 0 && !smallTalk;
 
             var thinking = 0;
-            await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken).ConfigureAwait(false))
+            await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken, think).ConfigureAwait(false))
             {
                 thinking += delta.ThinkingLength;
                 if (delta.Timings is { } t)
@@ -510,13 +572,13 @@ public sealed class FridayAssistant : IDisposable
                 AssistantSaid?.Invoke(this, reply.ToString());
                 foreach (var sentence in chunker.Push(delta.Content))
                 {
-                    Say(sentence);
+                    SayUnlessFiller(sentence);
                 }
             }
 
             if (chunker.Flush() is { } rest)
             {
-                Say(rest);
+                SayUnlessFiller(rest);
             }
 
             // Model ara sıra yalnızca "düşünüp" ne metin ne araç çağrısı üretiyor; bir kez daha denenir.
@@ -539,6 +601,14 @@ public sealed class FridayAssistant : IDisposable
             _memory.Add(new ChatMessage(ChatRole.Assistant, content.ToString()) { ToolCalls = calls });
             if (calls.Count == 0)
             {
+                // Ekranda da kalıp sözler görünmesin; konuşmada zaten okunmadılar.
+                var clean = ConversationStyle.RemoveFiller(reply.ToString());
+                if (clean.Length > 0 && clean != reply.ToString())
+                {
+                    AssistantSaid?.Invoke(this, clean);
+                    return clean;
+                }
+
                 return reply.ToString();
             }
 
@@ -555,6 +625,15 @@ public sealed class FridayAssistant : IDisposable
 
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
                 _memory.Add(new ChatMessage(ChatRole.Tool, result) { ToolName = call.Name });
+
+                // Nefes egzersizi gibi rehberli metinler aralarında beklenerek okunur; tur burada biter.
+                if (_tools.TakeScript() is { } script)
+                {
+                    await PlayScriptAsync(script, cancellationToken).ConfigureAwait(false);
+                    var spoken = string.Join(" ", script.Select(step => step.Text));
+                    _memory.Add(new ChatMessage(ChatRole.Assistant, spoken));
+                    return reply.Append(spoken).ToString();
+                }
 
                 if (calls.Count == 1 && AssistantTools.AnswersDirectly(call.Name))
                 {
@@ -587,6 +666,15 @@ public sealed class FridayAssistant : IDisposable
         return reply.ToString();
     }
 
+    /// <summary>"Başka bir şeye ihtiyacın var mı?" gibi kalıp cümleler okunmaz; geri kalanı okunur.</summary>
+    private void SayUnlessFiller(string sentence)
+    {
+        if (!ConversationStyle.IsFiller(sentence))
+        {
+            Say(sentence);
+        }
+    }
+
     private void Say(string sentence)
     {
         var spoken = Pronunciation.Apply(SpokenText.Clean(sentence), _settings.Pronunciations);
@@ -604,26 +692,77 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>Zamanlayıcı gibi kendiliğinden gelen duyurular; o an başka bir iş yoksa okunur.</summary>
-    private void Announce(string message)
+    private void Announce(string message) => Announce([new CoachStep(message)]);
+
+    /// <summary>
+    /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
+    /// basılır ya da "Hey Jarvis" denirse hemen susar.
+    /// </summary>
+    private void Announce(IReadOnlyList<CoachStep> script)
     {
+        CancellationToken token;
         lock (_gate)
         {
             if (State is not (AssistantState.Idle or AssistantState.Error))
             {
                 return;
             }
+
+            _announcement?.Dispose();
+            _announcement = new CancellationTokenSource();
+            token = _announcement.Token;
+            State = AssistantState.Speaking;
         }
 
+        Report(AssistantState.Speaking, "Hatırlatma");
         _ = Task.Run(async () =>
         {
-            AudioCues.PlayListening();
-            Report(AssistantState.Speaking, "Hatırlatma");
-            AssistantSaid?.Invoke(this, message);
-            _speaker.Speak(Pronunciation.Apply(SpokenText.Clean(message), _settings.Pronunciations));
-            await _speaker.WaitUntilDoneAsync(CancellationToken.None).ConfigureAwait(false);
-            RecordOnlineSpeech();
-            Report(AssistantState.Idle, ReadyText);
-        });
+            try
+            {
+                AudioCues.PlayListening();
+                await PlayScriptAsync(script, token).ConfigureAwait(false);
+                RecordOnlineSpeech();
+            }
+            catch (OperationCanceledException)
+            {
+                // Kullanıcı sözü kesti; yeni tur kendi durumunu bildirir.
+                return;
+            }
+
+            if (!token.IsCancellationRequested)
+            {
+                Report(AssistantState.Idle, ReadyText);
+            }
+        }, CancellationToken.None);
+    }
+
+    /// <summary>Cümleleri sırayla okur; her cümleden sonra adımın beklemesi kadar susar (nefes al… tut… ver…).</summary>
+    private async Task PlayScriptAsync(IReadOnlyList<CoachStep> script, CancellationToken cancellationToken)
+    {
+        foreach (var step in script)
+        {
+            AssistantSaid?.Invoke(this, step.Text);
+            Say(step.Text);
+            await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
+            if (step.PauseSeconds > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(step.PauseSeconds), cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Günün ilk oturuşu: "Günaydın, İstanbul'da hava açık, 9 derece. Arabanın muayenesi yarın."</summary>
+    private async Task GreetAsync()
+    {
+        try
+        {
+            var greeting = await _tools.MorningGreetingAsync(_settings.UserName, CancellationToken.None).ConfigureAwait(false);
+            Announce([new CoachStep(greeting)]);
+        }
+        catch (HttpRequestException exception)
+        {
+            FridayLog.Warn($"Sabah karşılaması hazırlanamadı: {exception.Message}");
+        }
     }
 
     private void Report(AssistantState state, string message)
@@ -648,6 +787,9 @@ public sealed class FridayAssistant : IDisposable
     public void Dispose()
     {
         _idleTimer?.Dispose();
+        _announcement?.Cancel();
+        _announcement?.Dispose();
+        _rhythm.Dispose();
         _wakeWord.Dispose();
         _turn?.Cancel();
         _turn?.Dispose();

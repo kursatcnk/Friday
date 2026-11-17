@@ -1,0 +1,433 @@
+using System.Globalization;
+using System.Text.Json.Nodes;
+using Friday.Core;
+
+namespace Friday.Infrastructure;
+
+/// <summary>
+/// Hızlı yolun cevabı. Sessiz cevaplar (müziği durdurmak gibi) okunmaz, yalnızca ekranda görünür; Script varsa (nefes
+/// egzersizi) cümleler aralarında beklenerek tek tek okunur.
+/// </summary>
+public sealed record QuickReply(string Text, bool Silent = false, IReadOnlyList<CoachStep>? Script = null);
+
+/// <summary>
+/// Dil modelsiz hızlı yol: kalıbı belli komutlar burada çalışır ve sonucu doğrudan konuşulacak bir cümleye çevrilir.
+/// Cümleler veriden kurulur; model olmadığı için uydurma ihtimali de yoktur.
+/// </summary>
+public sealed partial class AssistantTools
+{
+    private static readonly TimeSpan RateCacheLife = TimeSpan.FromMinutes(15);
+
+    /// <summary>"bun", "pencere" gibi uygulama olmayan nesneler Başlat menüsünde aranmaz.</summary>
+    private static readonly HashSet<string> NotApps =
+    [
+        "bu", "bun", "su", "sun", "o", "on", "hepsi", "pencere", "sekme", "sayfa", "dosya", "link", "baglanti", "video", "sarki",
+        "muzik", "ses", "isik", "isiklar", "kapi", "perde", "ekran", "bilgisayar", "klima", "televizyon", "mod", "kamera on"
+    ];
+
+    private readonly object _rateLock = new();
+    private IReadOnlyList<CoachStep>? _script;
+    private string _lastRhythmText = "";
+    private Task<(Dictionary<string, double> Rates, string Source)>? _rateTask;
+    private DateTime _rateAt;
+
+    /// <returns>Konuşulacak cevap; komut burada yapılamıyorsa null (soru dil modeline gider).</returns>
+    public async Task<QuickReply?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
+    {
+        string Arg(string key) => quick.Arguments.TryGetValue(key, out var value) ? value : "";
+        try
+        {
+            return quick.Tool switch
+            {
+                "saat_ve_tarih" => new QuickReply(Arg("odak") == "tarih"
+                    ? $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}."
+                    : $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."),
+                "hava_durumu" => new QuickReply(await WeatherSpeechAsync(Arg("sehir"), Arg("odak"), Arg("soru") == "yagmur", cancellationToken).ConfigureAwait(false)),
+                "doviz" => new QuickReply(await CurrencySpeechAsync(Arg("birim"), cancellationToken).ConfigureAwait(false)),
+                "medya" => await MediaReplyAsync(Arg("komut")).ConfigureAwait(false),
+                "zamanlayici" => new QuickReply(TimerSpeech(Arg("dakika"), Arg("not"))),
+                "uygulama_ac" => FindApp(Arg("ad")) is { } app ? new QuickReply(Open(app)) : null,
+                "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
+                "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
+                "ritim" => RhythmCommand(Arg("islem"), Arg("dakika")),
+                _ => null
+            };
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            return new QuickReply("İnternete şu an ulaşamıyorum; bağlantı gelince tekrar sorarsan bakarım.");
+        }
+    }
+
+    private async Task<string> WeatherSpeechAsync(string city, string focus, bool rainQuestion, CancellationToken cancellationToken)
+    {
+        var forecast = await FetchForecastAsync(city, focus is "hafta" or "haftasonu" ? 7 : 2, cancellationToken).ConfigureAwait(false);
+        if (forecast is null)
+        {
+            return $"{(string.IsNullOrWhiteSpace(city) ? Settings.City : city)} diye bir yer bulamadım.";
+        }
+
+        var where = TurkishGrammar.Locative(forecast.Place);
+        static string Degrees(double value) => Math.Round(value).ToString(CultureInfo.InvariantCulture);
+
+        if (focus is "hafta" or "haftasonu")
+        {
+            var days = focus == "hafta"
+                ? forecast.Days
+                : forecast.Days.Where(day => day.Date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday).ToList();
+            if (days.Count == 0)
+            {
+                days = forecast.Days;
+            }
+
+            var label = focus == "hafta" ? "Bu hafta" : "Hafta sonu";
+            var rainy = days.Where(day => day.RainChance >= 60).Select(day => day.Date.ToString("dddd", Turkish)).ToList();
+            return $"{label} {where} sıcaklık {Degrees(days.Min(day => day.Min))} ile {Degrees(days.Max(day => day.Max))} derece arasında. " +
+                   (rainy.Count == 0 ? "Yağışlı bir gün görünmüyor." : $"Yağmur beklenen günler: {TurkishGrammar.Join(rainy)}.");
+        }
+
+        var tomorrow = focus == "yarin";
+        var target = forecast.Days[Math.Min(tomorrow ? 1 : 0, forecast.Days.Count - 1)];
+        var dayLabel = tomorrow ? "yarın" : "bugün";
+        var chance = Math.Round(target.RainChance);
+        if (rainQuestion)
+        {
+            return chance switch
+            {
+                >= 60 => $"Evet, {dayLabel} {where} yüzde {chance} ihtimalle yağış var; şemsiyeni yanına al.",
+                >= 30 => $"İhtimal var: {dayLabel} yağış ihtimali yüzde {chance}. Yanına bir şemsiye almak iyi olur.",
+                _ => $"Pek sanmıyorum; {dayLabel} {where} yağış ihtimali yüzde {chance}."
+            };
+        }
+
+        var rain = chance >= 50
+            ? $"yüzde {chance} ihtimalle yağış var, şemsiyeni unutma."
+            : chance >= 25 ? $"yağış ihtimali yüzde {chance}." : "yağmur beklenmiyor.";
+        if (tomorrow)
+        {
+            return $"Yarın {where} hava {WeatherCodes.Describe(target.Code)}, {Degrees(target.Min)} ile {Degrees(target.Max)} derece arası; {rain}";
+        }
+
+        var feels = Math.Abs(forecast.Feels - forecast.Temperature) >= 3 ? $", hissedilen {Degrees(forecast.Feels)}" : "";
+        return $"{TurkishGrammar.Capitalize(where)} şu an {Degrees(forecast.Temperature)} derece{feels}, hava {WeatherCodes.Describe(forecast.Code)}. " +
+               $"Gün içinde en yüksek {Degrees(target.Max)} derece; {rain}";
+    }
+
+    /// <summary>Open-Meteo'dan anlık durum ve gün gün tahmin; yer bulunamazsa null.</summary>
+    private async Task<Forecast?> FetchForecastAsync(string city, int days, CancellationToken cancellationToken)
+    {
+        days = Math.Clamp(days, 2, 7);
+        var place = string.IsNullOrWhiteSpace(city) ? Settings.City : city.Trim();
+        ledger.Record(DataFlow.Outbound, "Hava durumu", $"open-meteo.com · şehir: {place}");
+        var geo = await GetJsonAsync(
+            $"https://geocoding-api.open-meteo.com/v1/search?count=1&language=tr&name={Uri.EscapeDataString(place)}",
+            cancellationToken).ConfigureAwait(false);
+        var location = geo?["results"]?[0];
+        if (location is null)
+        {
+            return null;
+        }
+
+        var latitude = location["latitude"]!.GetValue<double>().ToString(CultureInfo.InvariantCulture);
+        var longitude = location["longitude"]!.GetValue<double>().ToString(CultureInfo.InvariantCulture);
+        var data = await GetJsonAsync(
+            $"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}" +
+            "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m" +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum" +
+            $"&timezone=auto&forecast_days={days}",
+            cancellationToken).ConfigureAwait(false);
+
+        var current = data!["current"]!;
+        var daily = data["daily"]!;
+        static double Number(JsonNode? node) => node?.GetValue<double>() ?? 0;
+        var list = Enumerable.Range(0, daily["time"]!.AsArray().Count).Select(index => new ForecastDay(
+            DateTime.Parse(daily["time"]![index]!.GetValue<string>(), CultureInfo.InvariantCulture),
+            daily["weather_code"]![index]?.GetValue<int>() ?? 0,
+            Number(daily["temperature_2m_min"]![index]),
+            Number(daily["temperature_2m_max"]![index]),
+            Number(daily["precipitation_probability_max"]![index]),
+            Number(daily["precipitation_sum"]![index]))).ToList();
+        return new Forecast(
+            location["name"]?.GetValue<string>() ?? place,
+            Number(current["temperature_2m"]),
+            Number(current["apparent_temperature"]),
+            current["weather_code"]?.GetValue<int>() ?? 0,
+            Number(current["wind_speed_10m"]),
+            list);
+    }
+
+    private async Task<string> CurrencySpeechAsync(string currency, CancellationToken cancellationToken)
+    {
+        var (rates, _) = await GetRatesAsync().ConfigureAwait(false);
+        var parts = CurrencyCodes(currency)
+            .Where(rates.ContainsKey)
+            .Select(code => $"{CurrencyLabel(code)} {rates[code].ToString(rates[code] >= 10 ? "0.00" : "0.000", Turkish)} lira")
+            .ToList();
+        return parts.Count == 0 ? "Bu kurun bilgisini bulamadım." : TurkishGrammar.Capitalize(string.Join(", ", parts)) + ".";
+    }
+
+    /// <summary>
+    /// TL karşılıkları (1 birim = x TL). TCMB'nin bülteni bu bilgisayardan 9 sn'ye kadar gecikebiliyor; bu yüzden TCMB
+    /// ve open.er-api.com aynı anda istenir, önce gelen kullanılır ve sonuç 15 dk saklanır.
+    /// </summary>
+    private Task<(Dictionary<string, double> Rates, string Source)> GetRatesAsync()
+    {
+        lock (_rateLock)
+        {
+            // Aynı anda gelen sorular tek isteği paylaşır; başarılı sonuç 15 dk saklanır.
+            if (_rateTask is { } task && (!task.IsCompleted || (task.IsCompletedSuccessfully && DateTime.UtcNow - _rateAt < RateCacheLife)))
+            {
+                return task;
+            }
+
+            _rateAt = DateTime.UtcNow;
+            _rateTask = FetchRatesAsync();
+            return _rateTask;
+        }
+    }
+
+    private async Task<(Dictionary<string, double> Rates, string Source)> FetchRatesAsync()
+    {
+        ledger.Record(DataFlow.Outbound, "Döviz kuru", "tcmb.gov.tr ve open.er-api.com · günlük kurlar");
+        using var race = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var pending = new List<Task<(Dictionary<string, double>, string)>> { CentralBankAsync(race.Token), OpenRatesAsync(race.Token) };
+        while (pending.Count > 0)
+        {
+            var done = await Task.WhenAny(pending).ConfigureAwait(false);
+            pending.Remove(done);
+            if (done.IsCompletedSuccessfully && done.Result.Item1.Count > 0)
+            {
+                await race.CancelAsync().ConfigureAwait(false);
+                return done.Result;
+            }
+        }
+
+        throw new HttpRequestException("Kur kaynaklarına ulaşılamadı.");
+    }
+
+    private async Task<(Dictionary<string, double>, string)> CentralBankAsync(CancellationToken cancellationToken)
+    {
+        var xml = System.Xml.Linq.XDocument.Parse(
+            await http.GetStringAsync(new Uri("https://www.tcmb.gov.tr/kurlar/today.xml"), cancellationToken).ConfigureAwait(false));
+        var rates = new Dictionary<string, double>();
+        foreach (var element in xml.Descendants("Currency"))
+        {
+            var code = element.Attribute("Kod")?.Value;
+            if (code is not null
+                && double.TryParse(element.Element("ForexSelling")?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var selling)
+                && int.TryParse(element.Element("Unit")?.Value, out var unit) && unit > 0)
+            {
+                rates[code] = selling / unit;
+            }
+        }
+
+        return (rates, $"TCMB {xml.Root?.Attribute("Tarih")?.Value}");
+    }
+
+    private async Task<(Dictionary<string, double>, string)> OpenRatesAsync(CancellationToken cancellationToken)
+    {
+        var json = JsonNode.Parse(await http.GetStringAsync(new Uri("https://open.er-api.com/v6/latest/TRY"), cancellationToken).ConfigureAwait(false));
+        var rates = new Dictionary<string, double>();
+        if (json?["rates"] is JsonObject table)
+        {
+            foreach (var (code, value) in table)
+            {
+                // Tabloda 1 TL'nin karşılığı var; 1 birimin TL karşılığı tersidir.
+                if (value?.GetValue<double>() is > 0 and var perLira)
+                {
+                    rates[code] = 1 / perLira;
+                }
+            }
+        }
+
+        return (rates, "piyasa ortalaması (open.er-api.com)");
+    }
+
+    private static List<string> CurrencyCodes(string currency)
+    {
+        var wanted = Simplify(currency);
+        var codes = CurrencyNames.Where(pair => wanted.Contains(pair.Key, StringComparison.Ordinal)).Select(pair => pair.Value).Distinct().ToList();
+        return codes.Count > 0 ? codes : wanted.Length == 3 ? [wanted.ToUpperInvariant()] : ["USD", "EUR"];
+    }
+
+    private static string CurrencyLabel(string code) => code switch
+    {
+        "USD" => "dolar",
+        "EUR" => "euro",
+        "GBP" => "sterlin",
+        "CHF" => "İsviçre frangı",
+        "JPY" => "yen",
+        "RUB" => "ruble",
+        _ => code
+    };
+
+    private async Task<QuickReply> MediaReplyAsync(string command)
+    {
+        var result = await MediaAsync(command).ConfigureAwait(false);
+        return command switch
+        {
+            "ne_caliyor" => new QuickReply(result),
+            "oynat_duraklat" => new QuickReply("Müzik durduruldu ya da devam ettirildi.", Silent: true),
+            "sonraki" => new QuickReply("Sonraki parçaya geçildi.", Silent: true),
+            "onceki" => new QuickReply("Önceki parçaya dönüldü.", Silent: true),
+            "ses_ac" => new QuickReply("Ses açıldı.", Silent: true),
+            "ses_kis" => new QuickReply("Ses kısıldı.", Silent: true),
+            "sessiz" => new QuickReply("Ses kapatıldı.", Silent: true),
+            _ => new QuickReply(result)
+        };
+    }
+
+    private string TimerSpeech(string minutesText, string note)
+    {
+        var result = StartTimer(minutesText, note);
+        if (!double.TryParse(minutesText, NumberStyles.Float, CultureInfo.InvariantCulture, out var minutes) || result.StartsWith("Geçerli", StringComparison.Ordinal))
+        {
+            return result;
+        }
+
+        var span = TurkishGrammar.Duration(minutes);
+        return string.IsNullOrWhiteSpace(note)
+            ? $"Tamam, {span} sonra haber veririm."
+            : $"Tamam, {span} sonra {note} hatırlatırım.";
+    }
+
+    private async Task<QuickReply?> RoutineReplyAsync(string name, CancellationToken cancellationToken)
+    {
+        var match = Settings.Routines.FirstOrDefault(routine => Simplify(routine.Key) == Simplify(name));
+        if (match.Key is null)
+        {
+            return null;
+        }
+
+        var steps = match.Value.Select(RoutineStep.Parse).ToList();
+        if (steps.Any(step => step.Action == RoutineAction.Briefing))
+        {
+            // Brifing birden çok bilgiyi birleştirir; cümleyi model kurar.
+            return null;
+        }
+
+        await RunRoutineAsync(name, cancellationToken).ConfigureAwait(false);
+        var script = TakeScript();
+        var said = steps.Where(step => step.Action == RoutineAction.Say).Select(step => step.Value)
+            .Concat(steps.Where(step => step.Action == RoutineAction.Rhythm && script is null).Select(_ => _lastRhythmText))
+            .Where(text => text.Length > 0)
+            .ToList();
+        var text = said.Count > 0 ? string.Join(" ", said) : $"{TurkishGrammar.Capitalize(match.Key)} hazır.";
+        return new QuickReply(text, Script: script);
+    }
+
+    /// <summary>Ritim koçu (mola, odak, nefes egzersizi); kapalıysa null.</summary>
+    public RhythmCoach? Rhythm { get; set; }
+
+    /// <summary>Dil modeli ritim aracını çağırdıysa okunacak rehberli metin (nefes, esneme); bir kez alınır.</summary>
+    public IReadOnlyList<CoachStep>? TakeScript() => Interlocked.Exchange(ref _script, null);
+
+    private QuickReply RhythmCommand(string action, string minutesText)
+    {
+        if (Rhythm is not { Enabled: true } coach)
+        {
+            return new QuickReply("Ritim koçu kapalı; Ayarlar'dan açabilirsin.");
+        }
+
+        var minutes = double.TryParse(minutesText, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0;
+        var reply = Simplify(action) switch
+        {
+            "mola" => coach.StartBreak(),
+            "odak" => coach.StartFocus(minutes),
+            "odakbitir" => coach.EndFocus(),
+            "ertele" => coach.Snooze(minutes),
+            "nefes" => RhythmCoach.Breathe(),
+            "esneme" => RhythmCoach.Stretch(),
+            "su" => coach.Water(),
+            "durum" => coach.Status(),
+            "kaldigimyer" => coach.Where(),
+            _ => new QuickReply($"Bilinmeyen ritim işlemi: {action}")
+        };
+        ledger.Record(DataFlow.Local, "Ritim", $"{action} istendi");
+        _script = reply.Script;
+        _lastRhythmText = reply.Text;
+        return reply;
+    }
+
+    /// <summary>
+    /// Günün ilk oturuşunda söylenen kısa karşılama: hava ve üç gün içinde yaklaşan tarihli hatırlatmalar. Modelsiz
+    /// kurulur; sabah modeller uykudayken GPU'yu uyandırmaz.
+    /// </summary>
+    public async Task<string> MorningGreetingAsync(string userName, CancellationToken cancellationToken)
+    {
+        var parts = new List<string> { string.IsNullOrWhiteSpace(userName) ? "Günaydın!" : $"Günaydın {userName.Trim()}!" };
+        try
+        {
+            parts.Add(await WeatherSpeechAsync("", "bugun", rainQuestion: false, cancellationToken).ConfigureAwait(false));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            // İnternet yoksa karşılama havasız yapılır.
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        foreach (var item in memory.Items)
+        {
+            if (MemoryDates.NextOccurrence(item.Text, today) is { } date && date.DayNumber - today.DayNumber is var left and <= 3)
+            {
+                var when = left switch { 0 => "Bugün", 1 => "Yarın", _ => $"{left} gün sonra" };
+                var fact = item.Text.StartsWith("Kullanıcının ", StringComparison.Ordinal) ? item.Text["Kullanıcının ".Length..] : item.Text;
+                parts.Add($"{when}: {fact.TrimEnd('.')}.");
+            }
+        }
+
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>Rutin adımı: "mola", "odak 25", "nefes".</summary>
+    private string RhythmStep(string value)
+    {
+        var parts = value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length == 0 ? "" : RhythmCommand(parts[0], parts.Length > 1 ? parts[1] : "").Text;
+    }
+
+    /// <summary>Ayardaki ya da Başlat menüsündeki uygulama; bulunamazsa null.</summary>
+    private (string Target, string Name)? FindApp(string name)
+    {
+        var spoken = name.Trim();
+        if (spoken.Length == 0)
+        {
+            return null;
+        }
+
+        if (Settings.Apps.TryGetValue(spoken, out var command))
+        {
+            return (command, spoken);
+        }
+
+        var wanted = Simplify(spoken);
+        if (wanted.Length < 3 || NotApps.Contains(wanted))
+        {
+            return null;
+        }
+
+        var shortcut = StartMenuShortcuts()
+            .Select(path => (path, key: Simplify(Path.GetFileNameWithoutExtension(path))))
+            .Where(item => item.key.Length >= 3)
+            // Kısa adlar ("not") yalnızca tam eşleşir; uzunlar kısayol adının içinde aranabilir.
+            .Where(item => item.key == wanted
+                || (wanted.Length >= 4 && item.key.Contains(wanted, StringComparison.Ordinal))
+                || (item.key.Length >= 4 && wanted.Contains(item.key, StringComparison.Ordinal)))
+            .OrderBy(item => item.key == wanted ? 0 : 1)
+            .ThenBy(item => Math.Abs(item.key.Length - wanted.Length))
+            .Select(item => item.path)
+            .FirstOrDefault();
+        return shortcut is null ? null : (shortcut, Path.GetFileNameWithoutExtension(shortcut));
+    }
+
+    private string Open((string Target, string Name) app)
+    {
+        Launch(app.Target);
+        ledger.Record(DataFlow.Local, "Uygulama", $"{app.Name} açıldı");
+        return $"{TurkishGrammar.Capitalize(app.Name)} açılıyor.";
+    }
+
+    private sealed record ForecastDay(DateTime Date, int Code, double Min, double Max, double RainChance, double Rain);
+
+    private sealed record Forecast(string Place, double Temperature, double Feels, int Code, double Wind, List<ForecastDay> Days);
+}

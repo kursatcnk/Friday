@@ -89,9 +89,10 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
         string model,
         IReadOnlyList<ChatMessage> messages,
         JsonArray tools,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        bool think = true)
     {
-        var body = BuildRequest(model, messages, tools, KeepAlive);
+        var body = BuildRequest(model, messages, tools, KeepAlive, think);
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(server.BaseAddress, "api/chat"))
         {
             Content = JsonContent.Create(body)
@@ -119,7 +120,7 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
         }
     }
 
-    internal static JsonObject BuildRequest(string model, IReadOnlyList<ChatMessage> messages, JsonArray tools, string keepAlive = "5m")
+    internal static JsonObject BuildRequest(string model, IReadOnlyList<ChatMessage> messages, JsonArray tools, string keepAlive = "5m", bool think = true)
     {
         var items = new JsonArray();
         foreach (var message in messages)
@@ -166,7 +167,7 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
             // Gemma 4 düşünme kapalıyken araç çağırmak yerine "aracı kullanacağım" diye anlatıyor; açıkken
             // doğru aracı çağırıyor ve kısa sorularda yalnızca ~0,5 sn ekliyor. Düşünce metni ayrı bir alanda
             // ("thinking") gelir, seslendirilmez.
-            ["think"] = true,
+            ["think"] = think,
             ["keep_alive"] = keepAlive,
             ["options"] = Options()
         };

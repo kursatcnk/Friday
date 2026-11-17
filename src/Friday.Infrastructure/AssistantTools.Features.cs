@@ -176,6 +176,7 @@ public sealed partial class AssistantTools
                 RoutineAction.Say => $"Kullanıcıya şunu söyle: {step.Value}",
                 RoutineAction.Briefing => await BriefingAsync(cancellationToken).ConfigureAwait(false),
                 RoutineAction.LinguaFlow => await LinguaFlowAsync("baslat", cancellationToken).ConfigureAwait(false),
+                RoutineAction.Rhythm => RhythmStep(step.Value),
                 _ => ""
             });
         }
@@ -203,7 +204,14 @@ public sealed partial class AssistantTools
                 : "Zamanlayıcılar: " + string.Join(", ", _timers.Select(timer => $"{timer.Note} {timer.Due:HH:mm}")) + ". ");
         }
 
-        var soon = memory.Items.Where(item => MentionsUpcoming(item.Text)).Select(item => item.Text).ToList();
+        // Tarihi belli olanlar kaç gün kaldığıyla, tarihsizler "yarın/hafta" geçiyorsa söylenir.
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var soon = memory.Items
+            .Select(item => (item.Text, Left: MemoryDates.NextOccurrence(item.Text, today) is { } date ? date.DayNumber - today.DayNumber : (int?)null))
+            .Where(item => item.Left is <= 14 || (item.Left is null && MentionsUpcoming(item.Text)))
+            .OrderBy(item => item.Left ?? 99)
+            .Select(item => item.Left switch { 0 => $"{item.Text} (bugün)", 1 => $"{item.Text} (yarın)", { } days => $"{item.Text} ({days} gün kaldı)", _ => item.Text })
+            .ToList();
         if (soon.Count > 0)
         {
             text.Append("Hafızadaki yaklaşan şeyler: ").AppendJoin(" ", soon).Append(' ');

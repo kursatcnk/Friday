@@ -4,7 +4,8 @@ using System.Text.Json;
 
 namespace Friday.Core;
 
-public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created);
+/// <param name="Source">Bilgi başka bir yapay zekâdan aktarıldıysa onun adı (ör. "ChatGPT"); Friday'in kendisi için null.</param>
+public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created, string? Source = null);
 
 /// <summary>
 /// Uzun süreli hafıza: "Unutma, arabanın muayenesi Kasım'da" gibi bilgiler D:\Friday\data\memory.json'a yazılır ve
@@ -12,7 +13,7 @@ public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created);
 /// </summary>
 public sealed class MemoryStore
 {
-    private const int MaxItems = 200;
+    private const int MaxItems = 500;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -76,6 +77,76 @@ public sealed class MemoryStore
 
         Changed?.Invoke(this, EventArgs.Empty);
         return item;
+    }
+
+    /// <summary>Başka bir yapay zekâdan gelen bilgileri ekler; zaten bilinenler atlanır.</summary>
+    /// <returns>Eklenen bilgi sayısı.</returns>
+    public int Import(IEnumerable<string> facts, string source)
+    {
+        var added = 0;
+        lock (_gate)
+        {
+            var known = _items.Select(item => MemoryImport.Key(item.Text)).ToHashSet(StringComparer.Ordinal);
+            foreach (var fact in facts.Select(fact => fact.Trim()).Where(fact => fact.Length > 0))
+            {
+                if (known.Add(MemoryImport.Key(fact)))
+                {
+                    _items.Add(new MemoryItem(Guid.NewGuid().ToString("N")[..8], fact, _clock.GetUtcNow(), source));
+                    added++;
+                }
+            }
+
+            while (_items.Count > MaxItems)
+            {
+                _items.RemoveAt(0);
+            }
+
+            if (added > 0)
+            {
+                Save();
+            }
+        }
+
+        if (added > 0)
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        return added;
+    }
+
+    /// <summary>Okunur Markdown: yedek almak ya da başka bir uygulamaya taşımak için.</summary>
+    public string ToMarkdown(string assistantName)
+    {
+        var items = Items;
+        var text = new System.Text.StringBuilder();
+        text.AppendLine(CultureInfo.InvariantCulture, $"# {assistantName}'in hafızası");
+        text.AppendLine();
+        text.AppendLine(CultureInfo.InvariantCulture, $"{_clock.GetLocalNow().ToString("d MMMM yyyy HH:mm", Turkish)} · {items.Count} bilgi");
+        text.AppendLine();
+        foreach (var item in items)
+        {
+            text.AppendLine(CultureInfo.InvariantCulture, $"- {item.Text}");
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// Başka bir yapay zekâya yapıştırılacak hazır mesaj: bilgileri tanıtır ve kaydetmesini ister. ChatGPT, Claude ve
+    /// Gemini bu biçimdeki bir mesajı hafızalarına alabiliyor.
+    /// </summary>
+    public string ToPortablePrompt()
+    {
+        var text = new System.Text.StringBuilder();
+        text.AppendLine("Aşağıdakiler benim hakkımda bilmeni istediğim şeyler. Lütfen hepsini hafızana kaydet ve bundan sonraki konuşmalarımızda kullan:");
+        text.AppendLine();
+        foreach (var item in Items)
+        {
+            text.AppendLine(CultureInfo.InvariantCulture, $"- {item.Text}");
+        }
+
+        return text.ToString();
     }
 
     /// <summary>Metninde aranan ifade geçen bilgileri siler; silinenleri döndürür.</summary>

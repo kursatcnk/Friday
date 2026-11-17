@@ -26,6 +26,7 @@ public sealed class SpeechEndpointDetector
     private const float NoiseMultiplier = 3.5f;
     private const int SpeechWindowsToStart = 3;
 
+    private readonly int _sampleRate;
     private readonly int _windowSize;
     private readonly long _silenceToStop;
     private readonly long _noSpeechTimeout;
@@ -41,6 +42,7 @@ public sealed class SpeechEndpointDetector
 
     public SpeechEndpointDetector(int sampleRate, TimeSpan silenceToStop, TimeSpan noSpeechTimeout, TimeSpan maxDuration)
     {
+        _sampleRate = sampleRate;
         _windowSize = sampleRate / 50;
         _silenceToStop = Samples(sampleRate, silenceToStop);
         _noSpeechTimeout = Samples(sampleRate, noSpeechTimeout);
@@ -51,6 +53,15 @@ public sealed class SpeechEndpointDetector
 
     /// <summary>Son pencerenin 0–1 arası ses seviyesi (arayüzdeki gösterge için).</summary>
     public float Level { get; private set; }
+
+    /// <summary>Konuşmadan sonra süren sessizlik (tahmini yazıya dökme bunu bekler).</summary>
+    public TimeSpan TrailingSilence => TimeSpan.FromSeconds((double)_silenceRun / _sampleRate);
+
+    /// <summary>
+    /// Konuşma sayılan son pencerenin bittiği örnek. Değişmediyse o andan beri yeni bir söz söylenmemiştir; tahmini
+    /// yazı hâlâ geçerlidir.
+    /// </summary>
+    public long LastSpeechAt { get; private set; }
 
     public EndpointState Process(ReadOnlySpan<float> samples)
     {
@@ -89,6 +100,7 @@ public sealed class SpeechEndpointDetector
         if (isSpeech)
         {
             _silenceRun = 0;
+            LastSpeechAt = _elapsed;
             if (++_speechRun >= SpeechWindowsToStart)
             {
                 _speechStarted = true;

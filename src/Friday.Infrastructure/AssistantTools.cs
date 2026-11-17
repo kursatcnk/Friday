@@ -47,6 +47,7 @@ public sealed partial class AssistantTools(
         ["sayfayi_oku"] = "Sayfayı okuyorum",
         ["doviz"] = "Kurlara bakıyorum",
         ["video_ac"] = "Videoyu buluyorum",
+        ["ritim"] = "Ritmine bakıyorum",
     };
 
     private readonly List<(DateTime Due, string Note)> _timers = [];
@@ -108,6 +109,9 @@ public sealed partial class AssistantTools(
         Tool("gunluk_ozet", "Günaydın brifingi: tarih, hava, zamanlayıcılar ve hatırlatmalar.", []),
         Tool("gecmis", "Belirli bir günde kullanıcıyla neler konuşulduğunu verir.",
             [("gun", "string", "bugun, dun ya da yyyy-aa-gg", false)]),
+        Tool("ritim", "Çalışma ritmi koçu: mola başlatır, odak oturumu açar/bitirir, molayı erteler, sesli nefes egzersizi ya da esneme yaptırır, içilen suyu sayar, günün çalışma özetini ve moladan önce kalınan yeri söyler.",
+            [("islem", "string", "mola, odak, odak_bitir, ertele, nefes, esneme, su, durum ya da kaldigim_yer", true),
+             ("dakika", "number", "odak ya da erteleme süresi (dakika)", false)]),
         Tool("linguaflow", "LinguaFlow canlı çeviri uygulamasını açıp ekrandaki video/toplantı için çeviriyi başlatır ya da durdurur.",
             [("islem", "string", "baslat ya da durdur", true)]),
     ];
@@ -139,6 +143,7 @@ public sealed partial class AssistantTools(
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),
                 "doviz" => await ExchangeRatesAsync(Argument(call, "birim"), cancellationToken).ConfigureAwait(false),
+                "ritim" => RhythmCommand(Argument(call, "islem"), Argument(call, "dakika")).Text,
                 "internette_ara" => await SearchWebAsync(Argument(call, "soru"), cancellationToken).ConfigureAwait(false),
                 "sayfayi_oku" => await ReadPageAsync(Argument(call, "adres"), cancellationToken).ConfigureAwait(false),
                 // UI Automation çağrıları zaman alabilir; asistanın akışını bekletmesin diye arka planda çalışır.
@@ -146,6 +151,11 @@ public sealed partial class AssistantTools(
                 "masaustu_kontrol" => await Task.Run(() => DesktopControl(Argument(call, "islem"), Argument(call, "hedef"), Argument(call, "metin")), cancellationToken).ConfigureAwait(false),
                 _ => $"Böyle bir araç yok: {call.Name}"
             };
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Aracın kendi zaman aşımı: kullanıcı iptal etmedi, kaynak yanıt vermedi. Model bunu söyleyebilsin.
+            return "Hata: kaynak zamanında yanıt vermedi. Kullanıcıya bunu söyle, uydurma.";
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -160,36 +170,7 @@ public sealed partial class AssistantTools(
             return "Uygulama adı söylenmedi.";
         }
 
-        if (Settings.Apps.TryGetValue(name.Trim(), out var command))
-        {
-            Launch(command);
-            ledger.Record(DataFlow.Local, "Uygulama", $"{name} açıldı");
-            return $"{name} açıldı.";
-        }
-
-        // Başlat menüsündeki kısayollar arasında ada en çok benzeyeni bul.
-        var wanted = Simplify(name);
-        if (wanted.Length < 2)
-        {
-            return $"'{name}' adında bir uygulama bulunamadı.";
-        }
-
-        var shortcut = StartMenuShortcuts()
-            .Select(path => (path, key: Simplify(Path.GetFileNameWithoutExtension(path))))
-            .Where(item => item.key.Length >= 2)
-            .Where(item => item.key.Contains(wanted, StringComparison.Ordinal) || wanted.Contains(item.key, StringComparison.Ordinal))
-            .OrderBy(item => Math.Abs(item.key.Length - wanted.Length))
-            .Select(item => item.path)
-            .FirstOrDefault();
-        if (shortcut is null)
-        {
-            return $"'{name}' adında bir uygulama bulunamadı.";
-        }
-
-        Launch(shortcut);
-        var opened = Path.GetFileNameWithoutExtension(shortcut);
-        ledger.Record(DataFlow.Local, "Uygulama", $"{opened} açıldı");
-        return $"{opened} açıldı.";
+        return FindApp(name) is { } app ? Open(app) : $"'{name}' adında bir uygulama bulunamadı.";
     }
 
     private string OpenWebsite(string address)
@@ -257,45 +238,23 @@ public sealed partial class AssistantTools(
     /// <param name="days">Tahmin günü sayısı (2–7); haftalık sorular için 7.</param>
     private async Task<string> WeatherAsync(string city, CancellationToken cancellationToken, int days = 2)
     {
-        days = Math.Clamp(days, 2, 7);
-        var place = string.IsNullOrWhiteSpace(city) ? Settings.City : city.Trim();
-        ledger.Record(DataFlow.Outbound, "Hava durumu", $"open-meteo.com · şehir: {place}");
-        var geo = await GetJsonAsync(
-            $"https://geocoding-api.open-meteo.com/v1/search?count=1&language=tr&name={Uri.EscapeDataString(place)}",
-            cancellationToken).ConfigureAwait(false);
-        var location = geo?["results"]?[0];
-        if (location is null)
+        var forecast = await FetchForecastAsync(city, days, cancellationToken).ConfigureAwait(false);
+        if (forecast is null)
         {
-            return $"'{place}' bulunamadı.";
+            return $"'{(string.IsNullOrWhiteSpace(city) ? Settings.City : city)}' bulunamadı.";
         }
 
-        var latitude = location["latitude"]!.GetValue<double>().ToString(CultureInfo.InvariantCulture);
-        var longitude = location["longitude"]!.GetValue<double>().ToString(CultureInfo.InvariantCulture);
-        var forecast = await GetJsonAsync(
-            $"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}" +
-            "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m" +
-            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum" +
-            $"&timezone=auto&forecast_days={days}",
-            cancellationToken).ConfigureAwait(false);
-
-        var current = forecast!["current"]!;
-        var daily = forecast["daily"]!;
-        string Day(int index)
+        static string Degrees(double value) => Math.Round(value).ToString(CultureInfo.InvariantCulture);
+        string Day(ForecastDay day, int index)
         {
-            var date = DateTime.Parse(daily["time"]![index]!.GetValue<string>(), CultureInfo.InvariantCulture);
-            var label = index switch { 0 => "Bugün", 1 => "Yarın", _ => date.ToString("dddd d MMMM", Turkish) };
-            var rain = daily["precipitation_sum"]![index]?.GetValue<double>() ?? 0;
-            return $"{label}: {WeatherCodes.Describe(daily["weather_code"]![index]!.GetValue<int>())}, " +
-                   $"{Round(daily["temperature_2m_min"]![index])}–{Round(daily["temperature_2m_max"]![index])} derece, " +
-                   $"yağış ihtimali yüzde {Round(daily["precipitation_probability_max"]![index])}" +
-                   (rain >= 0.1 ? $", {rain.ToString("0.#", Turkish)} mm yağış" : "");
+            var label = index switch { 0 => "Bugün", 1 => "Yarın", _ => day.Date.ToString("dddd d MMMM", Turkish) };
+            return $"{label}: {WeatherCodes.Describe(day.Code)}, {Degrees(day.Min)}–{Degrees(day.Max)} derece, " +
+                   $"yağış ihtimali yüzde {Degrees(day.RainChance)}" + (day.Rain >= 0.1 ? $", {day.Rain.ToString("0.#", Turkish)} mm yağış" : "");
         }
 
-        var count = daily["time"]!.AsArray().Count;
-        return $"{location["name"]}: şu an {Round(current["temperature_2m"])} derece " +
-               $"(hissedilen {Round(current["apparent_temperature"])}), {WeatherCodes.Describe(current["weather_code"]!.GetValue<int>())}, " +
-               $"rüzgâr {Round(current["wind_speed_10m"])} km/sa.\n" +
-               string.Join('\n', Enumerable.Range(0, count).Select(Day));
+        return $"{forecast.Place}: şu an {Degrees(forecast.Temperature)} derece (hissedilen {Degrees(forecast.Feels)}), " +
+               $"{WeatherCodes.Describe(forecast.Code)}, rüzgâr {Degrees(forecast.Wind)} km/sa.\n" +
+               string.Join('\n', forecast.Days.Select(Day));
     }
 
     private string StartTimer(string minutesText, string note)
@@ -305,7 +264,12 @@ public sealed partial class AssistantTools(
             return "Geçerli bir süre söylenmedi.";
         }
 
-        var message = string.IsNullOrWhiteSpace(note) ? "Zamanlayıcı doldu." : $"Hatırlatma: {note}";
+        // "çamaşırı hatırlat" → "Çamaşırı unutma, zamanı geldi."; notsuz → "10 dakika doldu."
+        var message = string.IsNullOrWhiteSpace(note)
+            ? $"{TurkishGrammar.Capitalize(TurkishGrammar.Duration(minutes))} doldu."
+            : TurkishGrammar.IsAccusative(note)
+                ? $"{TurkishGrammar.Capitalize(note.Trim())} unutma, zamanı geldi."
+                : $"Hatırlatma: {note.Trim()}.";
         var entry = (Due: DateTime.Now.AddMinutes(minutes), Note: string.IsNullOrWhiteSpace(note) ? "zamanlayıcı" : note);
         lock (_timers)
         {

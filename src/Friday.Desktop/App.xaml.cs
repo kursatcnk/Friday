@@ -98,6 +98,7 @@ public sealed partial class App : Application, IDisposable
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
+        var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -109,7 +110,8 @@ public sealed partial class App : Application, IDisposable
             memory,
             ledger,
             history,
-            new WakeWordListener(paths.WakeWordModels));
+            new WakeWordListener(paths.WakeWordModels),
+            rhythm);
 
         var panel = new PanelViewModel(settings, new PanelActions
         {
@@ -127,6 +129,20 @@ public sealed partial class App : Application, IDisposable
             {
                 store.Save(changed);
                 assistant.ApplySettings();
+            },
+            PickImportFile = PickMemoryFile,
+            KnownMemories = () => memory.Items,
+            ImportMemories = (facts, source) =>
+            {
+                var added = memory.Import(facts, source);
+                ledger.Record(DataFlow.Local, "Hafıza", $"{source} kaynağından {added} bilgi aktarıldı");
+                return added;
+            },
+            ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
+            CopyMemoriesForAi = () =>
+            {
+                ClipboardText.Set(memory.ToPortablePrompt());
+                ledger.Record(DataFlow.Local, "Hafıza", "Başka bir yapay zekâ için panoya kopyalandı");
             }
         });
         var hud = new HudViewModel();
@@ -135,6 +151,9 @@ public sealed partial class App : Application, IDisposable
         panel.ShowLedger(ledger.TodayEntries);
 
         void Ui(Action action) => Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
+        void ShowRhythm() => panel.ShowRhythm(rhythm.Today, rhythm.CurrentStretch, rhythm.FocusEnd, settings.BreakEveryMinutes);
+        rhythm.Changed += (_, _) => Ui(ShowRhythm);
+        ShowRhythm();
         memory.Changed += (_, _) => Ui(() => panel.ShowMemories(memory.Items));
         ledger.Added += (_, entry) => Ui(() => panel.AddLedger(entry));
         assistant.StatusChanged += (_, status) => Ui(() =>
@@ -222,6 +241,36 @@ public sealed partial class App : Application, IDisposable
     }
 
     private void ExitFriday() => Shutdown();
+
+    /// <summary>Başka bir yapay zekânın hafıza dosyası; vazgeçilirse null.</summary>
+    private string? PickMemoryFile()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Hafıza dosyası seç",
+            Filter = "Metin, Markdown ya da JSON|*.txt;*.md;*.markdown;*.json|Tüm dosyalar|*.*"
+        };
+        return dialog.ShowDialog(_window) == true ? dialog.FileName : null;
+    }
+
+    /// <summary>Hafızayı D:\Friday\data\exports altına Markdown olarak yazar ve dosyayı klasöründe gösterir.</summary>
+    private static string? ExportMemory(FridayPaths paths, MemoryStore memory, string assistantName)
+    {
+        try
+        {
+            var folder = Path.Combine(paths.Data, "exports");
+            Directory.CreateDirectory(folder);
+            var file = Path.Combine(folder, $"hafiza-{DateTime.Now:yyyy-MM-dd-HHmm}.md");
+            File.WriteAllText(file, memory.ToMarkdown(assistantName));
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{file}\"") { UseShellExecute = true })?.Dispose();
+            return file;
+        }
+        catch (IOException exception)
+        {
+            FridayLog.Error("Hafıza dışa aktarılamadı", exception);
+            return null;
+        }
+    }
 
     private static void Open(string path) =>
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();

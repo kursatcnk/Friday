@@ -8,7 +8,10 @@ public enum RoutineAction
     Media,
     Say,
     Briefing,
-    LinguaFlow
+    LinguaFlow,
+
+    /// <summary>Ritim koçu: "ritim:mola", "ritim:odak 25", "ritim:nefes".</summary>
+    Rhythm
 }
 
 /// <summary>Rutin adımı: settings.json'da "uygulama:Spotify", "site:github.com", "soyle:Hazırım" gibi yazılır.</summary>
@@ -28,6 +31,7 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             "soyle" or "söyle" => RoutineAction.Say,
             "ozet" or "özet" => RoutineAction.Briefing,
             "linguaflow" => RoutineAction.LinguaFlow,
+            "ritim" => RoutineAction.Rhythm,
             _ => throw new FormatException($"Bilinmeyen rutin adımı: {text}")
         };
 

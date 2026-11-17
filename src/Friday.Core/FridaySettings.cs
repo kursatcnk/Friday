@@ -20,6 +20,21 @@ public sealed class FridaySettings
     /// <summary>Uyandırma kelimesinin eşik puanı (0–1). Yanlışlıkla uyanıyorsa artır, duymuyorsa azalt.</summary>
     public double WakeWordThreshold { get; set; } = 0.5;
 
+    /// <summary>
+    /// Ritim koçu: aralıksız çalışmayı ölçer, doğal bir duraksamada mola önerir, moladan dönünce kaldığın yeri söyler.
+    /// Yalnızca son klavye/fare kullanım zamanı okunur.
+    /// </summary>
+    public bool Rhythm { get; set; } = true;
+
+    /// <summary>Bu kadar dakika aralıksız çalışınca mola önerilir.</summary>
+    public int BreakEveryMinutes { get; set; } = 50;
+
+    /// <summary>"Mola ver" denince mola kaç dakika sürer.</summary>
+    public int BreakMinutes { get; set; } = 5;
+
+    /// <summary>Günün ilk oturuşunda (sabah) hava ve yaklaşan tarihlerle kısa bir karşılama.</summary>
+    public bool MorningGreeting { get; set; } = true;
+
     /// <summary>Whisper konuşma dili ("tr", "en" ya da "auto").</summary>
     public string Language { get; set; } = "tr";
 
@@ -118,7 +133,7 @@ public sealed class FridaySettings
     {
         ["çalışma modu"] = ["uygulama:Visual Studio", "site:github.com", "soyle:Çalışma modu hazır. Kolay gelsin."],
         ["günaydın"] = ["ozet"],
-        ["mola"] = ["medya:oynat_duraklat", "soyle:Mola zamanı. Biraz su iç, gözlerini dinlendir."],
+        ["mola"] = ["ritim:mola"],
     };
 
     /// <summary>

@@ -6,6 +6,8 @@ namespace Friday.Infrastructure;
 
 public sealed class JsonSettingsStore(FridayPaths paths)
 {
+    private static readonly string[] OldBreakRoutine = ["medya:oynat_duraklat", "soyle:Mola zamanı. Biraz su iç, gözlerini dinlendir."];
+
     private static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
@@ -28,6 +30,13 @@ public sealed class JsonSettingsStore(FridayPaths paths)
         var settings = JsonSerializer.Deserialize<FridaySettings>(text, Options) ?? new FridaySettings();
         settings.Apps = new Dictionary<string, string>(settings.Apps, StringComparer.OrdinalIgnoreCase);
         settings.Routines = new Dictionary<string, List<string>>(settings.Routines, StringComparer.OrdinalIgnoreCase);
+        // Eski varsayılan mola rutini (müziği durdurup tek cümle söylemek) ritim koçunun rehberli molasıyla değişir;
+        // kullanıcının kendi yazdığı bir mola rutinine dokunulmaz.
+        if (settings.Routines.TryGetValue("mola", out var steps) && steps.SequenceEqual(OldBreakRoutine))
+        {
+            settings.Routines["mola"] = ["ritim:mola"];
+        }
+
         // Yeni sürümde eklenen ayarlar dosyaya varsayılan değerleriyle yazılır; kullanıcı hepsini dosyada görür.
         Save(settings);
         return settings;

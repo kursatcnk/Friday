@@ -283,36 +283,17 @@ public sealed partial class AssistantTools
         ["yuan"] = "CNY", ["riyal"] = "SAR", ["dirhem"] = "AED", ["manat"] = "AZN", ["kanada"] = "CAD", ["avustralya"] = "AUD",
     };
 
-    /// <summary>TCMB'nin resmî günlük kurları; sitelerin JavaScript'le yüklenen rakamlarına bağlı kalmadan kesin cevap.</summary>
+    /// <summary>Güncel kurlar (TCMB ya da piyasa ortalaması, hangisi önce gelirse); sitelerin JavaScript'ine bağlı değil.</summary>
     private async Task<string> ExchangeRatesAsync(string currency, CancellationToken cancellationToken)
     {
-        var wanted = Simplify(currency);
-        var codes = CurrencyNames.Where(pair => wanted.Contains(pair.Key, StringComparison.Ordinal)).Select(pair => pair.Value).Distinct().ToList();
-        if (codes.Count == 0)
-        {
-            codes = wanted.Length == 3 ? [wanted.ToUpperInvariant()] : ["USD", "EUR", "GBP"];
-        }
-
-        ledger.Record(DataFlow.Outbound, "Döviz kuru", "tcmb.gov.tr · günlük kur bülteni");
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(8));
-        var xml = System.Xml.Linq.XDocument.Parse(
-            await http.GetStringAsync(new Uri("https://www.tcmb.gov.tr/kurlar/today.xml"), timeout.Token).ConfigureAwait(false));
-        var date = xml.Root?.Attribute("Tarih")?.Value ?? "";
-        string Value(System.Xml.Linq.XElement element, string name) =>
-            double.TryParse(element.Element(name)?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
-                ? number.ToString("0.####", Turkish)
-                : "-";
-
-        var lines = xml.Descendants("Currency")
-            .Where(element => codes.Contains(element.Attribute("Kod")?.Value ?? ""))
-            .Select(element =>
-                $"{element.Element("Unit")?.Value} {element.Element("Isim")?.Value}: alış {Value(element, "ForexBuying")}, " +
-                $"satış {Value(element, "ForexSelling")} TL (efektif satış {Value(element, "BanknoteSelling")} TL)")
+        var (rates, source) = await GetRatesAsync().ConfigureAwait(false);
+        var lines = CurrencyCodes(currency)
+            .Where(rates.ContainsKey)
+            .Select(code => $"1 {CurrencyLabel(code)} = {rates[code].ToString("0.####", Turkish)} TL")
             .ToList();
         return lines.Count == 0
-            ? $"TCMB bülteninde '{currency}' bulunamadı."
-            : $"TCMB {date} kurları (gün içinde piyasa biraz farklı olabilir): " + string.Join("; ", lines);
+            ? $"'{currency}' için kur bulunamadı."
+            : $"Kaynak: {source}. " + string.Join("; ", lines);
     }
 
     private static string Host(string url) =>

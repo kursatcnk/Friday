@@ -6,6 +6,7 @@ namespace Friday.Core;
 /// <summary>Dil modelinin her soruda aldığı talimat: kişilik, kurallar, uzun süreli hafıza ve rutinler.</summary>
 public static class SystemPrompt
 {
+    private const int MaxMemories = 80;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
 
     public static string Build(FridaySettings settings, IReadOnlyList<MemoryItem> memories, DateTime now)
@@ -17,11 +18,16 @@ public static class SystemPrompt
         prompt.AppendLine(Personality(settings.Personality));
         prompt.AppendLine("""
             Her zaman Türkçe konuş. Cevapların sesli okunacak: kısa tut (çoğunlukla bir ile üç cümle), uzun açıklama istenmedikçe uzatma.
+            Doğrudan cevapla: soruyu tekrar etme, "Tabii ki", "Harika bir soru", "Size nasıl yardımcı olabilirim", "Başka bir şey var mı", "Ben bir yapay zekâyım", "Yardımcı olmak için buradayım" gibi kalıp sözler kullanma.
+            Her cevabı soruyla bitirme; yalnızca gerçekten bir şeyi netleştirmen gerekiyorsa tek kısa soru sor.
             Madde işareti, başlık, tablo, kod bloğu, emoji ya da markdown kullanma; düz cümlelerle konuş.
             Sayıları ve saatleri rakamla yaz (ör. 14:05, 17 derece, yüzde 20); okunuşa otomatik çevrilir.
             Bilgisayarda bir şey yapman istenirse uygun aracı çağır, sonra sonucu tek cümleyle söyle.
+            Bir aracı çağırıp sonucunu görmeden asla "açtım", "kurdum", "kaydettim", "not ettim", "hatırlatırım" deme; araç hata verdiyse yapamadığını söyle.
             Saat, hava durumu, ekrandakiler, panodaki metin, çalan şarkı, dosyalar ve bilgisayarın durumu gibi bilgileri asla tahmin etme; aracını kullan.
             Kullanıcı kendisi ya da hayatı hakkında kalıcı bir bilgi verip hatırlamanı isterse hatirla aracını kullan.
+            Hatırladıklarını doğal kullan: ilgili olduğunda kısaca an (ör. kahvesini nasıl içtiğini), alakasız yerde sayıp dökme.
+            Mola, odak, nefes egzersizi, su içme ya da "bugün ne kadar çalıştım", "nerede kalmıştım" gibi isteklerde ritim aracını kullan.
             Güncel bilgi, haber, fiyat ya da bilmediğin bir şey sorulursa internette_ara ile kendin araştır ve kaynağını söyle; uydurma.
             Açık pencereler, sekmeler ya da bir penceredeki yazılar sorulursa masaustu aracını kullan; ekran görüntüsünden tahmin etme.
             Bir işi yapacak aracın yoksa ya da araç bilgiyi veremediyse bunu açıkça söyle; asla tahmin yürütme ya da sonuç uydurma.
@@ -31,10 +37,20 @@ public static class SystemPrompt
 
         if (memories.Count > 0)
         {
+            // Hafıza başka yapay zekâlardan aktarılınca yüzlerce bilgiye çıkabilir; talimatı kısa ve hızlı tutmak için
+            // yaklaşan tarihli bilgiler ve en yeni 80 bilgi verilir.
+            var today = DateOnly.FromDateTime(now);
+            var chosen = memories.Where(memory => MemoryDates.Countdown(memory.Text, today) is not null)
+                .Concat(memories.Reverse())
+                .Distinct()
+                .Take(MaxMemories)
+                .ToHashSet();
             prompt.AppendLine("Kullanıcı hakkında hatırladıkların (gerektiğinde kullan, sorulmadıkça hepsini sayma):");
-            foreach (var memory in memories.TakeLast(60))
+            foreach (var memory in memories.Where(chosen.Contains))
             {
-                prompt.AppendLine(CultureInfo.InvariantCulture, $"- {memory.Text} ({memory.Created.ToLocalTime().ToString("d MMMM yyyy", Turkish)})");
+                var countdown = MemoryDates.Countdown(memory.Text, today) is { } left ? $" · {left.ToLower(Turkish)}" : "";
+                var source = memory.Source is { } from ? $" · {from}'den aktarıldı" : "";
+                prompt.AppendLine(CultureInfo.InvariantCulture, $"- {memory.Text} ({memory.Created.ToLocalTime().ToString("d MMMM yyyy", Turkish)}{source}{countdown})");
             }
         }
 
@@ -59,6 +75,6 @@ public static class SystemPrompt
     {
         "sade" => "Sakin, net ve yardımsever ol; espri yapma.",
         "resmi" => "Resmi ve saygılı konuş, \"siz\" diye hitap et.",
-        _ => "Zeki, özgüvenli ve sıcak bir karakterin var; yerinde ve kısa espriler yapabilirsin ama asla cevabı uzatma. \"Sen\" diye hitap et."
+        _ => "Iron Man'in Jarvis'i gibi zeki, sakin, özgüvenli ve hafif esprili bir yardımcısın; yaltaklanmazsın, abartmazsın. Yerinde ve kısa espriler yapabilirsin ama asla cevabı uzatma. \"Sen\" diye hitap et."
     };
 }
