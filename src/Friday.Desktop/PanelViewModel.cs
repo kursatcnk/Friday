@@ -51,8 +51,6 @@ public sealed record LedgerView(string Time, string Category, string Detail, boo
     public string FlowLabel => IsOutbound ? "Dışarı" : "Yerel";
 }
 
-public sealed record RoutineStepView(string Glyph, string Text);
-
 /// <summary>"Bugün" ekranında yaklaşan bir şey: kurulu hatırlatma (silinebilir) ya da hafızadaki tarihli bilgi.</summary>
 public sealed record UpcomingView(string? ReminderId, string When, string Text)
 {
@@ -60,11 +58,6 @@ public sealed record UpcomingView(string? ReminderId, string When, string Text)
 }
 
 public sealed record NoteView(string Time, string Text);
-
-/// <summary>Ritim sayfasındaki haftalık grafikte bir gün.</summary>
-public sealed record WeekBarView(string Day, double Height, string Label, bool IsToday);
-
-public sealed record RoutineView(string Name, IReadOnlyList<RoutineStepView> Steps);
 
 /// <summary>Panelin kullanıcı eylemleri; App bunları asistana bağlar.</summary>
 public sealed class PanelActions
@@ -100,13 +93,41 @@ public sealed class PanelActions
     public Action<string> DeleteReminder { get; init; } = _ => { };
 
     public Action OpenNotes { get; init; } = () => { };
+
+    /// <summary>Sohbetler; anlık görüntüde null.</summary>
+    public ChatStore? Chats { get; init; }
+
+    /// <summary>Bir sohbeti açar (null: yeni sohbet); asistan konuşuyorsa susar.</summary>
+    public Action<string?> OpenChat { get; init; } = _ => { };
+
+    public Action<string> DeleteChat { get; init; } = _ => { };
+
+    /// <summary>Sohbeti Markdown olarak kaydeder; dosya yolunu döndürür.</summary>
+    public Func<string, string?> ExportChat { get; init; } = _ => null;
+
+    /// <summary>Konuşma kısayolunu canlı değiştirir; sorun yoksa null, varsa açıklaması.</summary>
+    public Func<string, string?> ApplyHotkey { get; init; } = _ => null;
+
+    /// <summary>Hızlı komut kutusunun kısayolunu değiştirir ("" kapatır); sorun yoksa null.</summary>
+    public Func<string, string?> ApplyQuickAskHotkey { get; init; } = _ => null;
+
+    public Func<bool, bool> SetStartWithWindows { get; init; } = _ => true;
+
+    /// <summary>"chats", "memory" ya da "reminders" verisini siler; silinen sayıyı döndürür.</summary>
+    public Func<string, int> ClearData { get; init; } = _ => 0;
+
+    public Action OpenLogs { get; init; } = () => { };
+
+    public Func<Task<UpdateInfo>> CheckForUpdate { get; init; } = () => Task.FromResult(new UpdateInfo(false, "", null));
+
+    public IReadOnlyList<VoiceOption> PiperVoices { get; init; } = [];
 }
 
 public sealed record VoiceOption(string Name, string Label);
 
 public sealed partial class PanelViewModel : ObservableObject
 {
-    private const int MaxLines = 80;
+    private const int MaxLines = 240;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
 
     private readonly PanelActions _actions;
@@ -129,8 +150,6 @@ public sealed partial class PanelViewModel : ObservableObject
     public ObservableCollection<MemoryView> Memories { get; } = [];
 
     public ObservableCollection<LedgerView> Ledger { get; } = [];
-
-    public ObservableCollection<RoutineView> Routines { get; } = [];
 
     public IReadOnlyList<string> Suggestions { get; } =
     [
@@ -192,8 +211,8 @@ public sealed partial class PanelViewModel : ObservableObject
         : IsMemory ? "Senin hakkında bildikleri; yalnızca bu bilgisayarda durur."
         : IsRhythm ? "Çalışma ritmin, molaların ve odak oturumların."
         : IsPrivacy ? "Bugün neyin bilgisayarda kaldığı, neyin dışarı çıktığı."
-        : IsRoutines ? "Tek cümleyle başlayan alışkanlıkların."
-        : IsSettings ? "Ses, uyandırma, ritim ve karakter."
+        : IsRoutines ? "Tek cümleyle başlayan alışkanlıkların; ekle, düzenle, sil."
+        : IsSettings ? "Kısayollar, ses, uyandırma, ritim, sohbet ve verilerin."
         : StatusText;
 
     public string Greeting => string.IsNullOrWhiteSpace(_settings.UserName) ? "Merhaba." : $"Merhaba {_settings.UserName.Trim()}.";
@@ -226,8 +245,6 @@ public sealed partial class PanelViewModel : ObservableObject
     public ObservableCollection<UpcomingView> Upcoming { get; } = [];
 
     public ObservableCollection<NoteView> RecentNotes { get; } = [];
-
-    public ObservableCollection<WeekBarView> WeekBars { get; } = [];
 
     [ObservableProperty]
     private bool _hasUpcoming;
@@ -325,41 +342,6 @@ public sealed partial class PanelViewModel : ObservableObject
 
     [ObservableProperty]
     private string _memoryMessage = "";
-
-    // ---------- Ritim ----------
-
-    [ObservableProperty]
-    private string _rhythmActive = "0 dk";
-
-    [ObservableProperty]
-    private string _rhythmFocus = "0 dk";
-
-    [ObservableProperty]
-    private string _rhythmBreaks = "0";
-
-    [ObservableProperty]
-    private string _rhythmLongest = "0 dk";
-
-    [ObservableProperty]
-    private string _rhythmWater = "0";
-
-    [ObservableProperty]
-    private string _rhythmStretch = "";
-
-    [ObservableProperty]
-    private double _rhythmProgress;
-
-    [ObservableProperty]
-    private IReadOnlyList<RhythmSegment> _rhythmSegments = [];
-
-    [ObservableProperty]
-    private DateTime _rhythmNow = DateTime.Now;
-
-    [ObservableProperty]
-    private bool _inFocus;
-
-    [ObservableProperty]
-    private string _focusRemaining = "";
 
     // ---------- Gizlilik ----------
 
@@ -507,15 +489,6 @@ public sealed partial class PanelViewModel : ObservableObject
         }
     }
 
-    public void LoadHistory(IEnumerable<ConversationTurn> turns)
-    {
-        foreach (var turn in turns.TakeLast(20))
-        {
-            AddLine(new ChatLine(true, turn.User, turn.Time.LocalDateTime));
-            AddLine(new ChatLine(false, turn.Assistant, turn.Time.LocalDateTime));
-        }
-    }
-
     public void ShowMemories(IEnumerable<MemoryItem> items)
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
@@ -559,20 +532,6 @@ public sealed partial class PanelViewModel : ObservableObject
         HasUpcoming = Upcoming.Count > 0;
     }
 
-    /// <summary>Son 7 günün aktif süresi: en uzun gün 90 piksel, bugün kor renginde.</summary>
-    public void ShowWeek(IReadOnlyList<RhythmDay> days)
-    {
-        var longest = Math.Max(60, days.Count == 0 ? 0 : days.Max(day => day.ActiveMinutes));
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        WeekBars.Clear();
-        foreach (var day in days)
-        {
-            var minutes = day.ActiveMinutes;
-            var label = minutes < 1 ? "" : minutes < 60 ? $"{Math.Round(minutes)} dk" : $"{(minutes / 60).ToString("0.#", Turkish)} sa";
-            WeekBars.Add(new WeekBarView(day.Date.ToString("ddd", Turkish), Math.Max(4, 90 * minutes / longest), label, day.Date == today));
-        }
-    }
-
     public void ShowNotes(IReadOnlyList<Note> notes)
     {
         RecentNotes.Clear();
@@ -595,28 +554,6 @@ public sealed partial class PanelViewModel : ObservableObject
         WeatherTemperature = $"{card.Temperature}°";
         WeatherSummary = $"{card.Place} · {card.Description}";
         WeatherDetail = $"En yüksek {card.Max}° · en düşük {card.Min}° · yağış %{card.RainChance}";
-    }
-
-    /// <summary>Ritim koçundan gelen günün özeti.</summary>
-    public void ShowRhythm(RhythmDay today, TimeSpan stretch, DateTime? focusEnd, int breakEveryMinutes)
-    {
-        static string Short(double minutes) => minutes < 60
-            ? $"{Math.Round(minutes)} dk"
-            : $"{(int)(minutes / 60)} sa {(int)Math.Round(minutes % 60)} dk";
-
-        RhythmActive = Short(today.ActiveMinutes);
-        RhythmFocus = Short(today.FocusMinutes);
-        RhythmBreaks = today.Breaks.ToString(CultureInfo.InvariantCulture);
-        RhythmLongest = Short(today.LongestStretchMinutes);
-        RhythmWater = today.Water.ToString(CultureInfo.InvariantCulture);
-        RhythmSegments = today.Segments;
-        RhythmNow = DateTime.Now;
-        InFocus = focusEnd is not null;
-        FocusRemaining = focusEnd is { } end ? $"Odak · {Math.Max(0, Math.Ceiling((end - DateTime.Now).TotalMinutes))} dk kaldı" : "";
-        RhythmProgress = Math.Clamp(stretch.TotalMinutes / Math.Max(1, breakEveryMinutes), 0, 1);
-        RhythmStretch = stretch < TimeSpan.FromMinutes(1)
-            ? "Şu an çalışmıyorsun ya da yeni döndün."
-            : $"{Short(stretch.TotalMinutes)} aralıksız · mola önerisine {Short(Math.Max(0, breakEveryMinutes - stretch.TotalMinutes))}";
     }
 
     public void ShowLedger(IEnumerable<LedgerEntry> entries)
@@ -728,14 +665,16 @@ public sealed partial class PanelViewModel : ObservableObject
     [RelayCommand]
     private void OpenNotes() => _actions.OpenNotes();
 
-    /// <summary>"Bugün" ekranındaki kısayollar: "chat", "memory", "rhythm", "import".</summary>
+    /// <summary>Kısayollar: "chat", "memory", "rhythm", "routines", "settings", "import".</summary>
     [RelayCommand]
     private void GoTo(string page)
     {
-        IsToday = false;
+        IsToday = IsPrivacy = false;
         IsChat = page == "chat";
         IsMemory = page is "memory" or "import";
         IsRhythm = page == "rhythm";
+        IsRoutines = page == "routines";
+        IsSettings = page == "settings";
         if (page == "import")
         {
             ImportFile();
@@ -787,14 +726,6 @@ public sealed partial class PanelViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RunRoutine(string name)
-    {
-        IsRoutines = false;
-        IsChat = true;
-        _actions.Send($"{name} rutinini çalıştır");
-    }
-
-    [RelayCommand]
     private void OpenSettingsFile() => _actions.OpenSettingsFile();
 
     [RelayCommand]
@@ -834,13 +765,14 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings.Rhythm = RhythmEnabled;
         _settings.BreakEveryMinutes = BreakEvery30 ? 30 : BreakEvery90 ? 90 : 50;
         _settings.MorningGreeting = MorningEnabled;
+        SaveMoreSettings();
         _actions.Save(_settings);
         OnPropertyChanged(nameof(Greeting));
         OnPropertyChanged(nameof(WakeHint));
         OnPropertyChanged(nameof(WakeLabel));
         OnPropertyChanged(nameof(TimeGreeting));
         OnPropertyChanged(nameof(NeedsIntro));
-        SavedMessage = $"Kaydedildi · {DateTime.Now:HH:mm}";
+        SavedMessage = $"Kaydedildi · {DateTime.Now:HH:mm}{_settingsNote}";
     }
 
     private void LoadSettingsFields()
@@ -873,50 +805,8 @@ public sealed partial class PanelViewModel : ObservableObject
         BreakEvery90 = _settings.BreakEveryMinutes >= 75;
         BreakEvery50 = !BreakEvery30 && !BreakEvery90;
         MorningEnabled = _settings.MorningGreeting;
+        LoadMoreSettings();
     }
-
-    private void LoadRoutines()
-    {
-        foreach (var (name, steps) in _settings.Routines)
-        {
-            var views = new List<RoutineStepView>();
-            foreach (var text in steps)
-            {
-                try
-                {
-                    var step = RoutineStep.Parse(text);
-                    views.Add(step.Action switch
-                    {
-                        RoutineAction.App => new RoutineStepView("", $"{step.Value} uygulamasını aç"),
-                        RoutineAction.Website => new RoutineStepView("", $"{step.Value} sitesini aç"),
-                        RoutineAction.Search => new RoutineStepView("", $"\"{step.Value}\" ara"),
-                        RoutineAction.Media => new RoutineStepView("", $"Medya: {step.Value.Replace('_', ' ')}"),
-                        RoutineAction.Say => new RoutineStepView("", $"\"{step.Value}\" de"),
-                        RoutineAction.Briefing => new RoutineStepView("", "Günün özetini oku"),
-                        RoutineAction.Rhythm => new RoutineStepView("\uE9D9", RhythmStepLabel(step.Value)),
-                        RoutineAction.LinguaFlow => new RoutineStepView("", "LinguaFlow çevirisini başlat"),
-                        _ => new RoutineStepView("", text)
-                    });
-                }
-                catch (FormatException)
-                {
-                    views.Add(new RoutineStepView("", $"Geçersiz adım: {text}"));
-                }
-            }
-
-            var title = name.Length == 0 ? name : char.ToUpper(name[0], Turkish) + name[1..];
-            Routines.Add(new RoutineView(title, views));
-        }
-    }
-
-    private static string RhythmStepLabel(string value) => value.Split(' ')[0] switch
-    {
-        "mola" => "Rehberli mola, dönünce kaldığın yeri söyle",
-        "odak" => "Odak oturumu başlat",
-        "nefes" => "Nefes egzersizi",
-        "esneme" => "Esneme molası",
-        _ => $"Ritim: {value}"
-    };
 
     private void AddLine(ChatLine line)
     {

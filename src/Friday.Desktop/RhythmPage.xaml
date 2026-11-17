@@ -1,0 +1,200 @@
+<UserControl x:Class="Friday.Desktop.RhythmPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Friday.Desktop">
+    <UserControl.Resources>
+        <Style x:Key="StatTile" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Margin" Value="6,0"/>
+            <Setter Property="Padding" Value="16,14"/>
+        </Style>
+        <Style x:Key="HowTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
+        <StackPanel Margin="0,0,12,0" MaxWidth="880" HorizontalAlignment="Left">
+
+            <!-- ================= Şu an: büyük halka ve canlı sayaç ================= -->
+            <Border Style="{StaticResource Card}" Padding="28,24" Margin="0,0,0,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="200" Height="200" Margin="0,0,30,0">
+                        <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="11"/>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding DialClock}" FontFamily="{StaticResource DisplayFont}" FontSize="42" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" Typography.NumeralAlignment="Tabular"/>
+                            <TextBlock Text="{Binding DialCaption}" Style="{StaticResource Caption}" HorizontalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Şu an" Style="{StaticResource Label}" Margin="0"/>
+                        <TextBlock Text="{Binding DialLabel}" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="SemiBold" Margin="0,2,0,8"/>
+                        <TextBlock Text="{Binding DialSentence}" Style="{StaticResource Body}" FontSize="13.5" LineHeight="21" MaxWidth="480" HorizontalAlignment="Left"/>
+
+                        <!-- Kipe göre düğmeler. -->
+                        <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver" Padding="16,9">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="12" Margin="0,0,8,0" Foreground="{StaticResource AccentInkBrush}"/>
+                                    <TextBlock Text="Mola ver" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım" Content="25 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="50 dakika odaklanacağım" Content="50 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="90 dakika odaklanacağım" Content="90 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="30 dakika ertele"
+                                    Content="Öneriyi 30 dk ertele" Visibility="{Binding CanSnooze, Converter={StaticResource Visible}}"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsFocusMode, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Odağı bitir" Padding="16,9" Content="Odağı bitir"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver" Content="Mola ver"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsBreakMode, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Moladan döndüm" Padding="16,9" Content="Moladan döndüm"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım" Content="Nefes egzersizi"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Esneme yapalım" Content="Esneme"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsOffMode, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding EnableRhythmCommand}" Padding="16,9" Content="Ritim koçunu aç"/>
+                        </WrapPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <TextBlock Text="{Binding RhythmRule}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                            <Button Style="{StaticResource IconButton}" Padding="5" Margin="6,0,0,0" ToolTip="Ritim ayarları" Command="{Binding GoToCommand}" CommandParameter="settings">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" FontSize="10"/>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ================= Bugün ================= -->
+            <TextBlock Text="Bugün" Style="{StaticResource SectionTitle}" Margin="2,6,0,4"/>
+            <TextBlock Text="{Binding RhythmSummary}" Style="{StaticResource Body}" Margin="2,0,0,12" TextWrapping="Wrap"/>
+            <UniformGrid Columns="5" Margin="-6,0,-6,14">
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock Text="Bilgisayar başında" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding RhythmActive}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock Text="Odak" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding RhythmFocus}" Style="{StaticResource StatValue}" Foreground="{StaticResource AccentBrush}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock Text="Mola" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding RhythmBreaks}" Style="{StaticResource StatValue}" Foreground="{StaticResource CalmBrush}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock Text="En uzun aralıksız" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding RhythmLongest}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="Su (bardak)" Style="{StaticResource Caption}"/>
+                            <TextBlock Text="{Binding RhythmWater}" Style="{StaticResource StatValue}"/>
+                        </StackPanel>
+                        <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="7" ToolTip="Bir bardak su içtim"
+                                Command="{Binding RhythmCommand}" CommandParameter="Su içtim">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="11"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </UniformGrid>
+
+            <!-- ================= Günün akışı ================= -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="Günün akışı" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
+                    <TextBlock Style="{StaticResource Body}" FontSize="12" Text="Bilgisayar başında geçen her aralık bir çubuk; aradaki boşluklar molaların."/>
+                    <local:RhythmTimeline Segments="{Binding RhythmSegments}" Now="{Binding RhythmNow}" Margin="0,16,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="#6E6A62" VerticalAlignment="Center"/>
+                        <TextBlock Text="Çalışma" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Odak oturumu" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Stroke="#3A3936" StrokeThickness="1" VerticalAlignment="Center"/>
+                        <TextBlock Text="Boşluk = mola ya da uzakta" Style="{StaticResource Caption}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ================= Son 7 gün ================= -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <TextBlock Text="Son 7 gün" Style="{StaticResource SectionTitle}"/>
+                        <TextBlock Text="{Binding WeekAverage}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="{Binding WeekSummary}" Style="{StaticResource Body}" FontSize="12" Margin="0,0,0,14"/>
+                    <ItemsControl ItemsSource="{Binding WeekBars}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:WeekBarView}">
+                                <StackPanel Margin="8,0">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <Grid Height="110">
+                                        <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="7" Background="#3A3936"/>
+                                    </Grid>
+                                    <TextBlock x:Name="Day" Text="{Binding Day}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                        <Setter TargetName="Bar" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="Day" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ================= Nasıl çalışır ================= -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="Nasıl çalışır?" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                    <UniformGrid Columns="3" Margin="-8,0">
+                        <StackPanel Margin="8,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="18" Foreground="{StaticResource SpeakingBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="1 · Ölçer" Style="{StaticResource HowTitle}"/>
+                            <TextBlock Style="{StaticResource Body}" FontSize="12"
+                                       Text="Yalnızca son klavye ya da fare kullanımının ne zaman olduğuna bakar. Tuşları, ekranı ya da pencereleri okumaz. 3 dakika dokunmazsan uzakta sayılırsın."/>
+                        </StackPanel>
+                        <StackPanel Margin="8,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="18" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="2 · Önerir" Style="{StaticResource HowTitle}"/>
+                            <TextBlock Style="{StaticResource Body}" FontSize="12"
+                                       Text="Ayarladığın süre boyunca ara vermeden çalışınca, yazmayı bıraktığın bir anda mola önerir. Tam ekran oyun, film ya da sunumda araya girmez; odaktayken susar."/>
+                        </StackPanel>
+                        <StackPanel Margin="8,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE823;" FontSize="18" Foreground="{StaticResource CalmBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="3 · Hatırlatır" Style="{StaticResource HowTitle}"/>
+                            <TextBlock Style="{StaticResource Body}" FontSize="12"
+                                       Text="Moladan dönünce hangi pencerede kaldığını söyler. Odak oturumu bitince günün özetini verir; her şey bu bilgisayarda kalır."/>
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="{StaticResource FaintBrush}" Margin="0,16,0,0" TextWrapping="Wrap"
+                               Text="Sesle: &quot;Mola ver&quot;, &quot;25 dakika odaklanacağım&quot;, &quot;Moladan döndüm&quot;, &quot;Nerede kalmıştım?&quot;, &quot;Bugün ne kadar çalıştım?&quot;, &quot;Bu hafta nasıl geçti?&quot;"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

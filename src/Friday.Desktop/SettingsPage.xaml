@@ -1,0 +1,398 @@
+<UserControl x:Class="Friday.Desktop.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Friday.Desktop">
+    <UserControl.Resources>
+        <Style x:Key="SettingsCard" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Margin" Value="0,0,0,14"/>
+            <Setter Property="Padding" Value="22,20"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+        <Style x:Key="Row" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+        <Style x:Key="Pills" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="-3,0,0,0"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource PillItem}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
+            <StackPanel Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
+
+                <!-- ================= Kısayollar ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Kısayollar ve başlangıç" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Konuşma kısayolu" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,8" Text="Basınca dinlemeye başlar; konuşurken basarsan susar ve seni dinler."/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding HotkeyOptions}" SelectedItem="{Binding SelectedHotkey}"/>
+                            <TextBlock Text="{Binding HotkeyNote}" Foreground="{StaticResource WarningBrush}" FontSize="11.5" Margin="2,4,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HotkeyNote}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Hızlı komut kutusu" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,8"
+                                       Text="Her yerden açılan küçük bir yazı kutusu: yaz, Enter'a bas. Rutinleri ve son sorularını önerir; cevap köşede görünür ve okunur."/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding QuickAskOptions}" SelectedItem="{Binding SelectedQuickAsk}"/>
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding StartWithWindows}">
+                            <StackPanel>
+                                <TextBlock Text="Windows açılınca başlat" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Tepside sessizce açılır. Yalnızca kullanıcı kayıt defterine tek bir başlangıç satırı yazılır; hiçbir şey kurulmaz."/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Uyandırma ve dinleme ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Uyandırma ve dinleme" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WakeEnabled}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding WakeLabel, StringFormat='&quot;{0}&quot; ile uyan'}" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="Mikrofon açık kalır ama ses yalnızca bellekte, 80 ms'lik parçalar halinde puanlanıp atılır. Kapalıyken yalnızca kısayol çalışır."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,18" Visibility="{Binding WakeEnabled, Converter={StaticResource Visible}}">
+                            <TextBlock Text="Hassasiyet" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Kolay uyan" IsChecked="{Binding WakeSensitive}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Normal" IsChecked="{Binding WakeNormal}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Seçici" IsChecked="{Binding WakeStrict}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Sustuğumda bekle" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="0,8 sn · hızlı" IsChecked="{Binding ListenQuick}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="1,2 sn" IsChecked="{Binding ListenNormal}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="1,8 sn · sabırlı" IsChecked="{Binding ListenPatient}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Devam sorusu bekle" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Kapalı" IsChecked="{Binding FollowUpOff}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="4 sn" IsChecked="{Binding FollowUpShort}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="7 sn" IsChecked="{Binding FollowUpLong}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Ritim ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Ritim ve sabah" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RhythmEnabled}">
+                            <StackPanel>
+                                <TextBlock Text="Ritim koçu" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Uzun süre aralıksız çalışınca uygun bir anda mola önerir; dönünce kaldığın yeri söyler."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <StackPanel Margin="0,12,0,18" Visibility="{Binding RhythmEnabled, Converter={StaticResource Visible}}">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="Mola öner" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                                <Border Style="{StaticResource SegmentTrack}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="30 dk'da bir" IsChecked="{Binding BreakEvery30}"/>
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="50 dk'da bir" IsChecked="{Binding BreakEvery50}"/>
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="90 dk'da bir" IsChecked="{Binding BreakEvery90}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Mola süresi" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                                <Border Style="{StaticResource SegmentTrack}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="5 dk" IsChecked="{Binding BreakLength5}"/>
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="10 dk" IsChecked="{Binding BreakLength10}"/>
+                                        <RadioButton Style="{StaticResource SegmentOption}" Content="15 dk" IsChecked="{Binding BreakLength15}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding MorningEnabled}" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Sabah karşılaması" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Günün ilk oturuşunda havayı ve yaklaşan tarihleri kısaca söyler."/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Karakter ve sohbet ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Karakter ve sohbet" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Sana nasıl hitap etsin" Style="{StaticResource Label}"/>
+                                <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Varsayılan şehir" Style="{StaticResource Label}"/>
+                                <TextBox Text="{Binding City, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Kişilik" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Esprili" IsChecked="{Binding PersonalityWitty}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Sade" IsChecked="{Binding PersonalityPlain}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Resmi" IsChecked="{Binding PersonalityFormal}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Yeni sohbete geç" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="10 dk sessizlikte" IsChecked="{Binding ChatAfter10}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="30 dk" IsChecked="{Binding ChatAfter30}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="2 saat" IsChecked="{Binding ChatAfter120}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="150,4,0,14"
+                                   Text="Bu kadar konuşulmazsa sonraki soru yeni bir sohbet olur; eskisi Sohbet sayfasında durur."/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding KeepHistory}">
+                            <StackPanel>
+                                <TextBlock Text="Sohbetleri kaydet" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Kapalıyken sohbetler yalnızca o anki konuşma boyunca hatırlanır, diske yazılmaz."/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Ses ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Ses" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <TextBlock Text="Motor" Style="{StaticResource Label}"/>
+                        <Border Style="{StaticResource SegmentTrack}" Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource SegmentOption}" Content="Piper · yerel, hızlı" IsChecked="{Binding EnginePiper}"/>
+                                <RadioButton Style="{StaticResource SegmentOption}" Content="XTTS · klonlanabilir" IsChecked="{Binding EngineXtts}"/>
+                                <RadioButton Style="{StaticResource SegmentOption}" Content="Azure nöral" IsChecked="{Binding EngineAzure}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,16"
+                                   Text="Piper bu bilgisayarda anında konuşur ve ekran kartı kullanmaz. XTTS konuşurken ~1,8 GB VRAM kullanır ama 6–15 saniyelik bir kayıttan ses klonlayabilir."/>
+
+                        <StackPanel Visibility="{Binding EnginePiper, Converter={StaticResource Visible}}" Margin="0,0,0,8">
+                            <TextBlock Text="Piper sesi" Style="{StaticResource Label}"/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding PiperVoices}" SelectedItem="{Binding SelectedPiperVoice}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Label}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,10">
+                            <TextBlock Text="Konuşma hızı" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Yavaş" IsChecked="{Binding SpeedSlow}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Normal" IsChecked="{Binding SpeedNormal}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Hızlı" IsChecked="{Binding SpeedFast}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Çok hızlı" IsChecked="{Binding SpeedFaster}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+                            <TextBlock Text="Oda yankısı" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Kuru" IsChecked="{Binding RoomDry}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Hafif" IsChecked="{Binding RoomLight}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Sıcak" IsChecked="{Binding RoomWarm}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Visibility="{Binding EngineXtts, Converter={StaticResource Visible}}">
+                            <TextBlock Text="XTTS sesi" Style="{StaticResource Label}"/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding Voices}" SelectedItem="{Binding SelectedVoice}" Margin="-3,0,0,8">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Label}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Command="{Binding PreviewVoiceCommand}" Margin="0,0,0,18">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE767;" FontSize="12" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Seçili sesi dinle"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Visibility="{Binding EngineAzure, Converter={StaticResource Visible}}">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
+                                       Text="Ücretsiz F0 katmanı ayda 500 bin karakter verir. Azure'a yalnızca okunacak cevap metni gider, mikrofon sesi gitmez."/>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="170"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Speech anahtarı" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                                    <PasswordBox x:Name="AzureKeyBox"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Bölge" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                                    <TextBox Text="{Binding AzureRegion, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Emel (kadın)" IsChecked="{Binding VoiceEmel}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Ahmet (erkek)" IsChecked="{Binding VoiceAhmet}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding EngineLabel, StringFormat='Şu an kullanılan: {0}'}" Style="{StaticResource Caption}" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Mikrofon ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Mikrofon" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                                   Text="Otomatik'te bütün mikrofonlar dinlenir ve seni duyan seçilir; sanal cihazlar (ör. SteelSeries Sonar) sorun olmaz."/>
+                        <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Performans ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Performans" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Ekran kartını boşalt" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="1 dk sonra" IsChecked="{Binding Gpu1}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="2 dk" IsChecked="{Binding Gpu2}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="5 dk" IsChecked="{Binding Gpu5}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="15 dk" IsChecked="{Binding Gpu15}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="Kısa süre, oyun ve video düzenleme gibi işlere ekran kartını hemen geri verir; uzun süre, art arda sorularda yeniden yüklemeyi (~3 sn) önler."/>
+                        <TextBlock Text="{Binding ModelSummary}" Style="{StaticResource Hint}" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Veriler ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Verilerin" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                                   Text="Sohbetler, hafıza, hatırlatmalar, notlar ve ritim kayıtları yalnızca D:\Friday\data altında durur."/>
+                        <WrapPanel Margin="-4,0,0,0">
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Content="Veri klasörü" Command="{Binding OpenDataFolderCommand}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Content="Günlükler" Command="{Binding OpenLogsCommand}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Content="settings.json" Command="{Binding OpenSettingsFileCommand}"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="-4,8,0,0">
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding AskClearCommand}" CommandParameter="chats">
+                                <TextBlock Text="Bütün sohbetleri sil" Foreground="{StaticResource WarningBrush}"/>
+                            </Button>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding AskClearCommand}" CommandParameter="memory">
+                                <TextBlock Text="Hafızayı sil" Foreground="{StaticResource WarningBrush}"/>
+                            </Button>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding AskClearCommand}" CommandParameter="reminders">
+                                <TextBlock Text="Hatırlatmaları sil" Foreground="{StaticResource WarningBrush}"/>
+                            </Button>
+                        </WrapPanel>
+                        <Border CornerRadius="12" Background="#1FFFB86B" BorderBrush="#40FFB86B" BorderThickness="1" Padding="14,10" Margin="0,10,0,0"
+                                Visibility="{Binding IsConfirmingClear, Converter={StaticResource Visible}}">
+                            <Grid>
+                                <TextBlock Text="{Binding ClearQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,190,0"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource GhostButton}" Content="Vazgeç" Command="{Binding CancelClearCommand}" Margin="0,0,6,0"/>
+                                    <Button Style="{StaticResource AccentButton}" Content="Kalıcı olarak sil" Command="{Binding ConfirmClearCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding DataMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12" Margin="2,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Hakkında ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding VersionText}" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="Yerel, Türkçe sesli asistan · github.com/kursatcnk/Friday"/>
+                            <TextBlock Text="{Binding UpdateMessage}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,8,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource AccentButton}" Content="İndir" Command="{Binding OpenUpdateCommand}" Margin="0,0,8,0"
+                                    Visibility="{Binding HasUpdate, Converter={StaticResource Visible}}"/>
+                            <Button Style="{StaticResource GhostButton}" Content="Güncellemeleri denetle" Command="{Binding CheckUpdateCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Her zaman görünen kaydet çubuğu. -->
+        <Border Grid.Row="1" Background="{StaticResource AppBackgroundBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="36,12,36,16">
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource AccentButton}" Content="Kaydet ve uygula" Command="{Binding SaveSettingsCommand}" Padding="18,9"/>
+                <TextBlock Text="{Binding SavedMessage}" Foreground="{StaticResource CalmBrush}" VerticalAlignment="Center" Margin="14,0,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

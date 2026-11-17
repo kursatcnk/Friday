@@ -13,6 +13,7 @@
     <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Friday</AssemblyName>
+    <Version>0.2.0</Version>
     <!-- Arka planda bekleyen bir asistan: eşzamanlı GC'nin ayrı yığını ve iş parçacığı gereksiz; bellek sıkı tutulur. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>true</TieredPGO>

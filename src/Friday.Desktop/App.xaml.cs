@@ -22,6 +22,9 @@ public sealed partial class App : Application, IDisposable
     private RegisteredWaitHandle? _showWait;
     private FridayPaths? _paths;
     private DispatcherTimer? _weatherClock;
+    private DispatcherTimer? _rhythmClock;
+    private QuickAskWindow? _quickAsk;
+    private bool _startHidden;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -68,6 +71,7 @@ public sealed partial class App : Application, IDisposable
                 }
             };
 
+            _startHidden = e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase);
             Start(paths);
             _showWait = ThreadPool.RegisterWaitForSingleObject(_showSignal, (_, _) =>
                 Dispatcher.BeginInvoke(() => _window?.ShowFromTray()), null, Timeout.Infinite, executeOnlyOnce: false);
@@ -93,7 +97,12 @@ public sealed partial class App : Application, IDisposable
         var settings = store.Load();
         var memory = new MemoryStore(Path.Combine(paths.Data, "memory.json"));
         var ledger = new PrivacyLedger(Path.Combine(paths.Data, "ledger"));
-        var history = new ConversationLog(Path.Combine(paths.Data, "history"));
+        var chats = new ChatStore(Path.Combine(paths.Data, "chats"));
+        if (chats.ImportLegacy(Path.Combine(paths.Data, "history")) is > 0 and var imported)
+        {
+            FridayLog.Info($"Eski günlük geçmişten {imported} sohbet oluşturuldu");
+        }
+
         var reminders = new ReminderStore(Path.Combine(paths.Data, "reminders.json"));
         var notes = new NoteStore(Path.Combine(paths.Data, "notes.md"));
 
@@ -102,7 +111,7 @@ public sealed partial class App : Application, IDisposable
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, history, reminders, notes);
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes);
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -113,7 +122,7 @@ public sealed partial class App : Application, IDisposable
             tools,
             memory,
             ledger,
-            history,
+            chats,
             new WakeWordListener(paths.WakeWordModels),
             rhythm);
 
@@ -157,22 +166,57 @@ public sealed partial class App : Application, IDisposable
             {
                 ClipboardText.Set(memory.ToPortablePrompt());
                 ledger.Record(DataFlow.Local, "Hafıza", "Başka bir yapay zekâ için panoya kopyalandı");
-            }
+            },
+            Chats = chats,
+            OpenChat = assistant.OpenChat,
+            DeleteChat = id =>
+            {
+                chats.Delete(id);
+                ledger.Record(DataFlow.Local, "Sohbet", "Bir sohbet silindi");
+            },
+            ExportChat = id => ExportChat(paths, chats, id, settings.AssistantName),
+            ApplyHotkey = text => ApplyHotkey(text, quickAsk: false),
+            ApplyQuickAskHotkey = text => ApplyHotkey(text, quickAsk: true),
+            SetStartWithWindows = StartupRegistration.Set,
+            ClearData = kind => ClearData(kind, chats, memory, reminders, ledger),
+            OpenLogs = () => Open(paths.Logs),
+            CheckForUpdate = () => UpdateCheck.CheckAsync(_http!, typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0), ledger, CancellationToken.None),
+            PiperVoices = PiperVoices(paths)
         });
         var hud = new HudViewModel();
-        panel.LoadHistory(history.Read(history.Today));
+        // Son sohbet az önce konuşulduysa oradan devam edilir; değilse yeni, boş bir sohbetle açılır.
+        if (chats.List().MaxBy(item => item.Updated) is { } last
+            && DateTimeOffset.Now - last.Updated < TimeSpan.FromMinutes(Math.Max(1, settings.ConversationMemoryMinutes)))
+        {
+            chats.Open(last.Id);
+        }
+
+        panel.ShowChat(chats.CurrentTurns);
         panel.ShowMemories(memory.Items);
         panel.ShowLedger(ledger.TodayEntries);
 
         void Ui(Action action) => Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
         void ShowRhythm()
         {
-            panel.ShowRhythm(rhythm.Today, rhythm.CurrentStretch, rhythm.FocusEnd, settings.BreakEveryMinutes);
+            panel.ShowRhythm(rhythm.Today, rhythm.Snapshot());
             panel.ShowWeek(rhythm.Week());
         }
 
         rhythm.Changed += (_, _) => Ui(ShowRhythm);
         ShowRhythm();
+        chats.Changed += (_, _) => Ui(panel.RefreshChats);
+        chats.CurrentChanged += (_, _) => Ui(() => panel.ShowChat(chats.CurrentTurns));
+
+        // Ritim halkasının saniyelik sayacı yalnızca panel açık ve Ritim ya da Bugün sayfası görünürken çalışır.
+        _rhythmClock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _rhythmClock.Tick += (_, _) =>
+        {
+            if (_window is { IsVisible: true, WindowState: not WindowState.Minimized } && (panel.IsRhythm || panel.IsToday))
+            {
+                panel.TickRhythm(rhythm.Snapshot());
+            }
+        };
+        _rhythmClock.Start();
 
         // "Bugün" ekranı: yaklaşanlar, notlar ve saatte bir yenilenen hava.
         void ShowToday() => panel.ShowToday(reminders.Upcoming, memory.Items);
@@ -236,11 +280,33 @@ public sealed partial class App : Application, IDisposable
         var candidates = new[] { requested }
             .Concat(FallbackHotkeys.Select(HotkeyGesture.Parse).Where(gesture => gesture != requested))
             .ToList();
-        _window = new MainWindow(panel, candidates, assistant.OnHotkey);
+        _quickAsk = new QuickAskWindow(() => QuickAskItems(settings, chats), assistant.SubmitText);
+        HotkeyGesture? quickGesture = null;
+        if (settings.QuickAskHotkey.Length > 0)
+        {
+            try
+            {
+                quickGesture = HotkeyGesture.Parse(settings.QuickAskHotkey);
+            }
+            catch (FormatException exception)
+            {
+                FridayLog.Warn($"Hızlı komut kısayolu okunamadı: {exception.Message}");
+            }
+        }
+
+        _window = new MainWindow(panel, candidates, assistant.OnHotkey, quickGesture, () => _quickAsk.Toggle());
         MainWindow = _window;
         _hud = new HudWindow(hud);
         _tray = new TrayIcon(settings.AssistantName, _window.ShowFromTray, ExitFriday);
-        _window.Show();
+        if (_startHidden)
+        {
+            // Windows açılışı: pencere gösterilmez ama kısayollar için pencere tutamacı oluşturulur.
+            new System.Windows.Interop.WindowInteropHelper(_window).EnsureHandle();
+        }
+        else
+        {
+            _window.Show();
+        }
 
         // Show() kısayolu kaydeder. Ayardaki kısayol başka bir uygulamadaysa yedeklerden biri kullanılır.
         if (_window.ActiveHotkey is { } active)
@@ -278,6 +344,116 @@ public sealed partial class App : Application, IDisposable
     }
 
     private void ExitFriday() => Shutdown();
+
+    /// <summary>Ayarlardan seçilen kısayolu canlı uygular; sorun yoksa null.</summary>
+    private string? ApplyHotkey(string text, bool quickAsk)
+    {
+        if (_window is null)
+        {
+            return "Pencere hazır değil";
+        }
+
+        if (quickAsk && text.Length == 0)
+        {
+            _window.ChangeQuickAsk(null);
+            return null;
+        }
+
+        HotkeyGesture gesture;
+        try
+        {
+            gesture = HotkeyGesture.Parse(text);
+        }
+        catch (FormatException exception)
+        {
+            return exception.Message;
+        }
+
+        var taken = quickAsk ? !_window.ChangeQuickAsk(gesture) : !_window.ChangeHotkey(gesture);
+        return taken ? $"{text} başka bir uygulamada; başka bir kısayol seç" : null;
+    }
+
+    /// <summary>Hızlı komut kutusunun önerileri: rutinler, son sorular ve hazır komutlar.</summary>
+    private static List<QuickAskItem> QuickAskItems(FridaySettings settings, ChatStore chats)
+    {
+        var items = new List<QuickAskItem>();
+        foreach (var name in settings.Routines.Keys.Order(StringComparer.CurrentCultureIgnoreCase))
+        {
+            items.Add(new QuickAskItem("\uE945", $"{TurkishGrammar.Capitalize(name)} rutinini çalıştır", "Rutin"));
+        }
+
+        var recent = chats.Read(chats.Today).Concat(chats.Read(chats.Today.AddDays(-1)))
+            .Select(turn => turn.User.Trim())
+            .Where(text => text.Length is > 3 and < 80)
+            .Reverse()
+            .Distinct(StringComparer.CurrentCultureIgnoreCase)
+            .Take(6);
+        items.AddRange(recent.Select(text => new QuickAskItem("\uE81C", text, "Son sorulan")));
+        string[] ideas =
+        [
+            "Yeni sohbet", "Saat kaç?", "Yarın hava nasıl?", "Dolar kaç lira?", "Hatırlatmalarım neler?", "Not al: ", "25 dakika odaklanacağım",
+            "Mola ver", "Bugün ne kadar çalıştım?", "Panodaki metni özetle", "Ekranımda ne var?", "Şu an ne çalıyor?", "Sesi yüzde 30 yap",
+        ];
+        items.AddRange(ideas.Select(text => new QuickAskItem("\uE945", text, "Komut")));
+        return items;
+    }
+
+    private static IReadOnlyList<VoiceOption> PiperVoices(FridayPaths paths)
+    {
+        var folder = Path.Combine(paths.Models, "piper");
+        return Directory.Exists(folder)
+            ? [.. Directory.GetFiles(folder, "*.onnx").Order(StringComparer.OrdinalIgnoreCase).Select(PanelViewModel.PiperVoiceOption)]
+            : [];
+    }
+
+    /// <summary>Ayarlar › Verilerin: sohbetleri, hafızayı ya da hatırlatmaları siler; silinen sayıyı döndürür.</summary>
+    private static int ClearData(string kind, ChatStore chats, MemoryStore memory, ReminderStore reminders, PrivacyLedger ledger)
+    {
+        int count;
+        switch (kind)
+        {
+            case "chats":
+                count = chats.DeleteAll();
+                ledger.Record(DataFlow.Local, "Sohbet", $"Bütün sohbetler silindi ({count})");
+                return count;
+            case "memory":
+                var items = memory.Items.ToList();
+                foreach (var item in items)
+                {
+                    memory.Remove(item.Id);
+                }
+
+                ledger.Record(DataFlow.Local, "Hafıza", $"Hafıza silindi ({items.Count} bilgi)");
+                return items.Count;
+            case "reminders":
+                count = reminders.Upcoming.Count(item => reminders.Remove(item.Id));
+                ledger.Record(DataFlow.Local, "Hatırlatma", $"Hatırlatmalar silindi ({count})");
+                return count;
+            default:
+                return 0;
+        }
+    }
+
+    /// <summary>Sohbeti D:\Friday\data\exports altına Markdown olarak yazar ve klasöründe gösterir.</summary>
+    private static string? ExportChat(FridayPaths paths, ChatStore chats, string id, string assistantName)
+    {
+        try
+        {
+            var folder = Path.Combine(paths.Data, "exports");
+            Directory.CreateDirectory(folder);
+            var title = chats.Find(id)?.Title ?? "sohbet";
+            var safe = string.Concat(title.Select(letter => Path.GetInvalidFileNameChars().Contains(letter) ? '-' : letter)).Trim();
+            var file = Path.Combine(folder, $"sohbet-{DateTime.Now:yyyy-MM-dd-HHmm}-{(safe.Length > 40 ? safe[..40] : safe)}.md");
+            File.WriteAllText(file, chats.ToMarkdown(id, assistantName));
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{file}\"") { UseShellExecute = true })?.Dispose();
+            return file;
+        }
+        catch (IOException exception)
+        {
+            FridayLog.Error("Sohbet dışa aktarılamadı", exception);
+            return null;
+        }
+    }
 
     /// <summary>Başka bir yapay zekânın hafıza dosyası; vazgeçilirse null.</summary>
     private string? PickMemoryFile()
@@ -342,6 +518,9 @@ public sealed partial class App : Application, IDisposable
     public void Dispose()
     {
         _weatherClock?.Stop();
+        _rhythmClock?.Stop();
+        _quickAsk?.Close();
+        _quickAsk = null;
         _startup?.Cancel();
         _startup?.Dispose();
         _tray?.Dispose();

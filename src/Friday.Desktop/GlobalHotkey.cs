@@ -13,21 +13,26 @@ namespace Friday.Desktop;
 public sealed partial class GlobalHotkey : IDisposable
 {
     private const int HotkeyMessage = 0x0312;
-    private const int Id = 0x4652;
     private const uint NoRepeat = 0x4000;
 
     private readonly Window _window;
+    private readonly int _id;
     private readonly Action _pressed;
     private HwndSource? _source;
     private bool _registered;
 
-    public GlobalHotkey(Window window, Action pressed)
+    /// <param name="id">Aynı pencerede birden çok kısayol için ayrı kimlik.</param>
+    public GlobalHotkey(Window window, Action pressed, int id = 0x4652)
     {
         _window = window;
         _pressed = pressed;
+        _id = id;
     }
 
-    /// <summary>Kısayolu kaydeder; başka bir uygulama aynı kısayolu tutuyorsa false döner.</summary>
+    /// <summary>Şu an kayıtlı kısayol; yoksa null.</summary>
+    public HotkeyGesture? Current { get; private set; }
+
+    /// <summary>Kısayolu kaydeder (öncekini bırakır); başka bir uygulama aynı kısayolu tutuyorsa false döner.</summary>
     public bool Register(HotkeyGesture gesture)
     {
         var handle = new WindowInteropHelper(_window).EnsureHandle();
@@ -37,15 +42,37 @@ public sealed partial class GlobalHotkey : IDisposable
             _source.AddHook(WndProc);
         }
 
-        var key = (Key)new KeyConverter().ConvertFromInvariantString(gesture.Key)!;
+        Unregister();
+        Key key;
+        try
+        {
+            key = (Key)new KeyConverter().ConvertFromInvariantString(gesture.Key)!;
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or FormatException)
+        {
+            return false;
+        }
+
         var modifiers = (uint)gesture.Modifiers | NoRepeat;
-        _registered = NativeMethods.RegisterHotKey(handle, Id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
+        _registered = NativeMethods.RegisterHotKey(handle, _id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
+        Current = _registered ? gesture : null;
         return _registered;
+    }
+
+    public void Unregister()
+    {
+        if (_registered && _source is not null)
+        {
+            NativeMethods.UnregisterHotKey(_source.Handle, _id);
+        }
+
+        _registered = false;
+        Current = null;
     }
 
     private IntPtr WndProc(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (message == HotkeyMessage && wParam.ToInt32() == Id)
+        if (message == HotkeyMessage && wParam.ToInt32() == _id)
         {
             _pressed();
             handled = true;
@@ -56,11 +83,7 @@ public sealed partial class GlobalHotkey : IDisposable
 
     public void Dispose()
     {
-        if (_registered && _source is not null)
-        {
-            NativeMethods.UnregisterHotKey(_source.Handle, Id);
-        }
-
+        Unregister();
         _source?.RemoveHook(WndProc);
     }
 

@@ -1,0 +1,295 @@
+<UserControl x:Class="Friday.Desktop.ChatPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Friday.Desktop">
+    <UserControl.Resources>
+        <!-- Listede şeffaf, tıklanabilir satır. -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate DataType="{x:Type local:ChatGroupView}">
+            <TextBlock Text="{Binding Title}" Style="{StaticResource Caption}" Margin="10,14,0,5"/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type local:ChatItemView}">
+            <Grid x:Name="Row" Margin="0,1">
+                <Border x:Name="Back" CornerRadius="10" Background="Transparent"/>
+                <Rectangle x:Name="Bar" Width="2" Height="16" RadiusX="1" RadiusY="1" HorizontalAlignment="Left" Fill="{StaticResource AccentBrush}"
+                           Opacity="0" Margin="1,0,0,0"/>
+                <Button Style="{StaticResource RowButton}" Padding="11,8,30,8"
+                        Command="{Binding DataContext.OpenChatCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding Id}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE718;" FontSize="9" Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding Pinned, Converter={StaticResource Visible}}"/>
+                                <TextBlock x:Name="Title" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="13" Foreground="{StaticResource MutedBrush}"
+                                           ToolTip="{Binding Title}"/>
+                            </DockPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding Meta}" Style="{StaticResource Caption}" Margin="8,1,0,0"/>
+                        </Grid>
+                        <TextBlock Text="{Binding Snippet}" Style="{StaticResource Caption}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                   LineHeight="16" LineStackingStrategy="BlockLineHeight" MaxHeight="32" Margin="0,3,0,0"
+                                   Visibility="{Binding HasSnippet, Converter={StaticResource Visible}}"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="Delete" Style="{StaticResource IconButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,4,0"
+                        Padding="5" Opacity="0" ToolTip="Sohbeti sil"
+                        Command="{Binding DataContext.AskDeleteChatCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding Id}">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="10"/>
+                </Button>
+            </Grid>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Back" Property="Background" Value="#10FFFFFF"/>
+                    <Setter TargetName="Delete" Property="Opacity" Value="1"/>
+                    <Setter TargetName="Title" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter TargetName="Back" Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
+                    <Setter TargetName="Bar" Property="Opacity" Value="1"/>
+                    <Setter TargetName="Title" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="20,4,32,24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="248"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= Sohbet listesi ================= -->
+        <DockPanel Margin="0,0,20,0">
+            <Button DockPanel.Dock="Top" Style="{StaticResource AccentButton}" Command="{Binding NewChatCommand}" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Left" Padding="14,10" ToolTip="Yeni sohbet (sesle: &quot;yeni sohbet&quot;)">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,10,0" Foreground="{StaticResource AccentInkBrush}"/>
+                    <TextBlock Text="Yeni sohbet" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                </StackPanel>
+            </Button>
+            <Grid DockPanel.Dock="Top" Margin="0,12,0,4">
+                <TextBox Text="{Binding ChatSearch, UpdateSourceTrigger=PropertyChanged}" Padding="34,8,30,8" FontSize="12.5"/>
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="11" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"
+                           Margin="13,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                <TextBlock Text="Sohbetlerde ara" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False" Margin="35,0,0,0"
+                           VerticalAlignment="Center" FontSize="12.5">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ChatSearch}" Value="">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button HorizontalAlignment="Right" Margin="0,0,6,0" Padding="5" ToolTip="Aramayı temizle" Command="{Binding ClearChatSearchCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ChatSearch}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
+                </Button>
+            </Grid>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding ChatListEmpty}" FontSize="12" Margin="10,14,10,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ChatListEmpty}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="-4,0,0,0">
+                <ItemsControl ItemsSource="{Binding ChatList}" Margin="0,0,8,0"/>
+            </ScrollViewer>
+        </DockPanel>
+
+        <!-- ================= Açık sohbet ================= -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Başlık ve sohbet işlemleri. -->
+            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Visibility="{Binding IsRenaming, Converter={StaticResource Hidden}}">
+                        <TextBlock Text="{Binding CurrentChatTitle}" FontFamily="{StaticResource DisplayFont}" FontSize="17" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding CurrentChatMeta}" Style="{StaticResource Caption}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Grid Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
+                        <TextBox x:Name="RenameBox" Text="{Binding RenameText, UpdateSourceTrigger=PropertyChanged}" FontSize="14" Padding="12,7">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding CommitRenameCommand}"/>
+                                <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </Grid>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource AccentButton}" Content="Kaydet" Command="{Binding CommitRenameCommand}" Margin="0,0,6,0"/>
+                            <Button Style="{StaticResource GhostButton}" Content="Vazgeç" Command="{Binding CancelRenameCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding HasCurrentChat, Converter={StaticResource Visible}}">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsRenaming, Converter={StaticResource Hidden}}">
+                                <Button Style="{StaticResource IconButton}" ToolTip="Yeniden adlandır" Command="{Binding StartRenameCommand}" Margin="0,0,4,0">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8AC;" FontSize="12"/>
+                                </Button>
+                                <Button ToolTip="Sabitle" Command="{Binding TogglePinCommand}" Margin="0,0,4,0">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                            <Setter Property="Content">
+                                                <Setter.Value>
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE718;" FontSize="12"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrentPinned}" Value="True">
+                                                    <Setter Property="ToolTip" Value="Sabitlemeyi kaldır"/>
+                                                    <Setter Property="Content">
+                                                        <Setter.Value>
+                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE77A;" FontSize="12" Foreground="{StaticResource AccentBrush}"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" ToolTip="Markdown olarak kaydet" Command="{Binding ExportChatCommand}" Margin="0,0,4,0">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEDE1;" FontSize="12"/>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" ToolTip="Sohbeti sil (sesle: &quot;sohbeti temizle&quot;)"
+                                        Command="{Binding AskDeleteChatCommand}" CommandParameter="{x:Null}">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12"/>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Silme onayı ve kısa bildirimler. -->
+            <StackPanel Grid.Row="1">
+                <Border CornerRadius="12" Background="#1FFFB86B" BorderBrush="#40FFB86B" BorderThickness="1" Padding="14,10" Margin="0,12,0,0"
+                        Visibility="{Binding IsConfirmingChatDelete, Converter={StaticResource Visible}}">
+                    <Grid>
+                        <TextBlock Text="{Binding ChatDeleteQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,180,0"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource GhostButton}" Content="Vazgeç" Command="{Binding CancelDeleteChatCommand}" Margin="0,0,6,0"/>
+                            <Button Style="{StaticResource AccentButton}" Content="Kalıcı olarak sil" Command="{Binding ConfirmDeleteChatCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <TextBlock Text="{Binding ChatMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12" Margin="2,8,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ChatMessage}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Boş durum: küre, selam ve öneriler. -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Visibility="{Binding HasLines, Converter={StaticResource Hidden}}">
+                <local:AudioRing x:Name="HeroRing" Width="170" Height="170" Level="{Binding Level}" State="{Binding State}"/>
+                <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" Margin="0,10,0,6"
+                           FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding WakeHint}" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" FontSize="13.5"
+                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520"/>
+                <TextBlock Text="Dinleme, anlama ve düşünme bu bilgisayarda yapılır." Foreground="{StaticResource FaintBrush}"
+                           HorizontalAlignment="Center" Margin="0,4,0,22" FontSize="12"/>
+                <ItemsControl ItemsSource="{Binding Suggestions}" MaxWidth="560">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel HorizontalAlignment="Center"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource ChipButton}" Content="{Binding}"
+                                    Command="{Binding DataContext.SuggestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="2" x:Name="Transcript" VerticalScrollBarVisibility="Auto" Margin="0,14,0,0"
+                          Visibility="{Binding HasLines, Converter={StaticResource Visible}}">
+                <ItemsControl ItemsSource="{Binding Lines}" ItemTemplate="{StaticResource ChatLineTemplate}" Margin="0,8,14,0"/>
+            </ScrollViewer>
+
+            <!-- Yazma alanı: yüzen, yumuşak köşeli bir kutu. -->
+            <Border Grid.Row="3" Margin="0,16,0,0" CornerRadius="18" Background="{StaticResource SurfaceRaisedBrush}"
+                    BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
+                <Grid>
+                    <TextBox x:Name="DraftBox" Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" Padding="18,13,60,13" FontSize="14"
+                             Background="Transparent" BorderThickness="0">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SendCommand}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <TextBlock Text="Friday'e yaz…" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"
+                               Margin="20,0,0,0" VerticalAlignment="Center" FontSize="14">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Draft}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Style="{StaticResource AccentButton}" Command="{Binding SendCommand}" HorizontalAlignment="Right"
+                            Width="36" Height="36" Padding="0" Margin="0,0,8,0">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE724;" FontSize="13"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

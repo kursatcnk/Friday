@@ -52,7 +52,21 @@ internal static class Snapshot
 
         var settings = new FridaySettings { UserName = "Kürşat" };
         var now = DateTime.Now;
-        var home = new PanelViewModel(settings, new PanelActions())
+        var chatFolder = Path.Combine(folder, ".snapshot-chats");
+        if (Directory.Exists(chatFolder))
+        {
+            Directory.Delete(chatFolder, recursive: true);
+        }
+
+        var chats = SampleChats(chatFolder, now);
+        var actions = new PanelActions
+        {
+            Chats = chats,
+            PiperVoices = [PanelViewModel.PiperVoiceOption(@"D:\Friday\models\piper\tr_TR-dfki-medium.onnx"),
+                PanelViewModel.PiperVoiceOption(@"D:\Friday\models\piper\tr_TR-99eren99.onnx")]
+        };
+        var working = new RhythmSnapshot(true, now.AddMinutes(-34), null, null, null, TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null);
+        var home = new PanelViewModel(settings, actions)
         {
             State = AssistantState.Idle,
             StatusText = "Hazır · \"Hey Friday\" de ya da Ctrl+Alt+F"
@@ -65,36 +79,42 @@ internal static class Snapshot
             ],
             [new MemoryItem("m1", $"Kullanıcının arabasının muayenesi {now.AddDays(3).ToString("d MMMM", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))}'da.", DateTimeOffset.Now)]);
         home.ShowNotes([new Note(now.AddHours(-3), "Süt ve ekmek al"), new Note(now.AddHours(-1), "Sunumun ilk slaytını sadeleştir")]);
-        home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 },
-            TimeSpan.FromMinutes(38), null, 50);
+        home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 }, working);
         RenderPanel(home, folder, "panel-today");
 
         var intro = new PanelViewModel(new FridaySettings(), new PanelActions()) { State = AssistantState.Idle, StatusText = "Hazır" };
         RenderPanel(intro, folder, "panel-today-intro");
 
-        var empty = new PanelViewModel(settings, new PanelActions())
+        var empty = new PanelViewModel(settings, actions)
         {
             State = AssistantState.Idle,
             StatusText = "Hazır · Whisper GPU (Vulkan) · Azure nöral ses (Emel)",
             IsToday = false,
             IsChat = true
         };
+        chats.NewChat();
+        empty.ShowChat([]);
         RenderPanel(empty, folder, "panel-chat-empty");
 
-        var panel = new PanelViewModel(settings, new PanelActions())
+        var panel = new PanelViewModel(settings, actions)
         {
             State = AssistantState.Speaking,
             StatusText = "Konuşuyor…",
             Level = 0.4,
             EngineLabel = "Azure nöral ses (Emel)"
         };
-        panel.OnUserSaid("Panodaki metnin yazım hatalarını düzeltir misin?");
-        panel.OnAssistantSaid("Düzelttim ve panoya koydum, Ctrl+V ile yapıştırabilirsin. \"Kalcakmış\" yerine \"kalacakmış\", \"cunku\" yerine \"çünkü\" yazdım.");
-        panel.OnUserSaid("Unutma, arabamın muayenesi 20 Kasım'da.");
-        panel.OnAssistantSaid("Not ettim, 20 Kasım yaklaşınca sabah brifinginde hatırlatırım.");
-        panel.OnUserSaid("Bilgisayar neden yavaş?");
-        panel.OnAssistantSaid("İşlemci yüzde 18'de, asıl yükü Chrome çekiyor: 4,2 GB bellek. Kullanmadığın sekmeleri kapatırsan rahatlar.");
+        var current = chats.List().First(chat => chat.Title.StartsWith("Panodaki", StringComparison.Ordinal));
+        chats.Open(current.Id);
+        panel.ShowChat(chats.CurrentTurns);
+        panel.IsToday = false;
+        panel.IsChat = true;
         RenderPanel(panel, folder, "panel-chat");
+
+        panel.ChatSearch = "muayene";
+        panel.RefreshChats();
+        RenderPanel(panel, folder, "panel-chat-search");
+        panel.ChatSearch = "";
+        panel.RefreshChats();
 
         panel.IsChat = false;
         panel.IsMemory = true;
@@ -122,7 +142,9 @@ internal static class Snapshot
         panel.IsMemory = false;
         panel.IsRhythm = true;
         var day = DateTime.Today;
-        panel.ShowRhythm(new RhythmDay
+        var focus = new RhythmSnapshot(true, now.AddMinutes(-41), now.AddMinutes(-13), now.AddMinutes(12), null,
+            TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null);
+        var rhythmDay = new RhythmDay
         {
             Date = DateOnly.FromDateTime(day),
             ActiveMinutes = 251,
@@ -138,7 +160,8 @@ internal static class Snapshot
                 new RhythmSegment(day.AddHours(13.2), day.AddHours(13.6), RhythmSegmentKind.Focus),
                 new RhythmSegment(day.AddHours(13.6), day.AddHours(14.4), RhythmSegmentKind.Work),
             ]
-        }, TimeSpan.FromMinutes(34), DateTime.Now.AddMinutes(12), 50);
+        };
+        panel.ShowRhythm(rhythmDay, focus);
         panel.RhythmNow = day.AddHours(14.4);
         panel.ShowWeek([.. Enumerable.Range(0, 7).Select(offset => new RhythmDay
         {
@@ -146,6 +169,11 @@ internal static class Snapshot
             ActiveMinutes = SampleWeek[offset]
         })]);
         RenderPanel(panel, folder, "panel-rhythm");
+        panel.TickRhythm(working);
+        RenderPanel(panel, folder, "panel-rhythm-working");
+        panel.TickRhythm(new RhythmSnapshot(true, null, null, null, now.AddMinutes(-2).AddSeconds(-14), TimeSpan.FromMinutes(50),
+            TimeSpan.FromMinutes(5), false, null));
+        RenderPanel(panel, folder, "panel-rhythm-break");
         panel.IsRhythm = false;
         panel.IsMemory = true;
 
@@ -165,10 +193,54 @@ internal static class Snapshot
         panel.IsPrivacy = false;
         panel.IsRoutines = true;
         RenderPanel(panel, folder, "panel-routines");
+        panel.UseTemplateCommand.Execute(RoutineStep.Templates[1]);
+        RenderPanel(panel, folder, "panel-routines-edit");
+        panel.CancelRoutineCommand.Execute(null);
 
         panel.IsRoutines = false;
         panel.IsSettings = true;
         RenderPanel(panel, folder, "panel-settings");
+        Directory.Delete(chatFolder, recursive: true);
+    }
+
+    /// <summary>Sohbet listesi için örnek sohbetler (bugün, dün, bu hafta ve sabitlenmiş bir tane).</summary>
+    private static ChatStore SampleChats(string folder, DateTime now)
+    {
+        var clock = new FixedClock(now);
+        var chats = new ChatStore(folder, clock);
+        void Chat(double hoursAgo, params (string User, string Assistant)[] turns)
+        {
+            clock.Now = now.AddHours(-hoursAgo);
+            chats.NewChat();
+            foreach (var (user, assistant) in turns)
+            {
+                chats.Append(user, assistant);
+            }
+        }
+
+        Chat(26 * 4, ("Arabamın muayenesi ne zaman?", "Arabanın muayenesi 20 Kasım'da; üç gün kala sabah brifinginde hatırlatırım."));
+        Chat(50, ("Bu hafta sonu İzmir'de hava nasıl?", "Cumartesi güneşli ve 22 derece, pazar akşamüstü hafif yağmur bekleniyor."));
+        Chat(27, ("Merhaba", "Merhaba Kürşat, nasıl gidiyor?"), ("Sunum için üç başlık önerir misin?", "Sorun, çözüm ve yol haritası. İlk slaytta tek bir cümleyle sorunu söyle."));
+        Chat(5, ("Unutma, arabamın muayenesi 20 Kasım'da.", "Not ettim, 20 Kasım yaklaşınca sabah brifinginde hatırlatırım."));
+        Chat(2.2, ("Dolar kaç lira?", "Dolar 41 lira 82 kuruş, euro 48 lira 15 kuruş. Merkez Bankası'nın bugünkü kurları."));
+        Chat(0.4,
+            ("Panodaki metnin yazım hatalarını düzeltir misin?", "Düzelttim ve panoya koydum, Ctrl+V ile yapıştırabilirsin. \"Kalcakmış\" yerine \"kalacakmış\", \"cunku\" yerine \"çünkü\" yazdım."),
+            ("Bilgisayar neden yavaş?", "İşlemci yüzde 18'de, asıl yükü Chrome çekiyor: 4,2 GB bellek. Kullanmadığın sekmeleri kapatırsan rahatlar."),
+            ("Peki hangi sekmeler?", "En çok YouTube (1,1 GB) ve iki Figma sekmesi (1,6 GB) yiyor. YouTube'u kapatman yeter."));
+        if (chats.List().FirstOrDefault(chat => chat.Title.StartsWith("Bu hafta sonu", StringComparison.Ordinal)) is { } pinned)
+        {
+            chats.SetPinned(pinned.Id, true);
+        }
+
+        clock.Now = now;
+        return chats;
+    }
+
+    private sealed class FixedClock(DateTime now) : TimeProvider
+    {
+        public DateTime Now { get; set; } = now;
+
+        public override DateTimeOffset GetUtcNow() => new DateTimeOffset(Now).ToUniversalTime();
     }
 
     private static void RenderPanel(PanelViewModel viewModel, string folder, string name)

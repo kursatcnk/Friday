@@ -8,9 +8,6 @@
              FontSize="13"
              TextOptions.TextFormattingMode="Display">
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="Visible"/>
-        <local:InverseVisibilityConverter x:Key="Hidden"/>
-
         <!-- Sol gezinme: simge ve küçük etiket; seçili olan sıcak beyaz, yanında ince kor çizgi. -->
         <Style x:Key="NavItem" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource FaintBrush}"/>
@@ -39,87 +36,6 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Pill" Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
                                 <Setter TargetName="Bar" Property="Opacity" Value="1"/>
-                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Tuş görünümlü küçük kutu (Ctrl, Alt, F). -->
-        <DataTemplate x:Key="KeyCap">
-            <Border CornerRadius="6" BorderThickness="1,1,1,2" BorderBrush="{StaticResource LineStrongBrush}" Background="{StaticResource SurfaceRaisedBrush}"
-                    Padding="7,1" Margin="2,0" MinWidth="22">
-                <TextBlock Text="{Binding}" FontFamily="{StaticResource SmallFont}" FontSize="11" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center"/>
-            </Border>
-        </DataTemplate>
-
-        <!-- Sohbet: Friday'in cevabı balonsuz, düz ve okunaklı; kullanıcının cümlesi sağda ince bir hap. -->
-        <DataTemplate x:Key="ChatLineTemplate" DataType="{x:Type local:ChatLine}">
-            <Grid Margin="0,0,0,18">
-                <Grid x:Name="Friday">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="30"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Ellipse Width="9" Height="9" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,7,0,0">
-                        <Ellipse.Fill>
-                            <RadialGradientBrush GradientOrigin="0.35,0.3">
-                                <GradientStop Color="#FFF6E9" Offset="0"/>
-                                <GradientStop Color="#F2CC8F" Offset="0.5"/>
-                                <GradientStop Color="#6B5536" Offset="1"/>
-                            </RadialGradientBrush>
-                        </Ellipse.Fill>
-                    </Ellipse>
-                    <StackPanel Grid.Column="1" MaxWidth="620" HorizontalAlignment="Left">
-                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" LineHeight="23" FontSize="14.5" Foreground="{StaticResource TextBrush}"/>
-                        <TextBlock Text="{Binding Time}" Style="{StaticResource Caption}" Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Grid>
-                <StackPanel x:Name="User" HorizontalAlignment="Right" MaxWidth="520" Visibility="Collapsed">
-                    <Border CornerRadius="18" Padding="16,9" Background="{StaticResource UserBubbleBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
-                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" LineHeight="21" FontSize="14" Foreground="{StaticResource TextBrush}"/>
-                    </Border>
-                    <TextBlock Text="{Binding Time}" Style="{StaticResource Caption}" HorizontalAlignment="Right" Margin="0,5,6,0"/>
-                </StackPanel>
-            </Grid>
-            <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsUser}" Value="True">
-                    <Setter TargetName="Friday" Property="Visibility" Value="Collapsed"/>
-                    <Setter TargetName="User" Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </DataTemplate.Triggers>
-        </DataTemplate>
-
-        <!-- Ritim sayfasındaki küçük istatistik kutusu. -->
-        <Style x:Key="StatValue" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
-            <Setter Property="Margin" Value="0,6,0,0"/>
-        </Style>
-
-        <!-- Ortak liste öğesi (ses, mikrofon seçimi). -->
-        <Style x:Key="PillItem" TargetType="ListBoxItem">
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Pill" CornerRadius="10" Padding="12,6" Margin="3" BorderThickness="1"
-                                BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SurfaceRaisedBrush}">
-                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="12.5"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Pill" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Pill" Property="Background" Value="#2A2A2F"/>
-                                <Setter TargetName="Pill" Property="BorderBrush" Value="#66FF8A5B"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -300,17 +216,22 @@
                                             <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11"/>
                                         </Button>
                                     </Grid>
-                                    <TextBlock Text="{Binding RhythmActive}" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="SemiBold"
-                                               Typography.NumeralAlignment="Tabular" Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding RhythmStretch}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,10"/>
-                                    <Grid Height="5" Margin="0,0,0,14">
-                                        <Border CornerRadius="3" Background="#222226"/>
-                                        <Border CornerRadius="3" Background="{StaticResource AccentBrush}" RenderTransformOrigin="0,0.5">
-                                            <Border.RenderTransform>
-                                                <ScaleTransform ScaleX="{Binding RhythmProgress}"/>
-                                            </Border.RenderTransform>
-                                        </Border>
+                                    <Grid Margin="0,6,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Width="64" Height="64" Margin="0,0,14,0">
+                                            <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="6"/>
+                                            <TextBlock Text="{Binding DialClock}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5"
+                                                       FontWeight="SemiBold" Typography.NumeralAlignment="Tabular"/>
+                                        </Grid>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DialLabel}" FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding RhythmActive, StringFormat='Bugün {0} bilgisayar başında'}" Style="{StaticResource Caption}" Margin="0,3,0,0"/>
+                                        </StackPanel>
                                     </Grid>
+                                    <TextBlock Text="{Binding DialSentence}" Style="{StaticResource Body}" FontSize="12" Margin="0,10,0,12"/>
                                     <WrapPanel Margin="-4,0,0,0">
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="Mola ver" Command="{Binding RhythmCommand}" CommandParameter="Mola ver"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="25 dk odak" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım"/>
@@ -379,203 +300,10 @@
                 </ScrollViewer>
 
                 <!-- ================= Sohbet ================= -->
-                <Grid Visibility="{Binding IsChat, Converter={StaticResource Visible}}" Margin="36,4,32,24">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Boş durum: küre, selam ve öneriler. -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="{Binding HasLines, Converter={StaticResource Hidden}}">
-                        <local:AudioRing x:Name="HeroRing" Width="190" Height="190" Level="{Binding Level}" State="{Binding State}"/>
-                        <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" Margin="0,10,0,6"
-                                   FontFamily="{StaticResource DisplayFont}" FontSize="28" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding WakeHint}" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" FontSize="13.5"/>
-                        <TextBlock Text="Dinleme, anlama ve düşünme bu bilgisayarda yapılır." Foreground="{StaticResource FaintBrush}"
-                                   HorizontalAlignment="Center" Margin="0,4,0,22" FontSize="12"/>
-                        <ItemsControl ItemsSource="{Binding Suggestions}" MaxWidth="620">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel HorizontalAlignment="Center"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Style="{StaticResource ChipButton}" Content="{Binding}"
-                                            Command="{Binding DataContext.SuggestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-
-                    <ScrollViewer x:Name="Transcript" VerticalScrollBarVisibility="Auto"
-                                  Visibility="{Binding HasLines, Converter={StaticResource Visible}}">
-                        <ItemsControl ItemsSource="{Binding Lines}" ItemTemplate="{StaticResource ChatLineTemplate}" Margin="0,8,14,0"/>
-                    </ScrollViewer>
-
-                    <!-- Yazma alanı: yüzen, yumuşak köşeli bir kutu. -->
-                    <Border Grid.Row="1" Margin="0,16,0,0" CornerRadius="18" Background="{StaticResource SurfaceRaisedBrush}"
-                            BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
-                        <Grid>
-                            <TextBox x:Name="DraftBox" Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" Padding="18,13,60,13" FontSize="14"
-                                     Background="Transparent" BorderThickness="0">
-                                <TextBox.InputBindings>
-                                    <KeyBinding Key="Enter" Command="{Binding SendCommand}"/>
-                                </TextBox.InputBindings>
-                            </TextBox>
-                            <TextBlock Text="Friday'e yaz…" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False" Margin="20,0,0,0"
-                                       VerticalAlignment="Center" FontSize="14">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Draft}" Value="">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <Button Style="{StaticResource AccentButton}" Command="{Binding SendCommand}" HorizontalAlignment="Right"
-                                    Width="36" Height="36" Padding="0" Margin="0,0,8,0">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE724;" FontSize="13"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-                </Grid>
+                <local:ChatPage x:Name="ChatView" Visibility="{Binding IsChat, Converter={StaticResource Visible}}"/>
 
                 <!-- ================= Ritim ================= -->
-                <ScrollViewer Visibility="{Binding IsRhythm, Converter={StaticResource Visible}}" VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
-                    <StackPanel Margin="0,0,12,0" MaxWidth="820" HorizontalAlignment="Left">
-                        <Border Style="{StaticResource Card}" Padding="24,22" Margin="0,0,0,14">
-                            <StackPanel>
-                                <Grid>
-                                    <StackPanel>
-                                        <TextBlock Text="Bugün aktif" Style="{StaticResource Label}" Margin="0"/>
-                                        <TextBlock Text="{Binding RhythmActive}" FontFamily="{StaticResource DisplayFont}" FontSize="40" FontWeight="SemiBold"
-                                                   Typography.NumeralAlignment="Tabular" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="10" Padding="12,6" Background="{StaticResource AccentSoftBrush}"
-                                            Visibility="{Binding InFocus, Converter={StaticResource Visible}}">
-                                        <TextBlock Text="{Binding FocusRemaining}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="12.5"/>
-                                    </Border>
-                                </Grid>
-                                <local:RhythmTimeline Segments="{Binding RhythmSegments}" Now="{Binding RhythmNow}" Margin="0,18,0,4"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <Rectangle Width="10" Height="6" RadiusX="3" RadiusY="3" Fill="#6E6A62" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Çalışma" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
-                                    <Rectangle Width="10" Height="6" RadiusX="3" RadiusY="3" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Odak" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
-                                    <TextBlock Text="Boşluklar mola" Style="{StaticResource Caption}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <UniformGrid Columns="4" Margin="-6,0,-6,14">
-                            <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                                <StackPanel>
-                                    <TextBlock Text="Odak" Style="{StaticResource Caption}"/>
-                                    <TextBlock Text="{Binding RhythmFocus}" Style="{StaticResource StatValue}"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                                <StackPanel>
-                                    <TextBlock Text="Mola" Style="{StaticResource Caption}"/>
-                                    <TextBlock Text="{Binding RhythmBreaks}" Style="{StaticResource StatValue}"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                                <StackPanel>
-                                    <TextBlock Text="En uzun aralıksız" Style="{StaticResource Caption}"/>
-                                    <TextBlock Text="{Binding RhythmLongest}" Style="{StaticResource StatValue}"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                                <StackPanel>
-                                    <TextBlock Text="Su (bardak)" Style="{StaticResource Caption}"/>
-                                    <TextBlock Text="{Binding RhythmWater}" Style="{StaticResource StatValue}"/>
-                                </StackPanel>
-                            </Border>
-                        </UniformGrid>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Bu hafta" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
-                                <ItemsControl ItemsSource="{Binding WeekBars}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Rows="1"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type local:WeekBarView}">
-                                            <StackPanel Margin="6,0">
-                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                                                <Grid Height="90">
-                                                    <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="6" Background="#3A3936"/>
-                                                </Grid>
-                                                <TextBlock x:Name="Day" Text="{Binding Day}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                                            </StackPanel>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                    <Setter TargetName="Bar" Property="Background" Value="{StaticResource AccentBrush}"/>
-                                                    <Setter TargetName="Day" Property="Foreground" Value="{StaticResource TextBrush}"/>
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Şu anki oturum" Style="{StaticResource SectionTitle}"/>
-                                <TextBlock Text="{Binding RhythmStretch}" Style="{StaticResource Body}" Margin="0,0,0,12"/>
-                                <Grid Height="6">
-                                    <Border CornerRadius="3" Background="#222226"/>
-                                    <Border CornerRadius="3" HorizontalAlignment="Stretch" RenderTransformOrigin="0,0.5">
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#7FD4B0" Offset="0"/>
-                                                <GradientStop Color="#F2CC8F" Offset="0.7"/>
-                                                <GradientStop Color="#FF8A5B" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <Border.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding RhythmProgress}"/>
-                                        </Border.RenderTransform>
-                                    </Border>
-                                </Grid>
-                                <WrapPanel Margin="-4,16,0,0">
-                                    <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver">
-                                        <TextBlock Text="Mola ver"/>
-                                    </Button>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım"
-                                            Content="25 dk odak"/>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="50 dakika odaklanacağım"
-                                            Content="50 dk odak"/>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Odağı bitir"
-                                            Content="Odağı bitir" Visibility="{Binding InFocus, Converter={StaticResource Visible}}"/>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım"
-                                            Content="Nefes egzersizi"/>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Esneme yapalım"
-                                            Content="Esneme"/>
-                                    <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Su içtim"
-                                            Content="Su içtim"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource FaintBrush}" FontSize="12">
-                            Friday yalnızca son klavye ve fare kullanım zamanını okur; tuşlara, ekrana ya da pencere içeriklerine bakmaz. Mola önerisi
-                            yazarken değil bir duraksamada gelir; tam ekran bir oyun, film ya da sunum açıkken araya girmez. "Mola ver", "25 dakika
-                            odaklanacağım", "nefes egzersizi", "nerede kalmıştım" ya da "bugün ne kadar çalıştım" diyebilirsin.
-                        </TextBlock>
-                    </StackPanel>
-                </ScrollViewer>
+                <local:RhythmPage Visibility="{Binding IsRhythm, Converter={StaticResource Visible}}"/>
 
                 <!-- ================= Hafıza ================= -->
                 <Grid Visibility="{Binding IsMemory, Converter={StaticResource Visible}}" Margin="36,4,32,24">
@@ -804,239 +532,10 @@
                 </Grid>
 
                 <!-- ================= Rutinler ================= -->
-                <Grid Visibility="{Binding IsRoutines, Converter={StaticResource Visible}}" Margin="36,4,32,24">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Style="{StaticResource Body}" Margin="0,0,0,16">
-                        "Çalışma modunu aç", "Günaydın" ya da "Mola" demen yeter. Rutinleri settings.json içindeki Routines bölümünden düzenleyebilirsin.
-                    </TextBlock>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding Routines}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type local:RoutineView}">
-                                    <Border Style="{StaticResource Card}" Width="272" Margin="0,0,14,14">
-                                        <DockPanel>
-                                            <Button DockPanel.Dock="Bottom" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,16,0,0"
-                                                    Command="{Binding DataContext.RunRoutineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding Name}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="10" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
-                                                    <TextBlock Text="Çalıştır"/>
-                                                </StackPanel>
-                                            </Button>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                                                <ItemsControl ItemsSource="{Binding Steps}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate DataType="{x:Type local:RoutineStepView}">
-                                                            <StackPanel Orientation="Horizontal" Margin="0,4">
-                                                                <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="12" Foreground="{StaticResource FaintBrush}" Width="18" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                                                <TextBlock Text="{Binding Text}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" MaxWidth="200" Margin="8,0,0,0" LineHeight="19"/>
-                                                            </StackPanel>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
-                                        </DockPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
+                <local:RoutinesPage Visibility="{Binding IsRoutines, Converter={StaticResource Visible}}"/>
 
                 <!-- ================= Ayarlar ================= -->
-                <ScrollViewer Visibility="{Binding IsSettings, Converter={StaticResource Visible}}" VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
-                    <StackPanel Margin="0,0,12,0" MaxWidth="740" HorizontalAlignment="Left">
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Uyandırma ve ritim" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
-                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WakeEnabled}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding WakeLabel, StringFormat='&quot;{0}&quot; ile uyan'}" FontWeight="SemiBold"/>
-                                        <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,2,0,0"
-                                                   Text="Mikrofon açık kalır ama ses yalnızca bellekte, 80 ms'lik parçalar halinde puanlanıp atılır. Kapalıyken yalnızca kısayol çalışır."/>
-                                    </StackPanel>
-                                </CheckBox>
-                                <StackPanel Orientation="Horizontal" Margin="0,12,0,18" Visibility="{Binding WakeEnabled, Converter={StaticResource Visible}}">
-                                    <TextBlock Text="Hassasiyet" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <Border Style="{StaticResource SegmentTrack}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="Kolay uyan" IsChecked="{Binding WakeSensitive}"/>
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="Normal" IsChecked="{Binding WakeNormal}"/>
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="Seçici" IsChecked="{Binding WakeStrict}"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RhythmEnabled}" Margin="0,0,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Ritim koçu" FontWeight="SemiBold"/>
-                                        <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,2,0,0"
-                                                   Text="Uzun süre aralıksız çalışınca uygun bir anda mola önerir; dönünce kaldığın yeri söyler."/>
-                                    </StackPanel>
-                                </CheckBox>
-                                <StackPanel Orientation="Horizontal" Margin="0,12,0,18" Visibility="{Binding RhythmEnabled, Converter={StaticResource Visible}}">
-                                    <TextBlock Text="Mola önerisi" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <Border Style="{StaticResource SegmentTrack}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="30 dk" IsChecked="{Binding BreakEvery30}"/>
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="50 dk" IsChecked="{Binding BreakEvery50}"/>
-                                            <RadioButton Style="{StaticResource SegmentOption}" Content="90 dk" IsChecked="{Binding BreakEvery90}"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding MorningEnabled}">
-                                    <StackPanel>
-                                        <TextBlock Text="Sabah karşılaması" FontWeight="SemiBold"/>
-                                        <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,2,0,0"
-                                                   Text="Günün ilk oturuşunda havayı ve yaklaşan tarihleri kısaca söyler."/>
-                                    </StackPanel>
-                                </CheckBox>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Karakter" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
-                                <Grid Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="12"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Sana nasıl hitap etsin" Style="{StaticResource Label}"/>
-                                        <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Varsayılan şehir" Style="{StaticResource Label}"/>
-                                        <TextBox Text="{Binding City, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Text="Kişilik" Style="{StaticResource Label}"/>
-                                <Border Style="{StaticResource SegmentTrack}" Margin="0,0,0,16">
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Esprili" IsChecked="{Binding PersonalityWitty}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Sade" IsChecked="{Binding PersonalityPlain}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Resmi" IsChecked="{Binding PersonalityFormal}"/>
-                                    </StackPanel>
-                                </Border>
-                                <TextBlock Text="Cevaptan sonra devam sorusu bekle" Style="{StaticResource Label}"/>
-                                <Border Style="{StaticResource SegmentTrack}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Kapalı" IsChecked="{Binding FollowUpOff}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="4 sn" IsChecked="{Binding FollowUpShort}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="7 sn" IsChecked="{Binding FollowUpLong}"/>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Ses" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
-                                <TextBlock Text="Motor" Style="{StaticResource Label}"/>
-                                <Border Style="{StaticResource SegmentTrack}" Margin="0,0,0,10">
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Piper · yerel, hızlı" IsChecked="{Binding EnginePiper}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="XTTS · klonlanabilir" IsChecked="{Binding EngineXtts}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Azure nöral" IsChecked="{Binding EngineAzure}"/>
-                                    </StackPanel>
-                                </Border>
-                                <TextBlock Style="{StaticResource Body}" Margin="0,0,0,16" FontSize="12">
-                                    Piper bu bilgisayarda anında konuşur ve ekran kartı kullanmaz. XTTS konuşurken ~1,8 GB VRAM kullanır ama istediğin bir sesi
-                                    6–15 saniyelik bir kayıttan klonlayabilir (settings.json: XttsVoiceSample).
-                                </TextBlock>
-
-                                <TextBlock Text="XTTS sesi" Style="{StaticResource Label}"/>
-                                <ListBox ItemsSource="{Binding Voices}" SelectedItem="{Binding SelectedVoice}" Background="Transparent" BorderThickness="0"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="-3,0,0,8" ItemContainerStyle="{StaticResource PillItem}">
-                                    <ListBox.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ListBox.ItemsPanel>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Label}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                                <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Command="{Binding PreviewVoiceCommand}" Margin="0,0,0,20">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE767;" FontSize="12" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
-                                        <TextBlock Text="Seçili sesi dinle"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <TextBlock Text="Azure (isteğe bağlı)" Style="{StaticResource Label}"/>
-                                <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,0,0,10">
-                                    Ücretsiz F0 katmanı ayda 500 bin karakter verir. Azure'a yalnızca okunacak cevap metni gider, mikrofon sesi gitmez.
-                                </TextBlock>
-                                <Grid Margin="0,0,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="12"/>
-                                        <ColumnDefinition Width="170"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Speech anahtarı" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
-                                        <PasswordBox x:Name="AzureKeyBox"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Bölge" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
-                                        <TextBox Text="{Binding AzureRegion, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                </Grid>
-                                <Border Style="{StaticResource SegmentTrack}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Emel (kadın)" IsChecked="{Binding VoiceEmel}"/>
-                                        <RadioButton Style="{StaticResource SegmentOption}" Content="Ahmet (erkek)" IsChecked="{Binding VoiceAhmet}"/>
-                                    </StackPanel>
-                                </Border>
-                                <TextBlock Text="{Binding EngineLabel, StringFormat='Şu an kullanılan: {0}'}" Style="{StaticResource Caption}" Margin="0,12,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="Mikrofon" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                                <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,0,0,12">
-                                    Otomatik'te bütün mikrofonlar dinlenir ve seni duyan seçilir; sanal cihazlar (ör. SteelSeries Sonar) sorun olmaz.
-                                </TextBlock>
-                                <ListBox ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}" Background="Transparent" BorderThickness="0"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="-3,0,0,0" ItemContainerStyle="{StaticResource PillItem}">
-                                    <ListBox.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ListBox.ItemsPanel>
-                                </ListBox>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
-                            <StackPanel>
-                                <TextBlock Text="Modeller ve bellek" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                                <TextBlock Text="{Binding ModelSummary}" Style="{StaticResource Body}" FontSize="12"/>
-                            </StackPanel>
-                        </Border>
-
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource AccentButton}" Content="Kaydet ve uygula" Command="{Binding SaveSettingsCommand}" Padding="18,9"/>
-                            <Button Style="{StaticResource GhostButton}" Content="settings.json" Command="{Binding OpenSettingsFileCommand}" Margin="10,0,0,0" Padding="14,9"/>
-                            <Button Style="{StaticResource GhostButton}" Content="Veri klasörü" Command="{Binding OpenDataFolderCommand}" Margin="10,0,0,0" Padding="14,9"/>
-                            <TextBlock Text="{Binding SavedMessage}" Foreground="{StaticResource CalmBrush}" VerticalAlignment="Center" Margin="14,0,0,0"/>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
+                <local:SettingsPage x:Name="SettingsView" Visibility="{Binding IsSettings, Converter={StaticResource Visible}}"/>
             </Grid>
         </Grid>
     </Grid>
