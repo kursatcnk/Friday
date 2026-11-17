@@ -60,6 +60,43 @@ public sealed partial class ChildProcessJob : IDisposable
     /// <summary>İşi kapatır; içindeki bütün süreçler hemen sonlanır.</summary>
     public void Dispose() => _handle.Dispose();
 
+    /// <summary>
+    /// Friday'in araç klasöründen (D:\Friday\tools) çalışan ama bu Friday'e ait olmayan süreçleri kapatır: önceki bir
+    /// sürümden ya da setup.ps1'den kalan bir Ollama, ona bağlı llama-server, Piper ya da XTTS. Açılışta bunlar
+    /// sahiplenilmez, kapatılıp temiz başlanır; kapanışta da son bir kez taranır. Böylece Friday kapalıyken
+    /// bilgisayarda Friday'e ait hiçbir şey çalışmaz. Kullanıcının kendi uygulamalarına dokunulmaz.
+    /// </summary>
+    /// <returns>Kapatılan süreç sayısı.</returns>
+    public static int KillStrays(string toolsFolder)
+    {
+        var root = Path.GetFullPath(toolsFolder).TrimEnd('\\') + "\\";
+        var killed = 0;
+        foreach (var name in new[] { "ollama", "llama-server", "piper", "python", "pythonw" })
+        {
+            foreach (var process in Process.GetProcessesByName(name))
+            {
+                using (process)
+                {
+                    try
+                    {
+                        if (process.MainModule?.FileName is { } file && file.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                        {
+                            process.Kill(entireProcessTree: true);
+                            process.WaitForExit(TimeSpan.FromSeconds(3));
+                            killed++;
+                        }
+                    }
+                    catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
+                    {
+                        // Başka kullanıcının ya da korumalı bir sürecin yolu okunamaz; onlar zaten Friday'in değildir.
+                    }
+                }
+            }
+        }
+
+        return killed;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct BasicLimit
     {

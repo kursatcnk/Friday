@@ -37,7 +37,8 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
-        for (var attempt = 0; attempt < 120; attempt++)
+        // Ollama portu hemen açar ama ekran kartı taraması bitene kadar cevap vermez; soğuk açılışta bu 10–20 sn sürebilir.
+        for (var attempt = 0; attempt < 360; attempt++)
         {
             if (_process.HasExited)
             {
@@ -52,7 +53,7 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
             await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         }
 
-        throw new TimeoutException("Ollama 30 saniyede hazır olmadı.");
+        throw new TimeoutException("Ollama 90 saniyede hazır olmadı.");
     }
 
     /// <summary>
@@ -150,6 +151,12 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
         start.Environment["HOME"] = paths.OllamaHome;
         start.Environment["TMP"] = paths.Temp;
         start.Environment["TEMP"] = paths.Temp;
+        // NVIDIA sürücüsü varsa model CUDA ile çalışır; Vulkan taraması (tümleşik GPU'larda ~8 sn) atlanır ve açılış kısalır.
+        if (File.Exists(Path.Combine(Environment.SystemDirectory, "nvcuda.dll")))
+        {
+            start.Environment["OLLAMA_VULKAN"] = "0";
+        }
+
         return start;
     }
 

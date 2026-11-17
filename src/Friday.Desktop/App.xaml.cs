@@ -20,6 +20,7 @@ public sealed partial class App : Application, IDisposable
     private CancellationTokenSource? _startup;
     private EventWaitHandle? _showSignal;
     private RegisteredWaitHandle? _showWait;
+    private FridayPaths? _paths;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -80,6 +81,13 @@ public sealed partial class App : Application, IDisposable
 
     private void Start(FridayPaths paths)
     {
+        _paths = paths;
+        // Önceki bir oturumdan kalan sahipsiz sunucular sahiplenilmez; kapatılır ve her şey bu Friday'in işine bağlı başlar.
+        if (ChildProcessJob.KillStrays(paths.Tools) is > 0 and var strays)
+        {
+            FridayLog.Warn($"Önceki oturumdan kalan {strays} yardımcı süreç kapatıldı");
+        }
+
         var store = new JsonSettingsStore(paths);
         var settings = store.Load();
         var memory = new MemoryStore(Path.Combine(paths.Data, "memory.json"));
@@ -218,10 +226,31 @@ public sealed partial class App : Application, IDisposable
     private static void Open(string path) =>
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
 
+    /// <summary>
+    /// Kapanış kesindir: arayüz kapanır, asistan sunucularını düzgünce kapatır (en fazla 5 sn), iş nesnesi kalan her
+    /// alt süreci öldürür, araç klasörü son kez taranır ve süreç Environment.Exit ile biter. Arkada açık kalan bir
+    /// iş parçacığı Friday'i hayatta tutamaz; RAM'in ve VRAM'in tamamı Windows'a döner.
+    /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
+        var assistant = _assistant;
+        _assistant = null;
         Dispose();
+        var graceful = Task.Run(() => assistant?.Dispose());
+        if (!graceful.Wait(TimeSpan.FromSeconds(5)))
+        {
+            FridayLog.Warn("Asistan 5 sn içinde kapanmadı; yardımcı süreçler zorla kapatılıyor");
+        }
+
+        ChildProcessJob.Shared.Dispose();
+        if (_paths is not null && ChildProcessJob.KillStrays(_paths.Tools) is > 0 and var strays)
+        {
+            FridayLog.Info($"Kapanışta {strays} yardımcı süreç son taramada kapatıldı");
+        }
+
+        FridayLog.Info("Friday kapandı");
         base.OnExit(e);
+        Environment.Exit(e.ApplicationExitCode);
     }
 
     public void Dispose()
