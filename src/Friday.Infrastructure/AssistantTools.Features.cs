@@ -177,11 +177,22 @@ public sealed partial class AssistantTools
                 RoutineAction.Briefing => await BriefingAsync(cancellationToken).ConfigureAwait(false),
                 RoutineAction.LinguaFlow => await LinguaFlowAsync("baslat", cancellationToken).ConfigureAwait(false),
                 RoutineAction.Rhythm => RhythmStep(step.Value),
+                RoutineAction.Volume => SystemVolume.Apply(Math.Clamp(step.Number, 0, 100)),
+                RoutineAction.Wait => await WaitAsync(step.Number, cancellationToken).ConfigureAwait(false),
+                RoutineAction.Remind => step.Value.Split('|', 2, StringSplitOptions.TrimEntries) is [var when, var what]
+                    ? ReminderCommand("kur", when, what)
+                    : "",
                 _ => ""
             });
         }
 
         return $"'{match.Key}' rutini çalıştı. " + string.Join(" ", results);
+    }
+
+    private static async Task<string> WaitAsync(int seconds, CancellationToken cancellationToken)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(seconds, 0, 60)), cancellationToken).ConfigureAwait(false);
+        return "";
     }
 
     private async Task<string> BriefingAsync(CancellationToken cancellationToken)
@@ -225,8 +236,18 @@ public sealed partial class AssistantTools
         return text.ToString();
     }
 
-    private string History(string day)
+    private string History(string day, string query = "")
     {
+        if (query.Trim().Length > 0)
+        {
+            var hits = history.Search(query, 8);
+            ledger.Record(DataFlow.Local, "Geçmiş", $"Sohbetlerde \"{query.Trim()}\" arandı");
+            return hits.Count == 0
+                ? $"Geçmiş sohbetlerde '{query.Trim()}' geçmiyor."
+                : $"'{query.Trim()}' geçen sohbetler:\n" + string.Join('\n', hits.Select(hit =>
+                    $"{hit.Chat.Updated.ToString("d MMMM", Turkish)} · {hit.Chat.Title}: {hit.Snippet}"));
+        }
+
         var date = Simplify(day) switch
         {
             "" or "bugun" => history.Today,

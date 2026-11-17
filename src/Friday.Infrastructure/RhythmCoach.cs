@@ -99,6 +99,16 @@ public sealed partial class RhythmCoach : IDisposable
         }
     }
 
+    /// <summary>Panelin canlı geri sayımı için o anki durum.</summary>
+    public RhythmSnapshot Snapshot()
+    {
+        lock (_gate)
+        {
+            return new RhythmSnapshot(Enabled, _tracker.StretchStart, _tracker.FocusStart, _tracker.FocusEnd, _tracker.BreakStart,
+                _tracker.BreakEvery, _tracker.BreakLength, _tracker.IsAway, _tracker.SnoozedUntil);
+        }
+    }
+
     public void Apply(FridaySettings settings)
     {
         lock (_gate)
@@ -133,8 +143,31 @@ public sealed partial class RhythmCoach : IDisposable
             _where = CurrentWindow();
             _tracker.StartBreak(DateTime.Now);
             Save();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        lock (_gate)
+        {
             return new QuickReply(RhythmCoachLines.BreakStarted(_tracker.BreakLength));
         }
+    }
+
+    /// <summary>"Moladan döndüm": mola erken biter, kaldığın yer söylenir.</summary>
+    public QuickReply EndBreak()
+    {
+        TimeSpan spent;
+        string? where;
+        lock (_gate)
+        {
+            spent = _tracker.EndBreak(DateTime.Now);
+            where = _where;
+            Save();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(spent <= TimeSpan.Zero
+            ? "Şu an bir molada değilsin."
+            : $"Hoş geldin, {RhythmCoachLines.Span(spent)} mola verdin." + (where is null ? "" : $" Kaldığın yer: {where}."));
     }
 
     public QuickReply StartFocus(double minutes)

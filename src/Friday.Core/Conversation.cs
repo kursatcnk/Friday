@@ -28,24 +28,45 @@ public sealed class ConversationMemory
 
     private readonly List<ChatMessage> _messages = [];
     private readonly TimeProvider _clock;
-    private readonly TimeSpan _expiry;
     private DateTimeOffset _lastActivity;
 
     public ConversationMemory(TimeSpan expiry, TimeProvider? clock = null)
     {
-        _expiry = expiry;
+        Expiry = expiry;
         _clock = clock ?? TimeProvider.System;
         _lastActivity = _clock.GetUtcNow();
     }
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
 
+    /// <summary>Bu kadar konuşulmazsa sohbet biter (ayarlardan değişebilir).</summary>
+    public TimeSpan Expiry { get; set; }
+
     /// <summary>Yeni bir tur başlarken çağrılır; hafıza süresi dolduysa eski mesajları siler.</summary>
-    public void BeginTurn()
+    /// <returns>Süre dolmuşsa true: önceki konuşma bitti, yeni bir sohbet başlıyor.</returns>
+    public bool BeginTurn()
     {
-        if (_clock.GetUtcNow() - _lastActivity > _expiry)
+        var expired = _clock.GetUtcNow() - _lastActivity > Expiry;
+        if (expired)
         {
             _messages.Clear();
+        }
+
+        _lastActivity = _clock.GetUtcNow();
+        return expired;
+    }
+
+    /// <summary>
+    /// Listeden açılan eski bir sohbetin son turlarını yükler; devam sorusu ("peki yarın?") o sohbete göre anlaşılır.
+    /// Süre bu andan itibaren yeniden sayılır.
+    /// </summary>
+    public void Load(IEnumerable<ConversationTurn> turns, int maxTurns = 6)
+    {
+        _messages.Clear();
+        foreach (var turn in turns.TakeLast(maxTurns))
+        {
+            _messages.Add(new ChatMessage(ChatRole.User, turn.User));
+            _messages.Add(new ChatMessage(ChatRole.Assistant, turn.Assistant));
         }
 
         _lastActivity = _clock.GetUtcNow();

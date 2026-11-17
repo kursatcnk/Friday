@@ -4,7 +4,7 @@ namespace Friday.Core;
 public sealed class FridaySettings
 {
     /// <summary>En güncel ayar sürümü. Eski dosyalar açılışta bu sürüme taşınır (yeni rutinler, yeni varsayılanlar).</summary>
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     /// <summary>Dosyanın ayar sürümü; sürümsüz eski dosyalar 0 sayılır.</summary>
     public int SettingsVersion { get; set; }
@@ -15,6 +15,12 @@ public sealed class FridaySettings
     public string UserName { get; set; } = "";
 
     public string Hotkey { get; set; } = "Ctrl+Alt+F";
+
+    /// <summary>Hızlı komut kutusu: her yerden açılan küçük bir yazı kutusu (Raycast/Spotlight gibi). Boşsa kapalıdır.</summary>
+    public string QuickAskHotkey { get; set; } = "Ctrl+Alt+Space";
+
+    /// <summary>Windows açılınca Friday tepside sessizce başlar (yalnızca kullanıcının kayıt defterindeki Run girdisi).</summary>
+    public bool StartWithWindows { get; set; }
 
     /// <summary>
     /// Uyandırma kelimesi: "hey_friday" ("Hey Friday") deyince kısayola basılmış gibi dinlemeye başlar. Boş bırakılırsa kapalıdır ve
@@ -117,8 +123,11 @@ public sealed class FridaySettings
 
     public int MaxRecordSeconds { get; set; } = 20;
 
-    /// <summary>Bu süre konuşulmazsa önceki sohbet unutulur.</summary>
-    public int ConversationMemoryMinutes { get; set; } = 10;
+    /// <summary>
+    /// Bu kadar dakika konuşulmazsa sohbet biter: sonraki soru yeni bir sohbet olarak başlar ve eski konuşma modele
+    /// taşınmaz. Eski sohbetler panelde durur, açılıp kaldığı yerden sürdürülebilir.
+    /// </summary>
+    public int ConversationMemoryMinutes { get; set; } = 30;
 
     /// <summary>"esprili" (varsayılan), "sade" ya da "resmi".</summary>
     public string Personality { get; set; } = "esprili";
@@ -126,14 +135,15 @@ public sealed class FridaySettings
     /// <summary>Cevap bittikten sonra mikrofon bu kadar saniye açık kalır; tuşa basmadan devam sorusu sorulur. 0 kapatır.</summary>
     public int FollowUpSeconds { get; set; } = 4;
 
-    /// <summary>Sohbetler gün gün D:\Friday\data\history altında tutulur ("Bugün ne konuştuk?" için).</summary>
+    /// <summary>Sohbetler D:\Friday\data\chats altında tutulur (sohbet listesi, arama, "Bugün ne konuştuk?").</summary>
     public bool KeepHistory { get; set; } = true;
 
     /// <summary>"Bu videoyu çevir" komutunun açacağı LinguaFlow.</summary>
     public string LinguaFlowPath { get; set; } = @"E:\Github\LinguaFlow\artifacts\publish\win-x64\LinguaFlow.Desktop.exe";
 
     /// <summary>
-    /// Sesli rutinler. Her adım "tür:değer" biçimindedir: uygulama, site, ara, medya, soyle, ozet, linguaflow.
+    /// Sesli rutinler. Her adım "tür:değer" biçimindedir: uygulama, site, ara, medya, ses, soyle, ozet, ritim, hatirlat,
+    /// bekle, linguaflow. Paneldeki Rutinler sayfasından da eklenip düzenlenebilir.
     /// </summary>
     public Dictionary<string, List<string>> Routines { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {

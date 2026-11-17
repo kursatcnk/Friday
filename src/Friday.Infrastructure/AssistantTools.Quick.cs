@@ -369,6 +369,16 @@ public sealed partial class AssistantTools
                 case RoutineAction.Say:
                     said.Add(step.Value);
                     break;
+                case RoutineAction.Volume:
+                    SystemVolume.Apply(Math.Clamp(step.Number, 0, 100));
+                    break;
+                case RoutineAction.Wait:
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(step.Number, 0, 60)), cancellationToken).ConfigureAwait(false);
+                    break;
+                case RoutineAction.Remind:
+                    var remind = step.Value.Split('|', 2, StringSplitOptions.TrimEntries);
+                    said.Add(ReminderCommand("kur", remind[0], remind[1]));
+                    break;
             }
         }
 
@@ -395,6 +405,7 @@ public sealed partial class AssistantTools
         var reply = Simplify(action) switch
         {
             "mola" => coach.StartBreak(),
+            "molabitir" => coach.EndBreak(),
             "odak" => coach.StartFocus(minutes),
             "odakbitir" => coach.EndFocus(),
             "ertele" => coach.Snooze(minutes),

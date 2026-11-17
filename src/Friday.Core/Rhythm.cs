@@ -95,6 +95,9 @@ public sealed class RhythmTracker
 
     public bool IsAway => _awaySince is not null;
 
+    /// <summary>Şu anki aralıksız çalışmanın başlangıcı; çalışılmıyorsa null.</summary>
+    public DateTime? StretchStart => _stretchStart;
+
     public TimeSpan CurrentStretch(DateTime now) => _stretchStart is { } start && now > start ? now - start : TimeSpan.Zero;
 
     /// <summary>Her yoklamada (ör. 20 sn'de bir) çağrılır; gereken olayları döndürür.</summary>
@@ -198,6 +201,20 @@ public sealed class RhythmTracker
         BreakStart = now;
         LastSuggestion = now;
         CloseStretch(now);
+    }
+
+    /// <summary>Molayı erken bitirir ("moladan döndüm"); süre yeniden sayılmaya başlar.</summary>
+    /// <returns>Molada geçen süre; mola yoksa sıfır.</returns>
+    public TimeSpan EndBreak(DateTime now)
+    {
+        if (BreakStart is not { } started)
+        {
+            return TimeSpan.Zero;
+        }
+
+        BreakStart = null;
+        _stretchStart = now;
+        return now - started;
     }
 
     public void StartFocus(DateTime now, TimeSpan length)

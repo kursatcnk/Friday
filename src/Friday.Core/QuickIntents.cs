@@ -41,7 +41,8 @@ public static partial class QuickIntents
             return null;
         }
 
-        return Video(sentence)
+        return Chat(sentence)
+            ?? Video(sentence)
             ?? Clock(sentence)
             ?? Weather(sentence)
             ?? Currency(sentence)
@@ -120,6 +121,12 @@ public static partial class QuickIntents
 
     private static QuickCommand Command(string tool, params (string Key, string Value)[] arguments) =>
         new(tool, arguments.Where(pair => pair.Value.Length > 0).ToDictionary(pair => pair.Key, pair => pair.Value));
+
+    /// <summary>"yeni sohbet", "konuyu değiştirelim" → yeni sohbet; "sohbeti temizle" → açık sohbeti sil.</summary>
+    private static QuickCommand? Chat(string sentence) =>
+        NewChat().IsMatch(sentence) ? Command("sohbet", ("islem", "yeni"))
+        : ClearChat().IsMatch(sentence) ? Command("sohbet", ("islem", "temizle"))
+        : null;
 
     private static QuickCommand? Video(string sentence)
     {
@@ -278,6 +285,7 @@ public static partial class QuickIntents
         var action = sentence switch
         {
             _ when FocusEnd().IsMatch(sentence) => "odak_bitir",
+            _ when BreakEnd().IsMatch(sentence) => "mola_bitir",
             _ when BreakRequest().IsMatch(sentence) => "mola",
             _ when BreathingRequest().IsMatch(sentence) => "nefes",
             _ when StretchRequest().IsMatch(sentence) => "esneme",
@@ -293,9 +301,16 @@ public static partial class QuickIntents
     private static QuickCommand? Routine(string sentence, IEnumerable<string> routines)
     {
         var opened = OpenObject().Match(sentence) is { Success: true } open ? open.Groups["x"].Value : null;
+        var named = RoutineRun().Match(sentence) is { Success: true } run ? run.Groups["x"].Value : null;
         foreach (var routine in routines)
         {
             var name = routine.ToLower(Turkish);
+            // "çalışma modu rutinini çalıştır", "sabah rutini aç" (panelin Çalıştır düğmesi de böyle gönderir).
+            if (named == name)
+            {
+                return Command("rutin", ("ad", routine));
+            }
+
             // "mola", "günaydın" tek başına; "çalışma modunu aç" → "çalışma modu"(nu).
             if (sentence == name || (opened is not null && (opened == name || (opened.StartsWith(name, StringComparison.Ordinal) && opened.Length - name.Length <= 3))))
             {
@@ -377,6 +392,18 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:odak(?: modu(?:nu)?)?|odağı) (?:bitir|kapat|durdur|sonlandır)$")]
     private static partial Regex FocusEnd();
+
+    [GeneratedRegex(@"^(?:molayı (?:bitir|sonlandır|kapat)|moladan (?:döndüm|geldim)|mola bitti|(?:ben )?geri döndüm)$")]
+    private static partial Regex BreakEnd();
+
+    [GeneratedRegex(@"^yeni (?:bir )?(?:sohbet|konuşma)(?: aç)?$|^(?:sohbeti|konuşmayı) (?:sıfırla|yenile|baştan aç)$|^konuyu değiştir(?:elim)?$|^(?:hadi )?baştan başlayalım$")]
+    private static partial Regex NewChat();
+
+    [GeneratedRegex(@"^(?:bu )?(?:sohbeti|konuşmayı) (?:temizle|sil)$")]
+    private static partial Regex ClearChat();
+
+    [GeneratedRegex(@"^(?<x>.+?) rutin(?:ini|i)? (?:çalıştır|aç)$")]
+    private static partial Regex RoutineRun();
 
     [GeneratedRegex(@"^(?:bir )?mola(?: ver(?:elim|eyim|iyorum|mek istiyorum)?| zamanı)?$|^molaya (?:çıkıyorum|çıkalım|gidiyorum)$")]
     private static partial Regex BreakRequest();

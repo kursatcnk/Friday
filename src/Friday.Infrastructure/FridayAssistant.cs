@@ -39,7 +39,7 @@ public sealed class FridayAssistant : IDisposable
     private readonly AssistantTools _tools;
     private readonly MemoryStore _longTermMemory;
     private readonly PrivacyLedger _ledger;
-    private readonly ConversationLog _history;
+    private readonly ChatStore _chats;
     private readonly WakeWordListener _wakeWord;
     private readonly RhythmCoach _rhythm;
     private readonly object _gate = new();
@@ -54,6 +54,9 @@ public sealed class FridayAssistant : IDisposable
     private string? _wakeDevice;
     private CancellationTokenSource? _announcement;
 
+    /// <summary>Başka bir sohbete geçildi; bir sonraki turda sohbet hafızası bu turlarla yeniden kurulur.</summary>
+    private IReadOnlyList<ConversationTurn>? _reload;
+
     public FridayAssistant(
         FridayPaths paths,
         MicrophoneRecorder microphone,
@@ -64,7 +67,7 @@ public sealed class FridayAssistant : IDisposable
         AssistantTools tools,
         MemoryStore longTermMemory,
         PrivacyLedger ledger,
-        ConversationLog history,
+        ChatStore chats,
         WakeWordListener wakeWord,
         RhythmCoach rhythm)
     {
@@ -77,7 +80,9 @@ public sealed class FridayAssistant : IDisposable
         _tools = tools;
         _longTermMemory = longTermMemory;
         _ledger = ledger;
-        _history = history;
+        _chats = chats;
+        // Panelden başka bir sohbet açıldı, yeni sohbete geçildi ya da açık sohbet silindi: model o sohbetle devam eder.
+        _chats.CurrentChanged += (_, _) => Volatile.Write(ref _reload, _chats.CurrentTurns);
         _wakeWord = wakeWord;
         _wakeWord.Detected += (_, device) => OnWake(device);
         _wakeWord.Problem += (_, problem) => FridayLog.Warn($"Uyandırma kelimesi: {problem}");
@@ -98,6 +103,8 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Panelden ayarlar kaydedilince ses motorunu ve uyandırma kelimesini yeni ayarlarla kurar.</summary>
     public void ApplySettings()
     {
+        _memory.Expiry = TimeSpan.FromMinutes(Math.Max(1, _settings.ConversationMemoryMinutes));
+        _chat.KeepAlive = $"{Math.Max(1, _settings.GpuIdleMinutes)}m";
         ReconfigureVoice();
         StartWakeWord();
         _rhythm.Apply(_settings);
@@ -499,16 +506,59 @@ public sealed class FridayAssistant : IDisposable
         return reply.Text;
     }
 
+    /// <summary>
+    /// Panelden bir sohbet açar (null: yeni, boş sohbet). Konuşuyorsa susar; sonraki soru o sohbetin bağlamıyla cevaplanır.
+    /// </summary>
+    public void OpenChat(string? id)
+    {
+        lock (_gate)
+        {
+            if (State is AssistantState.Thinking or AssistantState.Speaking)
+            {
+                _turn?.Cancel();
+                _speaker.Stop();
+            }
+        }
+
+        if (id is null)
+        {
+            _chats.NewChat();
+        }
+        else
+        {
+            _chats.Open(id);
+        }
+    }
+
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
     public async Task AskAsync(string text, CancellationToken cancellationToken)
     {
+        if (Interlocked.Exchange(ref _reload, null) is { } turns)
+        {
+            _memory.Load(turns);
+        }
+        else if (_memory.BeginTurn())
+        {
+            // Uzun bir sessizlikten sonra gelen soru yeni bir sohbettir; panel önce temizlenir, sonra soru görünür.
+            _chats.NewChat();
+            Volatile.Write(ref _reload, null);
+        }
+
+        var command = QuickIntents.Match(text, _settings.Routines.Keys);
+        if (command is { Tool: "sohbet" })
+        {
+            ChatCommand(command.Arguments.TryGetValue("islem", out var action) ? action : "yeni");
+            await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
+            Report(AssistantState.Idle, ReadyText);
+            return;
+        }
+
         UserSaid?.Invoke(this, text);
         Report(AssistantState.Thinking, "Düşünüyor…");
-        _memory.BeginTurn();
         _tools.LastUserText = text;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context));
-        var reply = QuickIntents.Match(text, _settings.Routines.Keys) is { } quick
+        var reply = command is { } quick
             ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
             : null;
         if (reply is null)
@@ -521,12 +571,38 @@ public sealed class FridayAssistant : IDisposable
         _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {
-            _history.Append(text, reply);
+            _chats.Append(text, reply);
         }
 
         await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
         RecordOnlineSpeech();
         Report(AssistantState.Idle, ReadyText);
+    }
+
+    /// <summary>"Yeni sohbet" ve "sohbeti temizle": sohbete yazılmaz, yalnızca söylenir.</summary>
+    private void ChatCommand(string action)
+    {
+        string reply;
+        if (action == "temizle" && _chats.CurrentId is { } current)
+        {
+            _chats.Delete(current);
+            reply = "Bu sohbeti sildim, temiz bir sayfa açtım.";
+        }
+        else if (action == "temizle")
+        {
+            reply = "Sohbet zaten boş.";
+        }
+        else
+        {
+            _chats.NewChat();
+            reply = "Yeni bir sohbet açtım. Dinliyorum.";
+        }
+
+        _memory.Clear();
+        Volatile.Write(ref _reload, null);
+        _ledger.Record(DataFlow.Local, "Sohbet", action == "temizle" ? "Açık sohbet silindi" : "Yeni sohbet açıldı");
+        Report(AssistantState.Speaking, reply);
+        Say(reply);
     }
 
     private async Task<string> AnswerAsync(string question, CancellationToken cancellationToken)

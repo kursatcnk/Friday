@@ -45,24 +45,29 @@ public sealed class JsonSettingsStore(FridayPaths paths)
     }
 
     /// <summary>
-    /// Sürüm 2: uyandırma kelimesi Friday'in kendi adıyla "Hey Friday" olur (eski varsayılan "hey_jarvis" idi) ve
-    /// "toplantı modu" ile "iyi geceler" rutinleri eklenir. Kullanıcının kendi değiştirdiği değerlere dokunulmaz.
+    /// Eski ayar dosyalarını sırayla günceller; kullanıcının kendi değiştirdiği değerlere dokunulmaz.
+    /// Sürüm 2: uyandırma kelimesi "Hey Friday" olur (eski varsayılan "hey_jarvis") ve "toplantı modu" ile "iyi geceler"
+    /// rutinleri eklenir. Sürüm 3: sohbetler ayrı sohbetler halinde tutulur; eski 10 dakikalık varsayılan, sohbetlerin
+    /// her soruda bölünmemesi için 30 dakika olur.
     /// </summary>
-    private static void Migrate(FridaySettings settings)
+    internal static void Migrate(FridaySettings settings)
     {
-        if (settings.SettingsVersion >= FridaySettings.CurrentVersion)
+        if (settings.SettingsVersion < 2)
         {
-            return;
+            if (settings.WakeWord == "hey_jarvis")
+            {
+                settings.WakeWord = "hey_friday";
+            }
+
+            foreach (var (name, steps) in new FridaySettings().Routines)
+            {
+                settings.Routines.TryAdd(name, steps);
+            }
         }
 
-        if (settings.WakeWord == "hey_jarvis")
+        if (settings.SettingsVersion < 3 && settings.ConversationMemoryMinutes == 10)
         {
-            settings.WakeWord = "hey_friday";
-        }
-
-        foreach (var (name, steps) in new FridaySettings().Routines)
-        {
-            settings.Routines.TryAdd(name, steps);
+            settings.ConversationMemoryMinutes = 30;
         }
 
         settings.SettingsVersion = FridaySettings.CurrentVersion;
