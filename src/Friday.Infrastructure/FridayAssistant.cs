@@ -40,6 +40,7 @@ public sealed class FridayAssistant : IDisposable
     private readonly MemoryStore _longTermMemory;
     private readonly PrivacyLedger _ledger;
     private readonly ConversationLog _history;
+    private readonly WakeWordListener _wakeWord;
     private readonly object _gate = new();
 
     private FridaySettings _settings = new();
@@ -49,6 +50,7 @@ public sealed class FridayAssistant : IDisposable
     private Task _currentTurn = Task.CompletedTask;
     private Timer? _idleTimer;
     private OpenWindow? _activeWindow;
+    private string? _wakeDevice;
 
     public FridayAssistant(
         FridayPaths paths,
@@ -60,7 +62,8 @@ public sealed class FridayAssistant : IDisposable
         AssistantTools tools,
         MemoryStore longTermMemory,
         PrivacyLedger ledger,
-        ConversationLog history)
+        ConversationLog history,
+        WakeWordListener wakeWord)
     {
         _paths = paths;
         _microphone = microphone;
@@ -72,6 +75,9 @@ public sealed class FridayAssistant : IDisposable
         _longTermMemory = longTermMemory;
         _ledger = ledger;
         _history = history;
+        _wakeWord = wakeWord;
+        _wakeWord.Detected += (_, device) => OnWake(device);
+        _wakeWord.Problem += (_, problem) => FridayLog.Warn($"Uyandırma kelimesi: {problem}");
         _tools.TimerElapsed += (_, message) => Announce(message);
         _speaker.FellBack += (_, reason) =>
             _ledger.Record(DataFlow.Local, "Ses", $"Azure kullanılamadı, yerel Piper'a geçildi ({reason})");
@@ -79,6 +85,46 @@ public sealed class FridayAssistant : IDisposable
 
     /// <summary>Kullanılan ses motoru (ör. "Azure nöral ses (Emel)").</summary>
     public string VoiceLabel => _speaker.EngineLabel;
+
+    /// <summary>Panelden ayarlar kaydedilince ses motorunu ve uyandırma kelimesini yeni ayarlarla kurar.</summary>
+    public void ApplySettings()
+    {
+        ReconfigureVoice();
+        StartWakeWord();
+    }
+
+    /// <summary>"Hey Jarvis" açıksa bekleme metni bunu hatırlatır.</summary>
+    private string ReadyText => _wakeWord.IsRunning ? $"Hazır · \"{WakeWordLabel}\" de ya da {_settings.Hotkey}" : "Hazır";
+
+    private string WakeWordLabel =>
+        CultureInfo.GetCultureInfo("tr-TR").TextInfo.ToTitleCase(_settings.WakeWord.Replace('_', ' '));
+
+    /// <summary>Uyandırma kelimesini ayara göre açar, yeniden başlatır ya da kapatır.</summary>
+    private void StartWakeWord()
+    {
+        if (_settings.WakeWord.Length == 0)
+        {
+            _wakeWord.Stop();
+            return;
+        }
+
+        if (!WakeWordListener.IsInstalled(_paths.WakeWordModels, _settings.WakeWord))
+        {
+            FridayLog.Warn($"Uyandırma kelimesi modeli yok: {_paths.WakeWordModels}. setup.ps1'i çalıştırın.");
+            return;
+        }
+
+        try
+        {
+            _wakeWord.Start(_settings.WakeWord, _settings.WakeWordThreshold, _settings.MicrophoneDevice);
+            _ledger.Record(DataFlow.Local, "Mikrofon",
+                $"\"{WakeWordLabel}\" bekleniyor · ses 80 ms'lik parçalar halinde yalnızca bellekte işlenip atılıyor, kaydedilmiyor");
+        }
+        catch (Exception exception) when (exception is Microsoft.ML.OnnxRuntime.OnnxRuntimeException or IOException or InvalidOperationException)
+        {
+            FridayLog.Error("Uyandırma kelimesi başlatılamadı", exception);
+        }
+    }
 
     /// <summary>Panelden ses ayarları değişince ses motorunu yeni ayarlarla kurar.</summary>
     public void ReconfigureVoice()
@@ -171,7 +217,8 @@ public sealed class FridayAssistant : IDisposable
             _speaker.WarmUpAsync(cancellationToken)).ConfigureAwait(false);
 
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
-        Report(AssistantState.Idle, $"Hazır · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
+        StartWakeWord();
+        Report(AssistantState.Idle, $"{ReadyText} · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
     }
 
     /// <summary>
@@ -209,7 +256,27 @@ public sealed class FridayAssistant : IDisposable
         }
 
         await Task.WhenAll(_whisper.UnloadAsync(), _speaker.SleepAsync()).ConfigureAwait(false);
-        Report(AssistantState.Idle, "Hazır · modeller uykuda, GPU boş");
+        // Modellerden kalan yönetilen ve yerel bellek işletim sistemine geri verilir; boştayken Friday birkaç on MB'a iner.
+        MemoryTrim.Now();
+        Report(AssistantState.Idle, $"{ReadyText} · modeller uykuda");
+    }
+
+    /// <summary>
+    /// "Hey Jarvis" duyuldu: kısayola basılmış gibi davranır. Friday konuşuyor ya da düşünüyorsa sözü kesilir ve
+    /// dinlemeye geçilir; zaten dinliyorsa bir şey yapılmaz. Kayıt yalnızca kelimeyi duyan mikrofonla yapılır.
+    /// </summary>
+    private void OnWake(string device)
+    {
+        lock (_gate)
+        {
+            if (State is AssistantState.Starting or AssistantState.Listening)
+            {
+                return;
+            }
+        }
+
+        FridayLog.Info($"Uyandırma kelimesi duyuldu ({device})");
+        StartTurn(text: null, device);
     }
 
     /// <summary>
@@ -239,7 +306,7 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
-    private void StartTurn(string? text)
+    private void StartTurn(string? text, string? device = null)
     {
         lock (_gate)
         {
@@ -247,6 +314,8 @@ public sealed class FridayAssistant : IDisposable
             {
                 return;
             }
+
+            _wakeDevice = device;
 
             if (State is AssistantState.Thinking or AssistantState.Speaking or AssistantState.Listening)
             {
@@ -309,6 +378,7 @@ public sealed class FridayAssistant : IDisposable
         }
         catch (Exception exception)
         {
+            FridayLog.Error("Tur yarıda kaldı", exception);
             Report(AssistantState.Error, exception.Message);
         }
     }
@@ -321,7 +391,7 @@ public sealed class FridayAssistant : IDisposable
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
         var timeout = followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout;
-        var audio = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken).ConfigureAwait(false);
+        var audio = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice).ConfigureAwait(false);
         AudioCues.PlayDone();
         var turkish = CultureInfo.GetCultureInfo("tr-TR");
         _ledger.Record(DataFlow.Local, "Mikrofon",
@@ -334,7 +404,7 @@ public sealed class FridayAssistant : IDisposable
             var hint = _microphone.LastPeak < 0.001f
                 ? $"{_microphone.LastDeviceName} hiç ses vermiyor; Ayarlar'dan mikrofonu seç."
                 : "Bir şey duymadım.";
-            Report(AssistantState.Idle, followUp ? "Hazır" : hint);
+            Report(AssistantState.Idle, followUp ? ReadyText : hint);
             return null;
         }
 
@@ -377,9 +447,18 @@ public sealed class FridayAssistant : IDisposable
         _tools.LastUserText = text;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context));
-        var reply = QuickIntents.Match(text) is { } quick
-            ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
-            : await AnswerAsync(cancellationToken).ConfigureAwait(false);
+        string reply;
+        if (QuickIntents.Match(text) is { } quick)
+        {
+            reply = await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            // Ollama bir sebeple kapandıysa (çökme, elle kapatma) sessizce yeniden başlatılır; soru boşa gitmez.
+            await _ollama.EnsureRunningAsync(_settings.OllamaPort, cancellationToken).ConfigureAwait(false);
+            reply = await AnswerAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {
@@ -388,7 +467,7 @@ public sealed class FridayAssistant : IDisposable
 
         await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
         RecordOnlineSpeech();
-        Report(AssistantState.Idle, "Hazır");
+        Report(AssistantState.Idle, ReadyText);
     }
 
     private async Task<string> AnswerAsync(CancellationToken cancellationToken)
@@ -543,7 +622,7 @@ public sealed class FridayAssistant : IDisposable
             _speaker.Speak(Pronunciation.Apply(SpokenText.Clean(message), _settings.Pronunciations));
             await _speaker.WaitUntilDoneAsync(CancellationToken.None).ConfigureAwait(false);
             RecordOnlineSpeech();
-            Report(AssistantState.Idle, "Hazır");
+            Report(AssistantState.Idle, ReadyText);
         });
     }
 
@@ -553,6 +632,9 @@ public sealed class FridayAssistant : IDisposable
         {
             State = state;
         }
+
+        // Friday kendisi dinlerken kelime aranmaz; kullanıcının sorusu onu yeniden tetiklemez ve işlemci boşta kalır.
+        _wakeWord.Suspended = state == AssistantState.Listening;
 
         // Her boşa düşüşte uyku sayacı yeniden başlar.
         if (state is AssistantState.Idle or AssistantState.Error)
@@ -566,6 +648,7 @@ public sealed class FridayAssistant : IDisposable
     public void Dispose()
     {
         _idleTimer?.Dispose();
+        _wakeWord.Dispose();
         _turn?.Cancel();
         _turn?.Dispose();
         _stopListening?.Dispose();

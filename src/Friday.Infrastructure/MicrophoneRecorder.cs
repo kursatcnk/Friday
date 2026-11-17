@@ -29,15 +29,17 @@ public sealed class MicrophoneRecorder
     /// <summary>Kaydı yapar ve konuşma yoksa boş dizi döndürür.</summary>
     /// <param name="noSpeechTimeout">Bu sürede konuşma başlamazsa mikrofon kapanır.</param>
     /// <param name="stopRequested">İptal edilirse kayıt o ana kadar duyulanla biter (kısayola ikinci basış).</param>
+    /// <param name="onlyDevice">Uyandırma kelimesini duyan mikrofon; verilirse yalnızca o açılır.</param>
     public async Task<float[]> RecordAsync(
-        FridaySettings settings, TimeSpan noSpeechTimeout, CancellationToken stopRequested, CancellationToken cancellationToken)
+        FridaySettings settings, TimeSpan noSpeechTimeout, CancellationToken stopRequested, CancellationToken cancellationToken,
+        string? onlyDevice = null)
     {
         if (WaveIn.DeviceCount == 0)
         {
             throw new InvalidOperationException("Mikrofon bulunamadı.");
         }
 
-        var devices = Devices(settings.MicrophoneDevice);
+        var devices = Devices(onlyDevice ?? settings.MicrophoneDevice);
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var gate = new object();
         Channel? lead = null;
@@ -138,7 +140,7 @@ public sealed class MicrophoneRecorder
     }
 
     /// <summary>Ayarda adı verilen mikrofon; yoksa bilgisayardaki bütün mikrofonlar.</summary>
-    private static List<int> Devices(string preference)
+    internal static List<int> Devices(string preference)
     {
         var all = Enumerable.Range(0, WaveIn.DeviceCount).ToList();
         if (string.IsNullOrWhiteSpace(preference))
@@ -172,7 +174,7 @@ public sealed class MicrophoneRecorder
     public static IReadOnlyList<string> DeviceNames() =>
         [.. Enumerable.Range(0, WaveIn.DeviceCount).Select(DeviceName)];
 
-    private static string DeviceName(int device) => WaveIn.GetCapabilities(device).ProductName.Trim();
+    internal static string DeviceName(int device) => WaveIn.GetCapabilities(device).ProductName.Trim();
 
     /// <summary>Tek bir mikrofonun kaydı, dedektörü ve en yüksek seviyesi.</summary>
     private sealed class Channel(int device, SpeechEndpointDetector detector) : IDisposable

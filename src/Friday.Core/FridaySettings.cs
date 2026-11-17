@@ -10,6 +10,16 @@ public sealed class FridaySettings
 
     public string Hotkey { get; set; } = "Ctrl+Alt+F";
 
+    /// <summary>
+    /// Uyandırma kelimesi: "hey_jarvis" deyince kısayola basılmış gibi dinlemeye başlar. Boş bırakılırsa kapalıdır ve
+    /// mikrofon yalnızca kısayolla açılır. Açıkken mikrofon sürekli açıktır ama ses 80 ms'lik parçalar halinde yalnızca
+    /// bellekte işlenip atılır; kaydedilmez, hiçbir yere gönderilmez.
+    /// </summary>
+    public string WakeWord { get; set; } = "hey_jarvis";
+
+    /// <summary>Uyandırma kelimesinin eşik puanı (0–1). Yanlışlıkla uyanıyorsa artır, duymuyorsa azalt.</summary>
+    public double WakeWordThreshold { get; set; } = 0.5;
+
     /// <summary>Whisper konuşma dili ("tr", "en" ya da "auto").</summary>
     public string Language { get; set; } = "tr";
 

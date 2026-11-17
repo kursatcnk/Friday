@@ -100,7 +100,8 @@ public sealed partial class App : Application, IDisposable
             new AssistantTools(_http, chat, memory, ledger, history),
             memory,
             ledger,
-            history);
+            history,
+            new WakeWordListener(paths.WakeWordModels));
 
         var panel = new PanelViewModel(settings, new PanelActions
         {
@@ -117,7 +118,7 @@ public sealed partial class App : Application, IDisposable
             Save = changed =>
             {
                 store.Save(changed);
-                assistant.ReconfigureVoice();
+                assistant.ApplySettings();
             }
         });
         var hud = new HudViewModel();
