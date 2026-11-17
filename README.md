@@ -1,6 +1,6 @@
 # Friday
 
-Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Jarvis"** deyince ya da kısayola basınca dinlemeye başlar, sen susunca durur. Uyandırma kelimesi, konuşma tanıma, anlama, düşünme ve konuşma tamamen bilgisayarında çalışır; API anahtarı, abonelik ya da internet gerekmez. Boşta beklerken toplam ~60 MB RAM ve tek çekirdeğin ~%2'sini kullanır.
+Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Friday"** deyince ya da kısayola basınca dinlemeye başlar, sen susunca durur. Uyandırma kelimesi, konuşma tanıma, anlama, düşünme ve konuşma tamamen bilgisayarında çalışır; API anahtarı, abonelik ya da internet gerekmez. Boşta beklerken toplam ~60 MB RAM ve tek çekirdeğin ~%2'sini kullanır.
 
 ![Friday konuşurken](docs/images/hud-speaking.png)
 
@@ -8,7 +8,12 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Jarvi
 
 | | |
 |---|---|
-| **"Hey Jarvis"** | Elin klavyede değilken seslenmen yeterli. Kelime [openWakeWord](https://github.com/dscripka/openWakeWord) ile bilgisayarında, işlemcide aranır; ses kaydedilmez. Ayarlardan kapatılır. |
+| **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
+| **Bugün ekranı** | Panel açılınca günün saatine göre selam, hava, yaklaşan hatırlatmalar ve tarihler, son notlar ve ritim özeti. İlk açılışta kısa bir tanışma: adın, şehrin, istersen başka bir yapay zekânın hafızası. |
+| **Hatırlatıcı** | "Yarın 9'da doktoru hatırlat", "akşam 8'de ilacımı hatırlat", "pazartesi 10:30'da toplantıyı hatırlat". Friday kapansa da kaybolmaz; kapalıyken kaçırılanları açılışta söyler. "Hatırlatmalarım neler?", "doktor hatırlatmasını iptal et". |
+| **Sesli notlar** | "Not al: süt ve ekmek", "notlarımı oku". Notlar D:\Friday\data\notes.md'de, Not Defteri'yle de açılır. |
+| **Hesap ve birimler** | "345 çarpı 12 kaç", "200'ün yüzde 18'i", "5 mil kaç kilometre", "30 derece kaç fahrenheit". Dil modeline gitmez, yanılmaz. |
+| **Gün sayacı** | "Yılbaşına kaç gün kaldı", "29 Ekim'e kaç gün var", "doğum günüme kaç gün kaldı" (hafızadan bulur). |
 | **Ekranını görür** | "Bu hata ne?", "Ekranımda ne var?" deyince aktif pencerenin görüntüsünü alır ve Gemma 4'ün görme yeteneğiyle bilgisayarında yorumlar. Görüntü diske yazılmaz. |
 | **Pano büyüsü** | Bir metni kopyala, "özetle", "İngilizceye çevir", "yazımını düzelt" ya da "resmileştir" de. Sonuç panoya geri konur; Ctrl+V ile yapıştırırsın. |
 | **Ritim koçu** | Kaç dakikadır aralıksız çalıştığını bilir; yazarken değil bir duraksamada, tam ekran oyun ya da film açık değilken mola önerir. Her seferinde başka bir öneri gelir: 20 saniye sayarak göz molası, rehberli esneme, su (içtiklerini sayar), uzun oturumda yürüyüş, gece geç saatte günü kapatma. "Nefes egzersizi" deyince seni sesli yönlendirir, "25 dakika odaklanacağım" deyince odak oturumu açar. |
@@ -18,13 +23,13 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Jarvi
 | **Hafızanı taşı** | ChatGPT'nin, Claude'un ya da Gemini'nin hafıza listesini .txt, .md ya da .json olarak içe aktar (ya da yapıştır); önizlemede seç, Friday zaten bildiklerini işaretler. Tersine, Friday'in hafızasını tek tıkla başka bir yapay zekâya yapıştırılacak bir mesaja ya da Markdown dosyasına çevir. |
 | **Dosya radarı** | "Dün indirdiğim PDF'i bul", "içinde fatura geçen Excel'i aç". Windows Arama dizinini kullanır. |
 | **Gizlilik defteri** | Mikrofonun ne zaman ve ne kadar açık kaldığı, neyin bilgisayarda kaldığı ve neyin dışarı çıktığı zaman çizelgesinde görünür. "Seni dinlemiyorum" iddiası denetlenebilir. |
-| **Rutinler** | "Çalışma modunu aç" deyince uygulamalar ve siteler açılır. "Günaydın" deyince tarih, hava, zamanlayıcılar ve yaklaşan hatırlatmalar okunur. |
+| **Rutinler** | "Çalışma modunu aç" deyince uygulamalar ve siteler açılır. "Günaydın" deyince tarih, hava ve yaklaşan hatırlatmalar okunur. "Toplantı modu" 45 dakikalık odak açar, "iyi geceler" günün özetini söyler. |
 | **"Bilgisayar neden yavaş?"** | İşlemci, bellek, disk ve ekran kartını ölçer; en çok kaynak yiyen uygulamaları söyler. |
-| **"Şu an ne çalıyor?"** | Spotify ya da tarayıcıdaki YouTube'da çalan şarkıyı Windows'tan okur; müziği durdurur ya da geçer. |
+| **"Şu an ne çalıyor?"** | Spotify ya da tarayıcıdaki YouTube'da çalan şarkıyı Windows'tan okur; müziği durdurur ya da geçer. "Sesi yüzde 30 yap" ile sesi tam ayarlar. |
 | **"Bugün ne konuştuk?"** | Günlük sohbet geçmişini bilgisayarında tutar ve özetler. |
 | **LinguaFlow bağlantısı** | "Bu videoyu çevir" deyince [LinguaFlow](https://github.com/kursatcnk/LinguaFlow) açılır ve canlı çeviri başlar. |
 | **Devam sorusu** | Cevaptan sonra mikrofon 4 sn daha açık kalır; tuşa basmadan "peki yarın?" diye sorabilirsin. Ayarlardan kapatılır. |
-| **Kesme** | Friday konuşurken kısayola basarsan ya da "Hey Jarvis" dersen susar ve seni dinlemeye başlar. |
+| **Kesme** | Friday konuşurken kısayola basarsan ya da "Hey Friday" dersen susar ve seni dinlemeye başlar. |
 | **Yazarak sorma** | Konuşamadığın yerde panelden yazabilirsin. |
 
 Tehlikeli işler bilerek yok: Friday dosya silemez, bilgisayarı kapatamaz, komut çalıştıramaz.
@@ -32,7 +37,7 @@ Tehlikeli işler bilerek yok: Friday dosya silemez, bilgisayarı kapatamaz, komu
 ## Nasıl çalışır?
 
 ```
-"Hey Jarvis"
+"Hey Friday"
 ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken biter)
                      mikrofon AÇILIR · bip · kapsül belirir
                      │  16 kHz mono ses, yalnızca bellekte
@@ -43,7 +48,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 18 araç             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 29 araç             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -60,26 +65,33 @@ Her sesli asistan dört parçadan oluşur:
 
 | Parça | Görevi | Friday'de |
 |---|---|---|
-| **Tetikleme** | Ne zaman dinleyeceğini bilmek | "Hey Jarvis" ([openWakeWord](https://github.com/dscripka/openWakeWord), ONNX Runtime, işlemci) ya da genel kısayol (`RegisterHotKey`) |
+| **Tetikleme** | Ne zaman dinleyeceğini bilmek | "Hey Friday" (Friday için eğitilmiş model, [openWakeWord](https://github.com/dscripka/openWakeWord) özellikleri, ONNX Runtime, işlemci) ya da genel kısayol (`RegisterHotKey`) |
 | **Kulak (STT)** | Sesi yazıya çevirmek | [Whisper.net](https://github.com/sandrohanea/whisper.net), Large v3 Turbo, GPU'da ~0,3 sn |
 | **Beyin (LLM)** | Anlamak ve iş yapmak | [Ollama](https://ollama.com) + Gemma 4 E4B, araç çağırma (tool calling) |
 | **Ses (TTS)** | Cevabı okumak | [Piper](https://github.com/rhasspy/piper) + [Türkçe ses](https://huggingface.co/99eren99/piper-turkish-tts), işlemcide anında · isteğe bağlı XTTS v2 ya da Azure |
 
-### "Hey Jarvis" nasıl çalışıyor?
+### "Hey Friday" nasıl çalışıyor?
 
-Uyandırma kelimesi, mikrofonun **her an açık** olmasını gerektirir; bu yüzden Windows'un mikrofon simgesi görünür. Ses 80 ms'lik parçalar halinde yalnızca bellekte işlenip hemen atılır, diske yazılmaz, hiçbir yere gönderilmez. Üç küçük model (toplam 3,6 MB) zinciri her parçayı puanlar: mel spektrogram → konuşma gömmesi → "hey jarvis" sınıflandırıcı.
+Uyandırma kelimesi, mikrofonun **her an açık** olmasını gerektirir; bu yüzden Windows'un mikrofon simgesi görünür. Ses 80 ms'lik parçalar halinde yalnızca bellekte işlenip hemen atılır, diske yazılmaz, hiçbir yere gönderilmez. Üç küçük model zinciri her parçayı puanlar: mel spektrogram → konuşma gömmesi (openWakeWord) → Friday'in kendi "hey friday" sınıflandırıcısı.
 
-- **Yanlış uyanmaya karşı.** Gerçek "Hey Jarvis" art arda 2–9 parça boyunca yüksek puan alır; benzer sesli cümlelerin çoğu tek parçada kalır. Friday iki parça şartı arar (gecikmeye 80 ms ekler).
+- **Yanlış uyanmaya karşı.** Gerçek "Hey Friday" art arda 2–9 parça boyunca yüksek puan alır; benzer sesli cümlelerin çoğu tek parçada kalır. Friday iki parça şartı arar (gecikmeye 80 ms ekler).
 - **Sessizlikte bedava.** Oda 1,3 sn'den uzun sessizse modeller hiç çalışmaz; arabellekler sessizliğin önceden hesaplanmış karşılığıyla kaydırılır. Ses gelince ilk parçada tam işlemeye dönülür.
 - **Ölçüm.** Konuşma varken 80 ms'lik parça başına ~0,7–1,1 ms işlemci; boşta Friday'in tamamı tek çekirdeğin ~%1,8'i.
-- **Türkçe aksan.** "Hey Carvis" gibi söylemek yeterli. Türkçe J ile ("jurnal"daki gibi) söylenirse tanımaz.
 - **Kapatmak için** `WakeWord` ayarını boş bırak; mikrofon o zaman yalnızca kısayoldan sonra açılır ve simge de görünmez. Mikrofon bir soru için açıkken kapsülde kırmızı **"Mikrofon açık"** göstergesi yanar; her açılış gizlilik defterine yazılır.
 
-Hazır "hey jarvis" modeli openWakeWord projesine aittir ve ticari olmayan kullanım lisanslıdır (CC BY-NC-SA 4.0).
+**Friday için eğitildi.** Hazır bir "Hey Friday" modeli yok; `training\train-wakeword.ps1` onu bu bilgisayarda, tamamen D:\Friday\training altında eğitir (RTX 5070 Ti'de ~1 saat, ~330 MB indirme):
+
+- **Olumlu örnekler:** Piper'ın çok konuşmacılı İngilizce sesleri (1.013 farklı konuşmacı) "Hey Friday" der; Türkçe Piper sesleri "Hey Fraydey" der. Her kayıt oda yankısı, mikrofon bant genişliği, gürültü, uğultu ve arka plan konuşmasıyla bozulur.
+- **Olumsuz örnekler:** benzer sesler ("hey Fred", "it's Friday", "Hey Ferhat", "Cuma günü"…), binlerce Türkçe ve İngilizce cümle, saf gürültü ve openWakeWord'ün gerçek ses doğrulama verisinin %70'i. "Hey Fri…" gibi yarım kalan kelime de olumsuz sayılır.
+- **Ölçüm** (eğitimde hiç kullanılmamış konuşmacılar ve 3,2 saatlik gerçek ses, iki parça şartıyla): eşik 0.50'te **yakalama %96**, **saatte 0,31 yanlış uyanma**.
+- **Gerçekçi sınama** (eğitimde hiç duyulmamış Windows sesleri, Friday'in kendi çalışma hattında): bitişik söylenen "Hey Friday"lerin ve Türkçe aksanlı "Hey Fraydey"lerin hepsi yakalandı. "See you on Friday", "Thank god it's Friday", "Hey Jarvis", "Hey Ferhat", "Cuma günü" gibi tuzak cümlelerin hiçbiri normal seste uyandırmadı; çok kısık seste "Hey Fred" bir kez uyandırdı. "Hey, … Friday" diye araya uzun bir duraklama konunca kaçırabilir; bitişik söylemek yeterli.
+- **İlk sürümden ders:** ilk model "see you on Friday"da da uyanıyordu ("Friday"i tek başına yeterli sanmıştı). Yüzlerce "Friday" bağlamı ve "Hey Fred/Frida/Frank…" gibi tuzaklar iki kat ağırlıkla eklenip ezber dropout'la azaltılınca düzeldi.
+
+Sınıflandırıcı openWakeWord'ün özellik çıkarıcılarıyla (Apache 2.0) çalışır; eğitimde kullanılan doğrulama verisi ticari olmayan kullanım lisanslı olduğundan model de kişisel kullanım içindir.
 
 ### Araç çağırma (beyin nasıl iş yapıyor?)
 
-Dil modeline 18 aracın listesi JSON şeması olarak verilir. "Not defterini aç" duyunca metin yerine `uygulama_ac(ad: "not defteri")` üretir; Friday aracı çalıştırır, sonucu modele verir, model "Açtım." der. Gemma 4, düşünme adımı kapalıyken aracı çağırmak yerine "aracı kullanacağım" diye anlatıyor. Bu yüzden kısa bir düşünme adımı açık; kısa sorulara ~0,5 sn ekliyor ve düşünce metni seslendirilmiyor.
+Dil modeline 29 aracın listesi JSON şeması olarak verilir. "Not defterini aç" duyunca metin yerine `uygulama_ac(ad: "not defteri")` üretir; Friday aracı çalıştırır, sonucu modele verir, model "Açtım." der. Gemma 4, düşünme adımı kapalıyken aracı çağırmak yerine "aracı kullanacağım" diye anlatıyor. Bu yüzden kısa bir düşünme adımı açık; kısa sorulara ~0,5 sn ekliyor ve düşünce metni seslendirilmiyor.
 
 ## Hız
 
@@ -96,6 +108,7 @@ Günlük komutların çoğu kalıptır ve dil modeline hiç gitmez: saat ve tari
 | "Bugün hava nasıl?" | 4,1 sn | 0,1 sn |
 | "Dolar kaç lira?" | 9 sn'ye kadar | 0,2–0,5 sn |
 | "Bana kısa bir espri yap." | 2,3 sn | 0,3 sn (model hazırken) |
+| "Yarın 9'da doktoru hatırlat" · "345 çarpı 12" · "yılbaşına kaç gün kaldı" | modele gidiyordu | 0,0–0,1 sn |
 
 ## Bellek ve ekran kartı
 
@@ -106,7 +119,7 @@ Friday boşta **toplam ~60 MB RAM ve 0 GB VRAM**, konuşurken ~3,5 GB RAM ve ~4 
 - **Halka animasyonu** panel öndeyken saniyede 15 kare nefes alır, arka plandayken hiç çizilmez.
 
 - **Görme modülü ayrı.** Sohbet, Gemma 4'ün görme modülü olmayan varyantıyla (`friday-text`) yapılır: 4,7 GB yerine 3,5 GB. Aynı model dosyasını paylaşır, diskte ek yer kaplamaz ve ilk açılışta otomatik oluşturulur. Görme modülü yalnızca "ekrana bak" denince yüklenir ve iş bitince boşaltılır.
-- **Ön ısıtma.** "Hey Jarvis" duyulunca ya da kısayola basınca modeller hemen yüklenmeye başlar. Yükleme (~3 sn) sen konuşurken biter, bu yüzden uyandırma neredeyse hissedilmez.
+- **Ön ısıtma.** "Hey Friday" duyulunca ya da kısayola basınca modeller hemen yüklenmeye başlar. Yükleme (~3 sn) sen konuşurken biter, bu yüzden uyandırma neredeyse hissedilmez.
 - **Ses GPU kullanmaz.** Piper işlemcide çalışır (bir cümle ~0,03 sn).
 - **Talimat önbelleği korunur.** Sistem talimatında saat değil yalnızca tarih var; böylece Ollama ~2.000 belirteçlik talimatı her soruda yeniden işlemez.
 
@@ -136,10 +149,14 @@ Yabancı adlar Türkçe sesle yanlış okunmasın diye seslendirmeden önce okun
 
 ## Kurulum
 
+**Hazır sürüm:** [Releases](https://github.com/kursatcnk/Friday/releases) sayfasından `Friday-…-win-x64.zip`'i indir, D: sürücüsünde bir klasöre aç, `setup.ps1`'i çalıştır, sonra `app\Friday.exe`'yi aç. .NET kurmana gerek yok.
+
+**Kaynaktan:**
+
 Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), en az 8 GB VRAM'li bir GPU önerilir (RTX 3070'te test edildi).
 
 ```powershell
-.\setup.ps1   # Ollama, Piper, Türkçe ses, "Hey Jarvis" ve Gemma 4'ü D:\Friday altına indirir (~7 GB, tek seferlik)
+.\setup.ps1   # Ollama, Piper, Türkçe ses, "Hey Friday" ve Gemma 4'ü D:\Friday altına indirir (~7 GB, tek seferlik)
 .\build.ps1   # derleme + testler
 .\run.ps1     # Friday'i başlatır
 
@@ -151,7 +168,7 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 | Klasör | İçerik |
 |---|---|
 | `D:\Friday\tools` | Ollama ve Piper (taşınabilir) |
-| `D:\Friday\models` | Gemma 4 (~6 GB), Türkçe Piper sesi, "Hey Jarvis" modelleri (`wakeword\`) |
+| `D:\Friday\models` | Gemma 4 (~6 GB), Türkçe Piper sesi, "Hey Friday" modelleri (`wakeword\`) |
 | `D:\LinguaFlowModels` | Whisper, LinguaFlow ile paylaşılır (yoksa `D:\Friday\models\whisper`) |
 | `D:\Friday\data` | `settings.json`, `memory.json`, gizlilik defteri (`ledger\`), sohbet geçmişi (`history\`), hata günlüğü (`logs\`, 14 gün) |
 | `D:\CodexCache\Friday` | .NET SDK ev klasörü, NuGet paketleri, NuGet indirme önbelleği ve derlemenin geçici dosyaları |
@@ -159,11 +176,12 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 ## Kullanım
 
 1. `.\run.ps1` ile başlat; ~8 sn sonra durum **Hazır** olur.
-2. **"Hey Jarvis"** de ya da **Ctrl+Alt+F**'e bas, bipten sonra konuş ve sus. Bu kısayol başka bir uygulamadaysa Friday sırayla Ctrl+Alt+J, Ctrl+Shift+Space ve Win+Shift+F'yi dener ve hangisini kullandığını panelin sağ üstünde gösterir.
+2. **"Hey Friday"** de ya da **Ctrl+Alt+F**'e bas, bipten sonra konuş ve sus. Bu kısayol başka bir uygulamadaysa Friday sırayla Ctrl+Alt+J, Ctrl+Shift+Space ve Win+Shift+F'yi dener ve hangisini kullandığını panelin sağ üstünde gösterir.
 3. Ekranın altında cam bir kapsül belirir. Halkanın rengi durumu gösterir: **kırmızı** dinliyor, **mor** düşünüyor, **yeşil** konuşuyor. Kapsül tıklamaları geçirir, odağı çalmaz ve ekran görüntülerine girmez.
 4. Pencereyi kapatınca (ya da tepsi simgesi → **Çıkış**) Friday tamamen kapanır: başlattığı Ollama, llama-server, Piper ve XTTS süreçleri kapatılır, kapanmayan varsa 5 sn içinde zorla sonlandırılır, D:\Friday\tools altından çalışan sahipsiz bir süreç kalmışsa o da kapatılır ve Friday'in kendi süreci kesin olarak biter; RAM ve VRAM'in tamamı geri döner. Friday Görev Yöneticisi'nden sonlandırılsa ya da çökse bile bu süreçler açık kalmaz, bir sonraki açılışta da önceki oturumdan kalan bir şey varsa temizlenir. Kısayolun çalışmaya devam etmesi için pencereyi kapatma, simge durumuna küçült. Friday zaten açıkken yeniden başlatırsan ikinci bir kopya açılmaz; çalışan Friday'in paneli öne gelir.
 5. Beklenmeyen bir hata Friday'i kapatmaz; ayrıntısı `D:\Friday\data\logs` altındaki günlüğe yazılır. Ollama kapanırsa bir sonraki soruda kendiliğinden yeniden başlatılır.
 
+![Bugün](docs/images/panel-today.png)
 ![Sohbet](docs/images/panel-chat.png)
 ![Ritim](docs/images/panel-rhythm.png)
 ![Hafıza](docs/images/panel-memory.png)
@@ -178,7 +196,7 @@ Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasın
 | `UserName` | boş | Sana nasıl hitap edeceği |
 | `Personality` | `esprili` | `esprili`, `sade` ya da `resmi` |
 | `Hotkey` | `Ctrl+Alt+F` | `Ctrl`/`Alt`/`Shift`/`Win` + tuş |
-| `WakeWord` / `WakeWordThreshold` | `hey_jarvis` / `0.5` | Uyandırma kelimesi; boş bırakılırsa kapalı. Yanlışlıkla uyanıyorsa eşiği artır, duymuyorsa azalt |
+| `WakeWord` / `WakeWordThreshold` | `hey_friday` / `0.50` | Uyandırma kelimesi; boş bırakılırsa kapalı. Yanlışlıkla uyanıyorsa eşiği artır, duymuyorsa azalt |
 | `FollowUpSeconds` | `4` | Cevaptan sonra devam sorusu bekleme süresi; `0` kapatır |
 | `SpeechEngine` | `piper` | `piper`, `xtts` ya da `azure` |
 | `PiperNoiseScale` / `PiperNoiseW` / `VoiceRoom` | `0.667` / `0.9` / `0.07` | Ton ve ritim değişkenliği, oda ve sıcaklık |
@@ -197,7 +215,7 @@ Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasın
 
 ## Gizlilik
 
-- "Hey Jarvis" açıkken mikrofon sürekli açıktır ama ses 80 ms'lik parçalar halinde yalnızca bellekte puanlanıp atılır. `WakeWord` boşsa mikrofon yalnızca kısayoldan sonra, bir soru boyunca açılır. Sorunun sesi de bellekte işlenir, diske yazılmaz, hiçbir yere gönderilmez.
+- "Hey Friday" açıkken mikrofon sürekli açıktır ama ses 80 ms'lik parçalar halinde yalnızca bellekte puanlanıp atılır. `WakeWord` boşsa mikrofon yalnızca kısayoldan sonra, bir soru boyunca açılır. Sorunun sesi de bellekte işlenir, diske yazılmaz, hiçbir yere gönderilmez.
 - Konuşma tanıma, dil modeli, ekran yorumlama ve pano işlemleri tamamen yereldir.
 - Ritim koçu yalnızca Windows'un tuttuğu "son klavye/fare kullanımı" zamanını okur; tuşlar, ekran ve pencere içerikleri okunmaz. Moladan önce yalnızca öndeki pencerenin başlığı hatırlanır. Günlük süreler `D:\Friday\data\rhythm` altında, 90 gün tutulur.
 - Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden).
@@ -205,11 +223,14 @@ Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasın
 ## Geliştirme
 
 ```
-src/Friday.Core            Saf mantık: konuşma sonu algılama, cümle bölme, sayı ve okunuş çevirisi,
-                           hafıza, gizlilik defteri, sohbet geçmişi, rutinler, dosya arama sorgusu, talimatlar
-src/Friday.Infrastructure  Mikrofon, Whisper, Ollama sunucusu/istemcisi, Azure + Piper ses, 18 araç, asistan döngüsü
-src/Friday.Desktop         Cam kapsül HUD, ses halkası, kontrol paneli, genel kısayol, sistem tepsisi
+src/Friday.Core            Saf mantık: konuşma sonu algılama, hızlı yol kalıpları, Türkçe zaman ve sayı, hesap,
+                           hafıza ve aktarımı, hatırlatma ve notlar, ritim, gizlilik defteri, talimatlar
+src/Friday.Infrastructure  Mikrofon, uyandırma kelimesi, Whisper, Ollama, Azure + Piper ses, 29 araç, ritim koçu, asistan döngüsü
+src/Friday.Desktop         Bugün ekranı, cam kapsül, ses küresi, kontrol paneli, genel kısayol, sistem tepsisi
 tests/Friday.UnitTests     Birim testleri
+training/                  "Hey Friday" uyandırma kelimesi eğitimi (train-wakeword.ps1)
+models/wakeword            Eğitilmiş "Hey Friday" modeli
+release.ps1                İndirilebilir sürümü (zip) hazırlar
 ```
 
 Arayüzü uygulamayı çalıştırmadan örnek verilerle PNG olarak çizmek için:
