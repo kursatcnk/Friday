@@ -73,13 +73,51 @@ internal static class Snapshot
 
         panel.IsChat = false;
         panel.IsMemory = true;
+        var soon = DateTime.Now.AddDays(3).ToString("d MMMM", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"));
         panel.ShowMemories(
         [
-            new MemoryItem("a1", "Kullanıcının arabasının muayenesi 20 Kasım'da.", DateTimeOffset.Now.AddDays(-2)),
+            new MemoryItem("a1", $"Kullanıcının arabasının muayenesi {soon}'da.", DateTimeOffset.Now.AddDays(-2)),
             new MemoryItem("a2", "Kullanıcı kahveyi şekersiz içer.", DateTimeOffset.Now.AddDays(-9)),
             new MemoryItem("a3", "Kullanıcının kızının doğum günü 3 Mart.", DateTimeOffset.Now.AddDays(-30)),
+            new MemoryItem("a4", "Is building a local voice assistant in C# and WPF.", DateTimeOffset.Now.AddDays(-1), "ChatGPT"),
+            new MemoryItem("a5", "Prefers short, direct answers without filler.", DateTimeOffset.Now.AddDays(-1), "ChatGPT"),
         ]);
         RenderPanel(panel, folder, "panel-memory");
+
+        panel.PreviewImport("""
+            Here is what I remember about you:
+            - Is a software developer living in Istanbul.
+            - Prefers concise answers.
+            - Has a daughter whose birthday is on March 3.
+            - Rides a bike on weekends.
+            """, "chatgpt-memories.txt");
+        RenderPanel(panel, folder, "panel-memory-import");
+        panel.CancelImportCommand.Execute(null);
+
+        panel.IsMemory = false;
+        panel.IsRhythm = true;
+        var day = DateTime.Today;
+        panel.ShowRhythm(new RhythmDay
+        {
+            Date = DateOnly.FromDateTime(day),
+            ActiveMinutes = 251,
+            FocusMinutes = 75,
+            Breaks = 3,
+            LongestStretchMinutes = 82,
+            Water = 4,
+            Segments =
+            [
+                new RhythmSegment(day.AddHours(8.6), day.AddHours(9.9), RhythmSegmentKind.Work),
+                new RhythmSegment(day.AddHours(10.05), day.AddHours(10.9), RhythmSegmentKind.Focus),
+                new RhythmSegment(day.AddHours(10.95), day.AddHours(12.3), RhythmSegmentKind.Work),
+                new RhythmSegment(day.AddHours(13.2), day.AddHours(13.6), RhythmSegmentKind.Focus),
+                new RhythmSegment(day.AddHours(13.6), day.AddHours(14.4), RhythmSegmentKind.Work),
+            ]
+        }, TimeSpan.FromMinutes(34), DateTime.Now.AddMinutes(12), 50);
+        panel.RhythmNow = day.AddHours(14.4);
+        RenderPanel(panel, folder, "panel-rhythm");
+        panel.IsRhythm = false;
+        panel.IsMemory = true;
 
         panel.IsMemory = false;
         panel.IsPrivacy = true;

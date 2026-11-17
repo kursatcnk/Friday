@@ -3,31 +3,46 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <!-- Renkler: koyu lacivert zemin, elektrik camgöbeği vurgu. Durum renkleri halka ve göstergelerde ortak. -->
-        <Color x:Key="AccentColor">#38E1FF</Color>
-        <Color x:Key="ListeningColor">#FF5C7A</Color>
-        <Color x:Key="ThinkingColor">#A78BFA</Color>
-        <Color x:Key="SpeakingColor">#2EE6A6</Color>
-        <Color x:Key="WarningColor">#FFB547</Color>
+        <!--
+            "Grafit ve kor": sıcak nötr koyu zemin, sıcak beyaz yazı ve tek bir imza renk. Durum renkleri kürede ve
+            göstergelerde ortak: kor (dinliyor), süsen (düşünüyor), şampanya (konuşuyor), grafit (boşta).
+        -->
+        <Color x:Key="AccentColor">#FF8A5B</Color>
+        <Color x:Key="ListeningColor">#FF8A5B</Color>
+        <Color x:Key="ThinkingColor">#B9A8FF</Color>
+        <Color x:Key="SpeakingColor">#F2CC8F</Color>
+        <Color x:Key="WarningColor">#FFB86B</Color>
+        <Color x:Key="CalmColor">#7FD4B0</Color>
 
-        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0A0C11"/>
-        <SolidColorBrush x:Key="SurfaceBrush" Color="#11141B"/>
-        <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#161A23"/>
-        <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#1C212C"/>
-        <SolidColorBrush x:Key="LineBrush" Color="#222836"/>
-        <SolidColorBrush x:Key="TextBrush" Color="#ECEFF4"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#8C93A3"/>
-        <SolidColorBrush x:Key="FaintBrush" Color="#5A6172"/>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0E0E10"/>
+        <SolidColorBrush x:Key="SidebarBrush" Color="#0B0B0D"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#151517"/>
+        <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#1B1B1E"/>
+        <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#222226"/>
+        <SolidColorBrush x:Key="LineBrush" Color="#16FFFFFF"/>
+        <SolidColorBrush x:Key="LineStrongBrush" Color="#26FFFFFF"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#F2F1EE"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#A3A19B"/>
+        <SolidColorBrush x:Key="FaintBrush" Color="#6E6C67"/>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#1A38E1FF"/>
-        <SolidColorBrush x:Key="UserBubbleBrush" Color="#14304A"/>
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#1FFF8A5B"/>
+        <SolidColorBrush x:Key="AccentInkBrush" Color="#1A0E08"/>
+        <SolidColorBrush x:Key="UserBubbleBrush" Color="#1E1E22"/>
         <SolidColorBrush x:Key="ListeningBrush" Color="{StaticResource ListeningColor}"/>
         <SolidColorBrush x:Key="SpeakingBrush" Color="{StaticResource SpeakingColor}"/>
         <SolidColorBrush x:Key="ThinkingBrush" Color="{StaticResource ThinkingColor}"/>
         <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+        <SolidColorBrush x:Key="CalmBrush" Color="{StaticResource CalmColor}"/>
+
+        <!-- Kartların üst kenarında çok hafif bir ışık: düz, "boyanmış" görünmez. -->
+        <LinearGradientBrush x:Key="CardBorderBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#22FFFFFF" Offset="0"/>
+            <GradientStop Color="#0EFFFFFF" Offset="1"/>
+        </LinearGradientBrush>
 
         <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
         <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+        <FontFamily x:Key="SmallFont">Segoe UI Variable Small, Segoe UI</FontFamily>
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
         <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
 
@@ -38,47 +53,66 @@
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
 
+        <!-- Küçük, sakin etiket: kod yazı tipi ve büyük harf yerine. -->
         <Style x:Key="Caption" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
-            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontFamily" Value="{StaticResource SmallFont}"/>
+            <Setter Property="FontSize" Value="11.5"/>
             <Setter Property="Foreground" Value="{StaticResource FaintBrush}"/>
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+        </Style>
+
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource TextFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
 
         <Style x:Key="SectionTitle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="Body" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="LineHeight" Value="20"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
         </Style>
 
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="16"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="20"/>
         </Style>
 
-        <!-- Düz, köşeleri yumuşak düğme. -->
+        <!-- Düz düğme: ince kenar, üzerine gelince hafifçe aydınlanır. -->
         <Style x:Key="GhostButton" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Padding" Value="14,8"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="11" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource LineStrongBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Root" Property="Opacity" Value="0.8"/>
@@ -92,16 +126,46 @@
             </Setter>
         </Style>
 
+        <!-- Yalnızca simge: kenarsız, üzerine gelince belirir. -->
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Foreground" Value="{StaticResource FaintBrush}"/>
+        </Style>
+
         <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-            <Setter Property="Foreground" Value="#06121A"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="11" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FF9C73"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <!-- Pasifken soluk turuncu değil, sakin bir gri: çamurlu görünmez. -->
+                                <Setter TargetName="Root" Property="Background" Value="#26262A"/>
+                                <Setter Property="Foreground" Value="{StaticResource FaintBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Öneri çipi (sohbet boşken). -->
         <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
-            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="14,8"/>
             <Setter Property="Margin" Value="4"/>
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
@@ -111,7 +175,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
             <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}"/>
-            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,9"/>
@@ -121,22 +185,23 @@
                     <ControlTemplate TargetType="TextBox">
                         <Border x:Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
-                            <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                            <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#66FF8A5B"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="PasswordBox">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
-            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="Padding" Value="12,9"/>
             <Setter Property="FontSize" Value="13"/>
@@ -149,7 +214,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#66FF8A5B"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -157,24 +222,91 @@
             </Setter>
         </Style>
 
-        <!-- Segment seçici gibi görünen radyo düğmesi (ayarlarda kişilik, ses, takip süresi). -->
+        <!-- Segment seçici gibi görünen radyo düğmesi. -->
         <Style x:Key="SegmentOption" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Root" Background="Transparent" CornerRadius="8" Padding="12,6" Margin="2">
+                        <Border x:Name="Root" Background="Transparent" CornerRadius="9" Padding="13,6" Margin="2">
                             <ContentPresenter HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentSoftBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Root" Property="Background" Value="#2A2A2F"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SegmentTrack" TargetType="Border">
+            <Setter Property="CornerRadius" Value="11"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="1"/>
+        </Style>
+
+        <!-- Açma/kapama anahtarı (CheckBox). -->
+        <Style x:Key="Switch" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter VerticalAlignment="Center" Margin="0,0,16,0"/>
+                            <Border Grid.Column="1" x:Name="Track" Width="38" Height="22" CornerRadius="11" Background="#2A2A2F"
+                                    BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1" VerticalAlignment="Center">
+                                <Ellipse x:Name="Knob" Width="14" Height="14" Fill="{StaticResource MutedBrush}" HorizontalAlignment="Left" Margin="4,0,0,0"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Knob" Property="Fill" Value="{StaticResource AccentInkBrush}"/>
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Knob" Property="Margin" Value="0,0,4,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Seçim kutusu (içe aktarma önizlemesi). -->
+        <Style x:Key="Tick" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Box" Width="18" Height="18" CornerRadius="6" BorderThickness="1"
+                                BorderBrush="{StaticResource LineStrongBrush}" Background="Transparent">
+                            <TextBlock x:Name="Mark" Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                       Foreground="{StaticResource AccentInkBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Mark" Property="Visibility" Value="Visible"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -195,7 +327,7 @@
                                 <Thumb>
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
-                                            <Border Background="#2A3140" CornerRadius="3"/>
+                                            <Border Background="#2C2C31" CornerRadius="3"/>
                                         </ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
@@ -209,7 +341,8 @@
         <Style TargetType="ToolTip">
             <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineStrongBrush}"/>
+            <Setter Property="Padding" Value="10,6"/>
         </Style>
     </Application.Resources>
 </Application>

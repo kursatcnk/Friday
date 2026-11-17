@@ -36,6 +36,7 @@ public sealed partial class HudViewModel : ObservableObject
         ["sayfayi_oku"] = "",
         ["doviz"] = "\uE825",
         ["video_ac"] = "\uE714",
+        ["ritim"] = "\uE9D9",
     };
 
     [ObservableProperty]
@@ -70,12 +71,12 @@ public sealed partial class HudViewModel : ObservableObject
 
     public string StatusLabel => State switch
     {
-        AssistantState.Listening => "DİNLİYORUM",
-        AssistantState.Thinking => "DÜŞÜNÜYORUM",
-        AssistantState.Speaking => "KONUŞUYORUM",
-        AssistantState.Error => "BİR SORUN VAR",
-        AssistantState.Starting => "HAZIRLANIYOR",
-        _ => "HAZIR"
+        AssistantState.Listening => "Dinliyorum",
+        AssistantState.Thinking => "Düşünüyorum",
+        AssistantState.Speaking => "Konuşuyorum",
+        AssistantState.Error => "Bir sorun var",
+        AssistantState.Starting => "Hazırlanıyor",
+        _ => "Hazır"
     };
 
     public Brush StateBrush => Frozen(new SolidColorBrush(AudioRing.Palette(State)));

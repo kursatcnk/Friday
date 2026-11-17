@@ -5,9 +5,9 @@ using Friday.Infrastructure;
 namespace Friday.Desktop;
 
 /// <summary>
-/// Friday'in "yüzü": merkezde parlayan bir çekirdek ve çevresinde ses seviyesine göre uzayıp kısalan çubuklar.
-/// Dinlerken kullanıcının, konuşurken Friday'in sesiyle dalgalanır; düşünürken çevresinde bir ışık döner, boştayken
-/// yavaşça nefes alır. Renk duruma göre yumuşakça geçer.
+/// Friday'in "yüzü": cam gibi parlayan bir çekirdek ve çevresinde sesle akışkan biçimde dalgalanan üç ince çizgi.
+/// Dinlerken kullanıcının, konuşurken Friday'in sesiyle büyür; düşünürken çizgiler hızlanıp çekirdeğin etrafında
+/// döner, boştayken yavaşça nefes alır. Renk duruma göre yumuşakça geçer.
 /// </summary>
 public sealed class AudioRing : FrameworkElement
 {
@@ -21,15 +21,15 @@ public sealed class AudioRing : FrameworkElement
     public static readonly DependencyProperty FrozenTimeProperty = DependencyProperty.Register(
         nameof(FrozenTime), typeof(double), typeof(AudioRing), new FrameworkPropertyMetadata(-1.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    private const int Bars = 64;
-    private readonly double[] _bars = new double[Bars];
+    private const int Points = 96;
+    private static readonly TimeSpan IdleFrame = TimeSpan.FromMilliseconds(66);
+
     private readonly DateTime _start = DateTime.UtcNow;
     private Color _color = Palette(AssistantState.Idle);
     private double _smoothedLevel;
+    private double _energy;
     private bool _animating;
     private TimeSpan _lastFrame;
-
-    private static readonly TimeSpan IdleFrame = TimeSpan.FromMilliseconds(66);
 
     public AudioRing()
     {
@@ -58,102 +58,110 @@ public sealed class AudioRing : FrameworkElement
 
     public static Color Palette(AssistantState state) => state switch
     {
-        AssistantState.Listening => Color.FromRgb(0xFF, 0x5C, 0x7A),
-        AssistantState.Thinking => Color.FromRgb(0xA7, 0x8B, 0xFA),
-        AssistantState.Speaking => Color.FromRgb(0x2E, 0xE6, 0xA6),
-        AssistantState.Error => Color.FromRgb(0xFF, 0xB5, 0x47),
-        AssistantState.Starting => Color.FromRgb(0x5A, 0x61, 0x72),
-        _ => Color.FromRgb(0x38, 0xE1, 0xFF)
+        AssistantState.Listening => Color.FromRgb(0xFF, 0x8A, 0x5B),
+        AssistantState.Thinking => Color.FromRgb(0xB9, 0xA8, 0xFF),
+        AssistantState.Speaking => Color.FromRgb(0xF2, 0xCC, 0x8F),
+        AssistantState.Error => Color.FromRgb(0xFF, 0x6B, 0x6B),
+        AssistantState.Starting => Color.FromRgb(0x5E, 0x5C, 0x57),
+        _ => Color.FromRgb(0xC9, 0xC1, 0xB1)
     };
 
     protected override void OnRender(DrawingContext drawingContext)
     {
-        var drawing = drawingContext;
-        var frozen = FrozenTime >= 0;
-        var time = frozen ? FrozenTime : (DateTime.UtcNow - _start).TotalSeconds;
-        var target = Palette(State);
-        _color = frozen ? target : Lerp(_color, target, 0.12);
-        _smoothedLevel = frozen ? Level : (_smoothedLevel * 0.6) + (Level * 0.4);
-
         var size = Math.Min(ActualWidth, ActualHeight);
         if (size <= 0)
         {
             return;
         }
 
-        var center = new Point(ActualWidth / 2, ActualHeight / 2);
-        var core = size * 0.2;
-        var ringStart = size * 0.27;
-        var maxBar = size * 0.2;
-
-        // Yumuşak dış parıltı: seviye arttıkça büyür.
-        var glowRadius = (size * 0.42) + (_smoothedLevel * size * 0.06);
-        var glow = new RadialGradientBrush(
-            [new GradientStop(WithAlpha(_color, 90), 0), new GradientStop(WithAlpha(_color, 0), 1)]);
-        glow.Freeze();
-        drawing.DrawEllipse(glow, null, center, glowRadius, glowRadius);
-
-        // Çubuklar.
-        for (var index = 0; index < Bars; index++)
+        var frozen = FrozenTime >= 0;
+        var time = frozen ? FrozenTime : (DateTime.UtcNow - _start).TotalSeconds;
+        var target = Palette(State);
+        _color = frozen ? target : Lerp(_color, target, 0.1);
+        _smoothedLevel = frozen ? Level : (_smoothedLevel * 0.55) + (Level * 0.45);
+        // Durumun "enerjisi": boşta sakin, dinlerken ve konuşurken sese göre, düşünürken sabit bir canlılık.
+        var wanted = State switch
         {
-            var angle = (index / (double)Bars * Math.PI * 2) - (Math.PI / 2);
-            var targetLength = BarTarget(index, time);
-            _bars[index] = frozen ? targetLength : (_bars[index] * 0.65) + (targetLength * 0.35);
+            AssistantState.Listening or AssistantState.Speaking => 0.25 + (_smoothedLevel * 1.4),
+            AssistantState.Thinking => 0.55,
+            AssistantState.Starting => 0.05,
+            _ => 0.12
+        };
+        _energy = frozen ? wanted : (_energy * 0.85) + (wanted * 0.15);
 
-            var brightness = State == AssistantState.Thinking ? 0.35 + (0.65 * Comet(index, time)) : 0.55 + (0.45 * _bars[index]);
-            var pen = new Pen(new SolidColorBrush(WithAlpha(_color, (byte)(255 * brightness))), Math.Max(1.6, size / 60))
-            {
-                StartLineCap = PenLineCap.Round,
-                EndLineCap = PenLineCap.Round
-            };
+        var center = new Point(ActualWidth / 2, ActualHeight / 2);
+        var core = size * 0.27;
+
+        // Yumuşak hale.
+        var halo = size * (0.46 + (_energy * 0.03));
+        var glow = new RadialGradientBrush(
+            [new GradientStop(WithAlpha(_color, (byte)(40 + (_energy * 50))), 0.45), new GradientStop(WithAlpha(_color, 0), 1)]);
+        glow.Freeze();
+        drawingContext.DrawEllipse(glow, null, center, halo, halo);
+
+        // Akışkan çizgiler: her biri farklı hızda ve evrede dönen birkaç sinüsün toplamı.
+        var speed = State == AssistantState.Thinking ? 1.9 : 0.8;
+        for (var layer = 0; layer < 3; layer++)
+        {
+            var radius = core * (1.2 + (layer * 0.07));
+            var amplitude = core * (0.035 + (_energy * 0.16)) * (1 - (layer * 0.18));
+            var geometry = Blob(center, radius, amplitude, (time * speed * (1 + (layer * 0.37))) + (layer * 2.1), layer);
+            var alpha = (byte)(layer switch { 0 => 210, 1 => 130, _ => 80 });
+            var stroke = layer == 2 ? Lerp(_color, Colors.White, 0.5) : _color;
+            var pen = new Pen(new SolidColorBrush(WithAlpha(stroke, alpha)), Math.Max(1.1, size / (layer == 0 ? 70 : 95)));
             pen.Freeze();
-            var length = 2 + (_bars[index] * maxBar);
-            var from = new Point(center.X + (Math.Cos(angle) * ringStart), center.Y + (Math.Sin(angle) * ringStart));
-            var to = new Point(center.X + (Math.Cos(angle) * (ringStart + length)), center.Y + (Math.Sin(angle) * (ringStart + length)));
-            drawing.DrawLine(pen, from, to);
+            drawingContext.DrawGeometry(null, pen, geometry);
         }
 
-        // Çekirdek: parlak merkez, koyu kenar ve ince bir halka.
-        var coreBrush = new RadialGradientBrush(
+        // Cam çekirdek: içten aydınlık, kenara doğru koyulaşan bir küre ve sol üstte yumuşak bir yansıma.
+        var breathing = State == AssistantState.Idle ? Math.Sin(time * 1.3) * 0.025 : 0;
+        var coreRadius = core * (1 + breathing + (_smoothedLevel * 0.07));
+        var sphere = new RadialGradientBrush(
         [
-            new GradientStop(Color.FromRgb(0xFF, 0xFF, 0xFF), 0),
-            new GradientStop(_color, 0.35),
-            new GradientStop(WithAlpha(Darken(_color, 0.55), 255), 1)
+            new GradientStop(Lerp(_color, Colors.White, 0.55), 0),
+            new GradientStop(_color, 0.42),
+            new GradientStop(Darken(_color, 0.78), 1)
         ])
-        { GradientOrigin = new Point(0.4, 0.35) };
-        coreBrush.Freeze();
-        var breathing = State == AssistantState.Idle ? Math.Sin(time * 1.6) * 0.04 : 0;
-        var coreRadius = core * (1 + breathing + (_smoothedLevel * 0.12));
-        drawing.DrawEllipse(coreBrush, null, center, coreRadius, coreRadius);
-        var rim = new Pen(new SolidColorBrush(WithAlpha(_color, 140)), 1);
+        { GradientOrigin = new Point(0.36, 0.3), Center = new Point(0.45, 0.42), RadiusX = 0.62, RadiusY = 0.62 };
+        sphere.Freeze();
+        drawingContext.DrawEllipse(sphere, null, center, coreRadius, coreRadius);
+
+        var shine = new RadialGradientBrush([new GradientStop(Color.FromArgb(90, 255, 255, 255), 0), new GradientStop(Color.FromArgb(0, 255, 255, 255), 1)]);
+        shine.Freeze();
+        drawingContext.DrawEllipse(shine, null, new Point(center.X - (coreRadius * 0.32), center.Y - (coreRadius * 0.38)), coreRadius * 0.45, coreRadius * 0.32);
+
+        var rim = new Pen(new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), 1);
         rim.Freeze();
-        drawing.DrawEllipse(null, rim, center, core * 1.18, core * 1.18);
+        drawingContext.DrawEllipse(null, rim, center, coreRadius, coreRadius);
     }
 
-    /// <summary>Her çubuğun hedef uzunluğu (0–1).</summary>
-    private double BarTarget(int index, double time)
+    /// <summary>Kapalı, yumuşak bir eğri: yarıçapı açıya göre birkaç sinüsle dalgalanır.</summary>
+    private static StreamGeometry Blob(Point center, double radius, double amplitude, double phase, int layer)
     {
-        // Çubuklara kendi "kişiliklerini" veren sabit tohum: hepsi aynı anda inip kalkmaz.
-        var seed = Math.Sin(index * 12.9898) * 43758.5453;
-        seed -= Math.Floor(seed);
-        var wave = 0.5 + (0.5 * Math.Sin((time * (3 + (seed * 4))) + (index * 0.7)));
-        return State switch
+        var geometry = new StreamGeometry();
+        using (var context = geometry.Open())
         {
-            AssistantState.Listening or AssistantState.Speaking =>
-                Math.Clamp((_smoothedLevel * (0.45 + (0.75 * wave))) + (0.04 * wave), 0, 1),
-            AssistantState.Thinking => 0.08 + (0.32 * Comet(index, time)),
-            AssistantState.Starting => 0.03,
-            _ => 0.05 + (0.05 * wave)
-        };
-    }
+            for (var index = 0; index <= Points; index++)
+            {
+                var angle = index / (double)Points * Math.PI * 2;
+                var wave = (0.55 * Math.Sin((2 * angle) + phase))
+                           + (0.3 * Math.Sin((3 * angle) - (phase * 1.3) + layer))
+                           + (0.15 * Math.Sin((5 * angle) + (phase * 0.7) - layer));
+                var r = radius + (amplitude * wave);
+                var point = new Point(center.X + (Math.Cos(angle) * r), center.Y + (Math.Sin(angle) * r));
+                if (index == 0)
+                {
+                    context.BeginFigure(point, isFilled: false, isClosed: true);
+                }
+                else
+                {
+                    context.LineTo(point, isStroked: true, isSmoothJoin: true);
+                }
+            }
+        }
 
-    /// <summary>Düşünürken halkada dönen ışığın bu çubuktaki parlaklığı.</summary>
-    private static double Comet(int index, double time)
-    {
-        var head = (time * 0.9) % 1.0;
-        var position = index / (double)Bars;
-        var distance = (head - position + 1) % 1.0;
-        return Math.Pow(1 - distance, 6);
+        geometry.Freeze();
+        return geometry;
     }
 
     private void UpdateAnimation()
