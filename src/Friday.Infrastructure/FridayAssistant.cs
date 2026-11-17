@@ -103,7 +103,7 @@ public sealed class FridayAssistant : IDisposable
         _rhythm.Apply(_settings);
     }
 
-    /// <summary>"Hey Jarvis" açıksa bekleme metni bunu hatırlatır.</summary>
+    /// <summary>Uyandırma kelimesi açıksa bekleme metni bunu hatırlatır.</summary>
     private string ReadyText => _wakeWord.IsRunning ? $"Hazır · \"{WakeWordLabel}\" de ya da {_settings.Hotkey}" : "Hazır";
 
     private string WakeWordLabel =>
@@ -229,6 +229,7 @@ public sealed class FridayAssistant : IDisposable
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
         StartWakeWord();
         _rhythm.Apply(settings);
+        _tools.StartReminders();
         Report(AssistantState.Idle, $"{ReadyText} · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
     }
 
@@ -273,7 +274,7 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>
-    /// "Hey Jarvis" duyuldu: kısayola basılmış gibi davranır. Friday konuşuyor ya da düşünüyorsa sözü kesilir ve
+    /// "Hey Friday" duyuldu: kısayola basılmış gibi davranır. Friday konuşuyor ya da düşünüyorsa sözü kesilir ve
     /// dinlemeye geçilir; zaten dinliyorsa bir şey yapılmaz. Kayıt yalnızca kelimeyi duyan mikrofonla yapılır.
     /// </summary>
     private void OnWake(string device)
@@ -696,7 +697,7 @@ public sealed class FridayAssistant : IDisposable
 
     /// <summary>
     /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
-    /// basılır ya da "Hey Jarvis" denirse hemen susar.
+    /// basılır ya da "Hey Friday" denirse hemen susar.
     /// </summary>
     private void Announce(IReadOnlyList<CoachStep> script)
     {
@@ -790,6 +791,7 @@ public sealed class FridayAssistant : IDisposable
         _announcement?.Cancel();
         _announcement?.Dispose();
         _rhythm.Dispose();
+        _tools.Dispose();
         _wakeWord.Dispose();
         _turn?.Cancel();
         _turn?.Dispose();

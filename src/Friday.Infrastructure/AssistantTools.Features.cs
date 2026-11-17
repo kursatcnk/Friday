@@ -197,12 +197,11 @@ public sealed partial class AssistantTools
             text.Append("Hava durumu alınamadı (internet yok). ");
         }
 
-        lock (_timers)
-        {
-            text.Append(_timers.Count == 0
-                ? "Kurulu zamanlayıcı yok. "
-                : "Zamanlayıcılar: " + string.Join(", ", _timers.Select(timer => $"{timer.Note} {timer.Due:HH:mm}")) + ". ");
-        }
+        var upcoming = reminders.Upcoming.Where(item => item.Due.Date <= DateTime.Today.AddDays(1)).ToList();
+        text.Append(upcoming.Count == 0
+            ? "Bugün için kurulu hatırlatma yok. "
+            : "Hatırlatmalar: " + string.Join(", ", upcoming.Select(item =>
+                $"{(item.Text.Length > 0 ? item.Text : "zamanlayıcı")} ({TurkishTime.Describe(item.Due, DateTime.Now)})")) + ". ");
 
         // Tarihi belli olanlar kaç gün kaldığıyla, tarihsizler "yarın/hafta" geçiyorsa söylenir.
         var today = DateOnly.FromDateTime(DateTime.Now);

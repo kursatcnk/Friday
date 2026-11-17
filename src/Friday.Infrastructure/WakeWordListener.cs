@@ -5,7 +5,7 @@ using NAudio.Wave;
 namespace Friday.Infrastructure;
 
 /// <summary>
-/// "Hey Jarvis"i bekler. Mikrofon açık kalır ama ses 80 ms'lik parçalar halinde yalnızca bellekte işlenip atılır;
+/// Uyandırma kelimesini ("Hey Friday") bekler. Mikrofon açık kalır ama ses 80 ms'lik parçalar halinde yalnızca bellekte işlenip atılır;
 /// diske yazılmaz, hiçbir yere gönderilmez. Ses kartının iş parçacığı yalnızca kopyalar; modeller tek bir arka plan
 /// iş parçacığında çalışır, böylece ses sürücüsü hiç bekletilmez. Bir mikrofon çıkarılırsa birkaç saniye sonra
 /// kendiliğinden yeniden açılır.
@@ -16,7 +16,7 @@ public sealed class WakeWordListener : IDisposable
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Gerçek "hey jarvis" eşiği art arda 2–9 parça (160–720 ms) boyunca geçer; benzer sesli cümlelerdeki yanlış
+    /// Gerçek uyandırma kelimesi eşiği art arda 2–9 parça (160–720 ms) boyunca geçer; benzer sesli cümlelerdeki yanlış
     /// alarmların çoğu ise tek parçada kalır. İki parça şartı gecikmeye yalnızca 80 ms ekler.
     /// </summary>
     private const int RequiredHits = 2;

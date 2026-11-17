@@ -3,7 +3,7 @@ using Microsoft.ML.OnnxRuntime;
 namespace Friday.Infrastructure;
 
 /// <summary>
-/// openWakeWord'ün üç küçük modeli (mel spektrogram → konuşma gömmesi → "hey jarvis" sınıflandırıcı). Modeller bir kez
+/// openWakeWord'ün üç küçük modeli (mel spektrogram → konuşma gömmesi → uyandırma kelimesi sınıflandırıcısı). Modeller bir kez
 /// yüklenir ve bütün mikrofonlar arasında paylaşılır; her mikrofonun kendi akış durumu <see cref="WakeWordTracker"/>'dedir.
 /// Tek çekirdekte, tek iş parçacığıyla çalışır: 80 ms'lik her parça birkaç milisaniye sürer.
 /// </summary>
@@ -44,7 +44,7 @@ public sealed class WakeWordEngine : IDisposable
         _melInput = [_mel.InputMetadata.Keys.First()];
         _embeddingInput = [_embedding.InputMetadata.Keys.First()];
         _wakeInput = [_wake.InputMetadata.Keys.First()];
-        // "hey_jarvis" modeli son 16 gömmeye (~1,3 sn) bakar.
+        // Sınıflandırıcı son 16 gömmeye (~1,3 sn) bakar.
         FeatureFrames = Math.Max(1, _wake.InputMetadata[_wakeInput[0]].Dimensions[1]);
     }
 
@@ -57,7 +57,7 @@ public sealed class WakeWordEngine : IDisposable
 
     public WakeWordTracker CreateStream() => new(this);
 
-    /// <summary>Sürüm eki olan dosyayı da bulur: "hey_jarvis" → hey_jarvis_v0.1.onnx.</summary>
+    /// <summary>Sürüm eki olan dosyayı da bulur: "hey_friday" → hey_friday_v0.1.onnx.</summary>
     private static string ModelFile(string folder, string model)
     {
         var exact = Path.Combine(folder, model + ".onnx");

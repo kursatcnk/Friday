@@ -142,6 +142,7 @@
                                  Level="{Binding Level}" State="{Binding State}"/>
                 <Ellipse DockPanel.Dock="Bottom" Width="7" Height="7" Fill="{Binding StateBrush}" ToolTip="{Binding StatusText}"/>
                 <StackPanel Margin="6,0,0,0">
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE80F;" Content="Bugün" IsChecked="{Binding IsToday}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8BD;" Content="Sohbet" IsChecked="{Binding IsChat}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE9D9;" Content="Ritim" IsChecked="{Binding IsRhythm}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8F1;" Content="Hafıza" IsChecked="{Binding IsMemory}"/>
@@ -172,7 +173,7 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Border CornerRadius="9" Padding="9,3" Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}"
                                 BorderThickness="1" Margin="0,0,10,0" Visibility="{Binding WakeEnabled, Converter={StaticResource Visible}}">
-                            <TextBlock Text="Hey Jarvis" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                            <TextBlock Text="{Binding WakeLabel}" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
                         </Border>
                         <ItemsControl ItemsSource="{Binding HotkeyKeys}" ItemTemplate="{StaticResource KeyCap}" VerticalAlignment="Center">
                             <ItemsControl.ItemsPanel>
@@ -187,6 +188,196 @@
             </Grid>
 
             <Grid Grid.Row="1">
+                <!-- ================= Bugün ================= -->
+                <ScrollViewer Visibility="{Binding IsToday, Converter={StaticResource Visible}}" VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
+                    <StackPanel Margin="0,0,12,0" MaxWidth="900" HorizontalAlignment="Stretch">
+                        <!-- Selam ve hava. -->
+                        <Border Style="{StaticResource Card}" Padding="26,22" Margin="0,0,0,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <local:AudioRing x:Name="TodayRing" Width="86" Height="86" Level="{Binding Level}" State="{Binding State}" Margin="-8,-6,14,-6"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TimeGreeting}" FontFamily="{StaticResource DisplayFont}" FontSize="28" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding WakeHint}" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="20,0,0,0"
+                                            Visibility="{Binding HasWeather, Converter={StaticResource Visible}}">
+                                    <TextBlock Text="{Binding WeatherTemperature}" FontFamily="{StaticResource DisplayFont}" FontSize="40" FontWeight="SemiBold"
+                                               HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular"/>
+                                    <TextBlock Text="{Binding WeatherSummary}" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="{Binding WeatherDetail}" Style="{StaticResource Caption}" HorizontalAlignment="Right" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- İlk açılış: tanışma. -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="{Binding NeedsIntro, Converter={StaticResource Visible}}"
+                                BorderBrush="#40FF8A5B">
+                            <StackPanel>
+                                <TextBlock Text="Tanışalım" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource Body}" Margin="0,0,0,14"
+                                           Text="Sana adınla hitap edeyim ve hava durumunu doğru şehir için söyleyeyim. Başka bir yapay zekâ seni zaten tanıyorsa hafızasını da buraya taşıyabilirsin."/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Adın" Style="{StaticResource Label}"/>
+                                        <TextBox Text="{Binding IntroName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Şehrin" Style="{StaticResource Label}"/>
+                                        <TextBox Text="{Binding IntroCity, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="3" Style="{StaticResource AccentButton}" Content="Kaydet" Command="{Binding SaveIntroCommand}"
+                                            VerticalAlignment="Bottom" Margin="12,0,0,0" Padding="18,10"/>
+                                </Grid>
+                                <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,14,0,0" Command="{Binding GoToCommand}" CommandParameter="import">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8B5;" FontSize="12" Margin="0,0,8,0"/>
+                                        <TextBlock Text="ChatGPT, Claude ya da Gemini hafızamı aktar"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Yaklaşanlar. -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Yaklaşanlar" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
+                                    <TextBlock Style="{StaticResource Body}" FontSize="12" Visibility="{Binding HasUpcoming, Converter={StaticResource Hidden}}"
+                                               Text="Yaklaşan bir şey yok. &quot;Yarın 9'da doktoru hatırlat&quot; ya da &quot;10 dakika sonra çayı hatırlat&quot; diyebilirsin."/>
+                                    <ItemsControl ItemsSource="{Binding Upcoming}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:UpcomingView}">
+                                                <Grid x:Name="Row" Background="Transparent" Margin="0,5">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border CornerRadius="8" Padding="8,3" Background="{StaticResource AccentSoftBrush}" VerticalAlignment="Top" Margin="0,1,10,0">
+                                                        <TextBlock Text="{Binding When}" Foreground="{StaticResource AccentBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="19" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="2" x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Hatırlatmayı sil" Opacity="0" Padding="6"
+                                                            Visibility="{Binding IsReminder, Converter={StaticResource Visible}}"
+                                                            Command="{Binding DataContext.DeleteReminderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding ReminderId}">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="10"/>
+                                                    </Button>
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Remove" Property="Opacity" Value="1"/>
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <!-- Ritim. -->
+                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock Text="Ritim" Style="{StaticResource SectionTitle}"/>
+                                        <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right" Padding="4" ToolTip="Ritim sayfası"
+                                                Command="{Binding GoToCommand}" CommandParameter="rhythm">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11"/>
+                                        </Button>
+                                    </Grid>
+                                    <TextBlock Text="{Binding RhythmActive}" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="SemiBold"
+                                               Typography.NumeralAlignment="Tabular" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding RhythmStretch}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,10"/>
+                                    <Grid Height="5" Margin="0,0,0,14">
+                                        <Border CornerRadius="3" Background="#222226"/>
+                                        <Border CornerRadius="3" Background="{StaticResource AccentBrush}" RenderTransformOrigin="0,0.5">
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleX="{Binding RhythmProgress}"/>
+                                            </Border.RenderTransform>
+                                        </Border>
+                                    </Grid>
+                                    <WrapPanel Margin="-4,0,0,0">
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Mola ver" Command="{Binding RhythmCommand}" CommandParameter="Mola ver"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="25 dk odak" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Nefes" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Notlar. -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock Text="Notlar" Style="{StaticResource SectionTitle}"/>
+                                        <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right" Padding="4" ToolTip="notes.md'yi aç"
+                                                Command="{Binding OpenNotesCommand}">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8A7;" FontSize="11"/>
+                                        </Button>
+                                    </Grid>
+                                    <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,6,0,0" Visibility="{Binding HasNotes, Converter={StaticResource Hidden}}"
+                                               Text="&quot;Not al: süt ve ekmek&quot; de, buraya yazayım. &quot;Notlarımı oku&quot; deyince okurum."/>
+                                    <ItemsControl ItemsSource="{Binding RecentNotes}" Margin="0,6,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:NoteView}">
+                                                <Grid Margin="0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="50"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Time}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="19"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <!-- Söyleyebileceklerin. -->
+                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Dene" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                                    <ItemsControl ItemsSource="{Binding TodayIdeas}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Margin="-4,0,0,0"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource ChipButton}" Content="{Binding}" Padding="11,6"
+                                                        Command="{Binding DataContext.SuggestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
                 <!-- ================= Sohbet ================= -->
                 <Grid Visibility="{Binding IsChat, Converter={StaticResource Visible}}" Margin="36,4,32,24">
                     <Grid.RowDefinitions>
@@ -308,6 +499,36 @@
                                 </StackPanel>
                             </Border>
                         </UniformGrid>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Bu hafta" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                                <ItemsControl ItemsSource="{Binding WeekBars}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Rows="1"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:WeekBarView}">
+                                            <StackPanel Margin="6,0">
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                                <Grid Height="90">
+                                                    <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="6" Background="#3A3936"/>
+                                                </Grid>
+                                                <TextBlock x:Name="Day" Text="{Binding Day}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                    <Setter TargetName="Bar" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                                    <Setter TargetName="Day" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
 
                         <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                             <StackPanel>
@@ -639,7 +860,7 @@
                                 <TextBlock Text="Uyandırma ve ritim" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                                 <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WakeEnabled}">
                                     <StackPanel>
-                                        <TextBlock Text="&quot;Hey Jarvis&quot; ile uyan" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding WakeLabel, StringFormat='&quot;{0}&quot; ile uyan'}" FontWeight="SemiBold"/>
                                         <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,2,0,0"
                                                    Text="Mikrofon açık kalır ama ses yalnızca bellekte, 80 ms'lik parçalar halinde puanlanıp atılır. Kapalıyken yalnızca kısayol çalışır."/>
                                     </StackPanel>

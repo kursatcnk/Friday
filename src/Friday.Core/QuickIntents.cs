@@ -45,8 +45,14 @@ public static partial class QuickIntents
             ?? Clock(sentence)
             ?? Weather(sentence)
             ?? Currency(sentence)
+            ?? Volume(sentence)
             ?? Media(sentence)
+            ?? ReminderAt(sentence)
             ?? Timer(sentence)
+            ?? Reminders(sentence)
+            ?? Notes(sentence)
+            ?? Calculation(text)
+            ?? Countdown(text)
             ?? Rhythm(sentence)
             ?? Routine(sentence, routines ?? [])
             ?? App(sentence);
@@ -205,6 +211,56 @@ public static partial class QuickIntents
             ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)), ("not", match.Groups["note"].Value.Trim()));
     }
 
+    private static QuickCommand? Volume(string sentence)
+    {
+        if (VolumeSet().Match(sentence) is { Success: true } set && int.TryParse(set.Groups["n"].Value, CultureInfo.InvariantCulture, out var level))
+        {
+            return Command("medya", ("komut", "ses_ayarla"), ("deger", Math.Clamp(level, 0, 100).ToString(CultureInfo.InvariantCulture)));
+        }
+
+        return VolumeQuestion().IsMatch(sentence) ? Command("medya", ("komut", "ses_seviyesi")) : null;
+    }
+
+    /// <summary>"yarın 9'da doktoru hatırlat", "akşam 8'de ilacımı hatırlat", "pazartesi 10:30'da toplantıyı hatırlat".</summary>
+    private static QuickCommand? ReminderAt(string sentence)
+    {
+        var match = ReminderRequest().Match(sentence);
+        if (!match.Success || match.Groups["when"].Value.Trim().Length == 0 || TurkishTime.Parse(match.Groups["when"].Value, DateTime.Now) is null)
+        {
+            return null;
+        }
+
+        return Command("hatirlatici", ("islem", "ekle"), ("zaman", match.Groups["when"].Value.Trim()), ("metin", match.Groups["note"].Value.Trim()));
+    }
+
+    private static QuickCommand? Reminders(string sentence)
+    {
+        if (ReminderList().IsMatch(sentence))
+        {
+            return Command("hatirlatici", ("islem", "listele"));
+        }
+
+        return ReminderCancel().Match(sentence) is { Success: true } cancel
+            ? Command("hatirlatici", ("islem", "sil"), ("metin", cancel.Groups["x"].Value.Trim()))
+            : null;
+    }
+
+    private static QuickCommand? Notes(string sentence)
+    {
+        if (NoteTake().Match(sentence) is { Success: true } take && take.Groups["x"].Value.Trim() is { Length: > 1 } note)
+        {
+            return Command("not", ("islem", "ekle"), ("metin", note));
+        }
+
+        return NoteRead().IsMatch(sentence) ? Command("not", ("islem", "oku")) : null;
+    }
+
+    private static QuickCommand? Calculation(string text) =>
+        SpokenMath.Answer(Address().Replace(text.Trim().ToLower(Turkish), "")) is not null ? Command("hesap", ("soru", text.Trim())) : null;
+
+    private static QuickCommand? Countdown(string text) =>
+        DayCountdown.Target(Address().Replace(text.Trim().ToLower(Turkish), "")) is { Length: > 1 } target ? Command("gun_sayaci", ("hedef", target)) : null;
+
     private static QuickCommand? Rhythm(string sentence)
     {
         if (FocusStart().Match(sentence) is { Success: true } focus)
@@ -227,6 +283,7 @@ public static partial class QuickIntents
             _ when StretchRequest().IsMatch(sentence) => "esneme",
             _ when WaterLog().IsMatch(sentence) => "su",
             _ when DayStatus().IsMatch(sentence) => "durum",
+            _ when WeekStatus().IsMatch(sentence) => "hafta",
             _ when WhereWasI().IsMatch(sentence) => "kaldigim_yer",
             _ => ""
         };
@@ -342,6 +399,33 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:ne yapıyordum|nerede kalmıştım|kaldığım yer(?: neydi)?|en son ne yapıyordum)$")]
     private static partial Regex WhereWasI();
 
+    // "sesi yüzde 30 yap", "sesi 40'a ayarla", "ses seviyesini yüzde 50 yap"
+    [GeneratedRegex(@"^(?:sesi|ses seviyesini|sesin seviyesini) (?:yüzde )?(?<n>\d{1,3})['’]?(?:e|a|ye|ya)? (?:yap|ayarla|getir|indir|çıkar|düşür|kıs|aç)$")]
+    private static partial Regex VolumeSet();
+
+    [GeneratedRegex(@"^(?:ses seviyesi|ses) (?:kaç|ne kadar|yüzde kaç)$")]
+    private static partial Regex VolumeQuestion();
+
+    // "<zaman> <not> hatırlat"; zaman: "yarın 9'da", "saat 15:30'da", "akşam 8'de", "pazartesi sabah", "öğleden sonra 3'te"
+    [GeneratedRegex(@"^(?<when>(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar) ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
+    private static partial Regex ReminderRequest();
+
+    [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$")]
+    private static partial Regex ReminderList();
+
+    [GeneratedRegex(@"^(?<x>.+?) hatırlatma(?:sını|yı)? (?:iptal et|sil|kaldır)$")]
+    private static partial Regex ReminderCancel();
+
+    // "not al: süt al", "şunu not et: yarın bankaya git", "süt almayı not al"
+    [GeneratedRegex(@"^(?:(?:bir )?not (?:al|et|ekle)|şunu not (?:al|et)|not tut)[:,]? (?<x>.+)$|^(?<x>.+?) (?:diye )?not (?:al|et)$")]
+    private static partial Regex NoteTake();
+
+    [GeneratedRegex(@"^(?:notlarımı (?:oku|söyle|göster)|notlarım (?:neler|ne)|son notum (?:ne|neydi)|notlarım)$")]
+    private static partial Regex NoteRead();
+
+    [GeneratedRegex(@"^bu hafta (?:ne kadar (?:çalıştım|odaklandım)|nasıl geçti|kaç mola verdim)$|^haftam nasıl geçti$")]
+    private static partial Regex WeekStatus();
+
     // "spotify'ı aç", "not defterini aç", "çalışma modunu aç"
     [GeneratedRegex(@"^(?<x>[\p{L}\d .+-]{2,40}?)(?:['’]?(?:yı|yi|yu|yü|ı|i|u|ü|nı|ni|nu|nü))? aç$")]
     private static partial Regex OpenObject();
@@ -349,7 +433,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"[.!?]+\s+")]
     private static partial Regex SentenceBreak();
 
-    [GeneratedRegex(@"^(?:hey\s+)?(?:friday|jarvis)[,\s]+")]
+    [GeneratedRegex(@"^(?:hey\s+)?friday[,\s]+")]
     private static partial Regex Address();
 
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]

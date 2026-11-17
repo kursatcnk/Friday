@@ -19,7 +19,7 @@ public class QuickIntentTests
     [InlineData("Naruto Kokuten şarkısını çal", "naruto kokuten")]
     [InlineData("Power to Resist'i YouTube'dan aç", "power to resist'i")]
     [InlineData("YouTube'da Dragon Ball müziği izlemek istiyorum", "dragon ball müziği")]
-    [InlineData("Hey Jarvis, YouTube'dan Tarkan aç", "tarkan")]
+    [InlineData("Hey Friday, YouTube'dan Tarkan aç", "tarkan")]
     public void RecognizesClearVideoCommands(string sentence, string query)
     {
         var command = QuickIntents.Match(sentence);
@@ -203,6 +203,7 @@ public class FillerTests
     [InlineData("Bugün sana nasıl yardımcı olabilirim?", true)]
     [InlineData("Size nasıl yardımcı olabilirim?", true)]
     [InlineData("Yardımcı olmak için buradayım.", true)]
+    [InlineData("Ben bir yapay zekayım, duygularım yok ama sistemlerim sorunsuz çalışıyor.", true)]
     [InlineData("Ankara'da yarın yağmur yok.", false)]
     [InlineData("Ne yapmamı istersin?", false)]
     public void RecognizesFillerSentences(string sentence, bool filler) =>

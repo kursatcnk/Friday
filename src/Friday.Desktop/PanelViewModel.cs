@@ -53,6 +53,17 @@ public sealed record LedgerView(string Time, string Category, string Detail, boo
 
 public sealed record RoutineStepView(string Glyph, string Text);
 
+/// <summary>"Bugün" ekranında yaklaşan bir şey: kurulu hatırlatma (silinebilir) ya da hafızadaki tarihli bilgi.</summary>
+public sealed record UpcomingView(string? ReminderId, string When, string Text)
+{
+    public bool IsReminder => ReminderId is not null;
+}
+
+public sealed record NoteView(string Time, string Text);
+
+/// <summary>Ritim sayfasındaki haftalık grafikte bir gün.</summary>
+public sealed record WeekBarView(string Day, double Height, string Label, bool IsToday);
+
 public sealed record RoutineView(string Name, IReadOnlyList<RoutineStepView> Steps);
 
 /// <summary>Panelin kullanıcı eylemleri; App bunları asistana bağlar.</summary>
@@ -85,6 +96,10 @@ public sealed class PanelActions
 
     /// <summary>Başka bir yapay zekâya yapıştırılacak mesajı panoya koyar.</summary>
     public Action CopyMemoriesForAi { get; init; } = () => { };
+
+    public Action<string> DeleteReminder { get; init; } = _ => { };
+
+    public Action OpenNotes { get; init; } = () => { };
 }
 
 public sealed record VoiceOption(string Name, string Label);
@@ -127,11 +142,28 @@ public sealed partial class PanelViewModel : ObservableObject
         "Bugün ne konuştuk?",
     ];
 
+    /// <summary>"Bugün" ekranındaki "Dene" kartı: Friday'in dil modelsiz, anında yaptığı işler.</summary>
+    public IReadOnlyList<string> TodayIdeas { get; } =
+    [
+        "Yarın hava nasıl?",
+        "Dolar kaç lira?",
+        "345 çarpı 12 kaç?",
+        "Yılbaşına kaç gün kaldı?",
+        "Bugün ne kadar çalıştım?",
+        "Hatırlatmalarım neler?",
+        "Notlarımı oku",
+        "Bu hafta ne kadar çalıştım?",
+    ];
+
     // ---------- Gezinme ----------
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
-    private bool _isChat = true;
+    private bool _isToday = true;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
+    private bool _isChat;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
@@ -153,10 +185,11 @@ public sealed partial class PanelViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
     private bool _isSettings;
 
-    public string PageTitle => IsMemory ? "Hafıza" : IsRhythm ? "Ritim" : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
+    public string PageTitle => IsToday ? "Bugün" : IsMemory ? "Hafıza" : IsRhythm ? "Ritim" : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
 
     public string PageSubtitle =>
-        IsMemory ? "Senin hakkında bildikleri; yalnızca bu bilgisayarda durur."
+        IsToday ? $"{DateTime.Now.ToString("d MMMM dddd", Turkish)} · {StatusText}"
+        : IsMemory ? "Senin hakkında bildikleri; yalnızca bu bilgisayarda durur."
         : IsRhythm ? "Çalışma ritmin, molaların ve odak oturumların."
         : IsPrivacy ? "Bugün neyin bilgisayarda kaldığı, neyin dışarı çıktığı."
         : IsRoutines ? "Tek cümleyle başlayan alışkanlıkların."
@@ -165,10 +198,60 @@ public sealed partial class PanelViewModel : ObservableObject
 
     public string Greeting => string.IsNullOrWhiteSpace(_settings.UserName) ? "Merhaba." : $"Merhaba {_settings.UserName.Trim()}.";
 
-    /// <summary>Boş sohbet ekranındaki ipucu: "Hey Jarvis" açıksa onu da söyler.</summary>
+    /// <summary>Uyandırma kelimesinin okunuşu: "hey_friday" → "Hey Friday".</summary>
+    public string WakeLabel => string.Join(' ', _settings.WakeWord.Split('_', StringSplitOptions.RemoveEmptyEntries)
+        .Select(word => char.ToUpper(word[0], Turkish) + word[1..]));
+
+    /// <summary>Boş sohbet ekranındaki ipucu: uyandırma kelimesi açıksa onu da söyler.</summary>
     public string WakeHint => _settings.WakeWord.Length > 0
-        ? $"\"Hey Jarvis\" de, {Hotkey.Replace("+", " ", StringComparison.Ordinal)} tuşlarına bas ya da aşağıya yaz."
+        ? $"\"{WakeLabel}\" de, {Hotkey.Replace("+", " ", StringComparison.Ordinal)} tuşlarına bas ya da aşağıya yaz."
         : $"{Hotkey.Replace("+", " ", StringComparison.Ordinal)} tuşlarına bas ve konuş ya da aşağıya yaz.";
+
+    /// <summary>Günün saatine göre selam: "Günaydın Kürşat", "İyi akşamlar".</summary>
+    public string TimeGreeting
+    {
+        get
+        {
+            var hour = DateTime.Now.Hour;
+            var hello = hour switch { >= 5 and < 11 => "Günaydın", >= 11 and < 17 => "İyi günler", >= 17 and < 22 => "İyi akşamlar", _ => "İyi geceler" };
+            return string.IsNullOrWhiteSpace(_settings.UserName) ? $"{hello}." : $"{hello} {_settings.UserName.Trim()}.";
+        }
+    }
+
+    /// <summary>Adı girilmemişse "Bugün" ekranında kısa bir tanışma kartı görünür.</summary>
+    public bool NeedsIntro => string.IsNullOrWhiteSpace(_settings.UserName);
+
+    // ---------- Bugün ----------
+
+    public ObservableCollection<UpcomingView> Upcoming { get; } = [];
+
+    public ObservableCollection<NoteView> RecentNotes { get; } = [];
+
+    public ObservableCollection<WeekBarView> WeekBars { get; } = [];
+
+    [ObservableProperty]
+    private bool _hasUpcoming;
+
+    [ObservableProperty]
+    private bool _hasNotes;
+
+    [ObservableProperty]
+    private bool _hasWeather;
+
+    [ObservableProperty]
+    private string _weatherTemperature = "";
+
+    [ObservableProperty]
+    private string _weatherSummary = "";
+
+    [ObservableProperty]
+    private string _weatherDetail = "";
+
+    [ObservableProperty]
+    private string _introName = "";
+
+    [ObservableProperty]
+    private string _introCity = "";
 
     // ---------- Durum ----------
 
@@ -400,6 +483,13 @@ public sealed partial class PanelViewModel : ObservableObject
 
     public void OnUserSaid(string text)
     {
+        // "Bugün" ekranındayken konuşma başlarsa sohbet görünür.
+        if (IsToday)
+        {
+            IsToday = false;
+            IsChat = true;
+        }
+
         _currentReply = null;
         AddLine(new ChatLine(true, text, DateTime.Now));
     }
@@ -444,6 +534,67 @@ public sealed partial class PanelViewModel : ObservableObject
         var upcoming = Memories.Count(memory => memory.HasCountdown);
         MemorySummary = Memories.Count == 0 ? "Henüz bilgi yok"
             : upcoming > 0 ? $"{Memories.Count} bilgi · {upcoming} yaklaşan tarih" : $"{Memories.Count} bilgi";
+    }
+
+    /// <summary>"Bugün" ekranındaki yaklaşanlar: kurulu hatırlatmalar ve 30 gün içinde tarihi gelen hafıza bilgileri.</summary>
+    public void ShowToday(IReadOnlyList<Reminder> reminders, IEnumerable<MemoryItem> memories)
+    {
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        Upcoming.Clear();
+        var items = reminders.Select(item => (Sort: item.Due, View: new UpcomingView(item.Id, TurkishTime.Describe(item.Due, now),
+                item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")))
+            .Concat(memories
+                .Select(item => (Item: item, Next: MemoryDates.NextOccurrence(item.Text, today)))
+                .Where(entry => entry.Next is { } next && next.DayNumber - today.DayNumber <= 30)
+                .Select(entry => (Sort: entry.Next!.Value.ToDateTime(TimeOnly.MinValue),
+                    View: new UpcomingView(null, MemoryDates.Countdown(entry.Item.Text, today) ?? "", entry.Item.Text))))
+            .OrderBy(entry => entry.Sort)
+            .Take(8);
+        foreach (var (_, view) in items)
+        {
+            Upcoming.Add(view);
+        }
+
+        HasUpcoming = Upcoming.Count > 0;
+    }
+
+    /// <summary>Son 7 günün aktif süresi: en uzun gün 90 piksel, bugün kor renginde.</summary>
+    public void ShowWeek(IReadOnlyList<RhythmDay> days)
+    {
+        var longest = Math.Max(60, days.Count == 0 ? 0 : days.Max(day => day.ActiveMinutes));
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        WeekBars.Clear();
+        foreach (var day in days)
+        {
+            var minutes = day.ActiveMinutes;
+            var label = minutes < 1 ? "" : minutes < 60 ? $"{Math.Round(minutes)} dk" : $"{(minutes / 60).ToString("0.#", Turkish)} sa";
+            WeekBars.Add(new WeekBarView(day.Date.ToString("ddd", Turkish), Math.Max(4, 90 * minutes / longest), label, day.Date == today));
+        }
+    }
+
+    public void ShowNotes(IReadOnlyList<Note> notes)
+    {
+        RecentNotes.Clear();
+        foreach (var note in notes.TakeLast(5).Reverse())
+        {
+            RecentNotes.Add(new NoteView(note.Time.Date == DateTime.Today ? note.Time.ToString("HH:mm", Turkish) : note.Time.ToString("d MMM", Turkish), note.Text));
+        }
+
+        HasNotes = RecentNotes.Count > 0;
+    }
+
+    public void ShowWeather(WeatherCard? card)
+    {
+        HasWeather = card is not null;
+        if (card is null)
+        {
+            return;
+        }
+
+        WeatherTemperature = $"{card.Temperature}°";
+        WeatherSummary = $"{card.Place} · {card.Description}";
+        WeatherDetail = $"En yüksek {card.Max}° · en düşük {card.Min}° · yağış %{card.RainChance}";
     }
 
     /// <summary>Ritim koçundan gelen günün özeti.</summary>
@@ -571,6 +722,47 @@ public sealed partial class PanelViewModel : ObservableObject
         MemoryMessage = "Panoya kondu. ChatGPT, Claude ya da Gemini'ye yapıştırman yeter.";
     }
 
+    [RelayCommand]
+    private void DeleteReminder(string id) => _actions.DeleteReminder(id);
+
+    [RelayCommand]
+    private void OpenNotes() => _actions.OpenNotes();
+
+    /// <summary>"Bugün" ekranındaki kısayollar: "chat", "memory", "rhythm", "import".</summary>
+    [RelayCommand]
+    private void GoTo(string page)
+    {
+        IsToday = false;
+        IsChat = page == "chat";
+        IsMemory = page is "memory" or "import";
+        IsRhythm = page == "rhythm";
+        if (page == "import")
+        {
+            ImportFile();
+        }
+    }
+
+    [RelayCommand]
+    private void SaveIntro()
+    {
+        if (!string.IsNullOrWhiteSpace(IntroName))
+        {
+            _settings.UserName = IntroName.Trim();
+            UserName = _settings.UserName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(IntroCity))
+        {
+            _settings.City = IntroCity.Trim();
+            City = _settings.City;
+        }
+
+        _actions.Save(_settings);
+        OnPropertyChanged(nameof(NeedsIntro));
+        OnPropertyChanged(nameof(TimeGreeting));
+        OnPropertyChanged(nameof(Greeting));
+    }
+
     /// <summary>Ritim düğmeleri sesli komutla aynı yoldan gider: "Mola ver", "25 dakika odaklanacağım".</summary>
     [RelayCommand]
     private void Rhythm(string sentence) => _actions.Send(sentence);
@@ -637,7 +829,7 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings.City = City.Trim();
         _settings.MicrophoneDevice = SelectedMicrophone == "Otomatik" ? "" : SelectedMicrophone;
         _settings.UserName = UserName.Trim();
-        _settings.WakeWord = WakeEnabled ? "hey_jarvis" : "";
+        _settings.WakeWord = WakeEnabled ? "hey_friday" : "";
         _settings.WakeWordThreshold = WakeSensitive ? 0.35 : WakeStrict ? 0.7 : 0.5;
         _settings.Rhythm = RhythmEnabled;
         _settings.BreakEveryMinutes = BreakEvery30 ? 30 : BreakEvery90 ? 90 : 50;
@@ -645,6 +837,9 @@ public sealed partial class PanelViewModel : ObservableObject
         _actions.Save(_settings);
         OnPropertyChanged(nameof(Greeting));
         OnPropertyChanged(nameof(WakeHint));
+        OnPropertyChanged(nameof(WakeLabel));
+        OnPropertyChanged(nameof(TimeGreeting));
+        OnPropertyChanged(nameof(NeedsIntro));
         SavedMessage = $"Kaydedildi · {DateTime.Now:HH:mm}";
     }
 

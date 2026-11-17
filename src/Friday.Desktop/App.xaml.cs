@@ -21,6 +21,7 @@ public sealed partial class App : Application, IDisposable
     private EventWaitHandle? _showSignal;
     private RegisteredWaitHandle? _showWait;
     private FridayPaths? _paths;
+    private DispatcherTimer? _weatherClock;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -93,12 +94,15 @@ public sealed partial class App : Application, IDisposable
         var memory = new MemoryStore(Path.Combine(paths.Data, "memory.json"));
         var ledger = new PrivacyLedger(Path.Combine(paths.Data, "ledger"));
         var history = new ConversationLog(Path.Combine(paths.Data, "history"));
+        var reminders = new ReminderStore(Path.Combine(paths.Data, "reminders.json"));
+        var notes = new NoteStore(Path.Combine(paths.Data, "notes.md"));
 
         // Yerel model yanıtları uzun sürebilir; zaman aşımını istekler kendi belirler.
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
+        var tools = new AssistantTools(_http, chat, memory, ledger, history, reminders, notes);
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -106,7 +110,7 @@ public sealed partial class App : Application, IDisposable
             ollama,
             chat,
             new Speaker(paths),
-            new AssistantTools(_http, chat, memory, ledger, history),
+            tools,
             memory,
             ledger,
             history,
@@ -139,6 +143,16 @@ public sealed partial class App : Application, IDisposable
                 return added;
             },
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
+            DeleteReminder = id => reminders.Remove(id),
+            OpenNotes = () =>
+            {
+                if (!File.Exists(notes.File))
+                {
+                    notes.Add("Notlarım burada; Friday'e \"not al: …\" de.", DateTime.Now);
+                }
+
+                Open(notes.File);
+            },
             CopyMemoriesForAi = () =>
             {
                 ClipboardText.Set(memory.ToPortablePrompt());
@@ -151,9 +165,32 @@ public sealed partial class App : Application, IDisposable
         panel.ShowLedger(ledger.TodayEntries);
 
         void Ui(Action action) => Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
-        void ShowRhythm() => panel.ShowRhythm(rhythm.Today, rhythm.CurrentStretch, rhythm.FocusEnd, settings.BreakEveryMinutes);
+        void ShowRhythm()
+        {
+            panel.ShowRhythm(rhythm.Today, rhythm.CurrentStretch, rhythm.FocusEnd, settings.BreakEveryMinutes);
+            panel.ShowWeek(rhythm.Week());
+        }
+
         rhythm.Changed += (_, _) => Ui(ShowRhythm);
         ShowRhythm();
+
+        // "Bugün" ekranı: yaklaşanlar, notlar ve saatte bir yenilenen hava.
+        void ShowToday() => panel.ShowToday(reminders.Upcoming, memory.Items);
+        reminders.Changed += (_, _) => Ui(ShowToday);
+        memory.Changed += (_, _) => Ui(ShowToday);
+        notes.Changed += (_, _) => Ui(() => panel.ShowNotes(notes.All));
+        ShowToday();
+        panel.ShowNotes(notes.All);
+        async Task RefreshWeatherAsync()
+        {
+            var card = await tools.WeatherCardAsync(CancellationToken.None).ConfigureAwait(true);
+            panel.ShowWeather(card);
+        }
+
+        _weatherClock = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+        _weatherClock.Tick += async (_, _) => await RefreshWeatherAsync().ConfigureAwait(true);
+        _weatherClock.Start();
+        _ = RefreshWeatherAsync();
         memory.Changed += (_, _) => Ui(() => panel.ShowMemories(memory.Items));
         ledger.Added += (_, entry) => Ui(() => panel.AddLedger(entry));
         assistant.StatusChanged += (_, status) => Ui(() =>
@@ -304,6 +341,7 @@ public sealed partial class App : Application, IDisposable
 
     public void Dispose()
     {
+        _weatherClock?.Stop();
         _startup?.Cancel();
         _startup?.Dispose();
         _tray?.Dispose();

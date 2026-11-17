@@ -14,6 +14,8 @@ namespace Friday.Desktop;
 /// </summary>
 internal static class Snapshot
 {
+    private static readonly int[] SampleWeek = [310, 265, 0, 340, 288, 120, 251];
+
     public static void RenderAll(string folder)
     {
         Directory.CreateDirectory(folder);
@@ -49,10 +51,33 @@ internal static class Snapshot
         }
 
         var settings = new FridaySettings { UserName = "Kürşat" };
+        var now = DateTime.Now;
+        var home = new PanelViewModel(settings, new PanelActions())
+        {
+            State = AssistantState.Idle,
+            StatusText = "Hazır · \"Hey Friday\" de ya da Ctrl+Alt+F"
+        };
+        home.ShowWeather(new WeatherCard("İstanbul", 15, "parçalı bulutlu", 17, 9, 20));
+        home.ShowToday(
+            [
+                new Reminder("r1", now.Date.AddHours(20), "ilacımı", now),
+                new Reminder("r2", now.Date.AddDays(1).AddHours(9), "doktoru aramayı", now),
+            ],
+            [new MemoryItem("m1", $"Kullanıcının arabasının muayenesi {now.AddDays(3).ToString("d MMMM", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))}'da.", DateTimeOffset.Now)]);
+        home.ShowNotes([new Note(now.AddHours(-3), "Süt ve ekmek al"), new Note(now.AddHours(-1), "Sunumun ilk slaytını sadeleştir")]);
+        home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 },
+            TimeSpan.FromMinutes(38), null, 50);
+        RenderPanel(home, folder, "panel-today");
+
+        var intro = new PanelViewModel(new FridaySettings(), new PanelActions()) { State = AssistantState.Idle, StatusText = "Hazır" };
+        RenderPanel(intro, folder, "panel-today-intro");
+
         var empty = new PanelViewModel(settings, new PanelActions())
         {
             State = AssistantState.Idle,
-            StatusText = "Hazır · Whisper GPU (Vulkan) · Azure nöral ses (Emel)"
+            StatusText = "Hazır · Whisper GPU (Vulkan) · Azure nöral ses (Emel)",
+            IsToday = false,
+            IsChat = true
         };
         RenderPanel(empty, folder, "panel-chat-empty");
 
@@ -115,6 +140,11 @@ internal static class Snapshot
             ]
         }, TimeSpan.FromMinutes(34), DateTime.Now.AddMinutes(12), 50);
         panel.RhythmNow = day.AddHours(14.4);
+        panel.ShowWeek([.. Enumerable.Range(0, 7).Select(offset => new RhythmDay
+        {
+            Date = DateOnly.FromDateTime(day.AddDays(offset - 6)),
+            ActiveMinutes = SampleWeek[offset]
+        })]);
         RenderPanel(panel, folder, "panel-rhythm");
         panel.IsRhythm = false;
         panel.IsMemory = true;

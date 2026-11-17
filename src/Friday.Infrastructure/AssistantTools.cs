@@ -16,7 +16,9 @@ public sealed partial class AssistantTools(
     OllamaChatClient chat,
     MemoryStore memory,
     PrivacyLedger ledger,
-    ConversationLog history)
+    ConversationLog history,
+    ReminderStore reminders,
+    NoteStore notes) : IDisposable
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
 
@@ -48,11 +50,13 @@ public sealed partial class AssistantTools(
         ["doviz"] = "Kurlara bakıyorum",
         ["video_ac"] = "Videoyu buluyorum",
         ["ritim"] = "Ritmine bakıyorum",
+        ["hatirlatici"] = "Hatırlatıcıya bakıyorum",
+        ["not"] = "Not defterine bakıyorum",
+        ["hesap"] = "Hesaplıyorum",
+        ["gun_sayaci"] = "Günleri sayıyorum",
     };
 
-    private readonly List<(DateTime Due, string Note)> _timers = [];
-
-    /// <summary>Zamanlayıcı dolunca söylenecek metin.</summary>
+    /// <summary>Hatırlatma ya da zamanlayıcı dolunca söylenecek metin.</summary>
     public event EventHandler<string>? TimerElapsed;
 
     public FridaySettings Settings { get; set; } = new();
@@ -81,13 +85,24 @@ public sealed partial class AssistantTools(
         Tool("masaustu_kontrol", "Masaüstünde işlem yapar: sekmeye_gec, sekmeyi_kapat, one_getir (pencereyi öne al), tikla (hedef 'Uygulama > düğme adı'), yaz (hedef pencereye metin yazar). Araç onay isterse kullanıcıya sor.",
             [("islem", "string", "sekmeye_gec, sekmeyi_kapat, one_getir, tikla ya da yaz", true), ("hedef", "string", "Sekme adı, uygulama adı ya da 'Uygulama > düğme'", true),
              ("metin", "string", "yaz için metin", false)]),
-        Tool("medya", "Müzik/videoyu ve sesi kontrol eder; ne_caliyor ile o an çalan şarkıyı/videoyu söyler.",
-            [("komut", "string", "oynat_duraklat, sonraki, onceki, ses_ac, ses_kis, sessiz ya da ne_caliyor", true)]),
+        Tool("medya", "Müzik/videoyu ve sesi kontrol eder; ne_caliyor ile o an çalan şarkıyı/videoyu söyler; ses_ayarla ile ses yüzdesini ayarlar.",
+            [("komut", "string", "oynat_duraklat, sonraki, onceki, ses_ac, ses_kis, sessiz, ses_ayarla, ses_seviyesi ya da ne_caliyor", true),
+             ("deger", "number", "ses_ayarla için yüzde (0–100)", false)]),
         Tool("hava_durumu", "Bir şehrin şu anki hava durumu ve gün gün tahmini (en fazla 7 gün): sıcaklık, yağış ihtimali ve miktarı. Hava ve yağmur soruları için internette_ara yerine bunu kullan.",
             [("sehir", "string", "Şehir adı; söylenmediyse boş bırak", false),
              ("gun", "number", "Kaç günlük tahmin: bugün/yarın için 2, hafta için 7", false)]),
         Tool("zamanlayici", "Belirtilen süre sonra kullanıcıya sesli hatırlatma yapar.",
             [("dakika", "number", "Kaç dakika sonra", true), ("not", "string", "Hatırlatılacak şey", false)]),
+        Tool("hatirlatici", "Belirli bir zamanda sesli hatırlatma kurar (Friday kapansa bile kaybolmaz), kurulu hatırlatmaları listeler ya da siler.",
+            [("islem", "string", "ekle, listele ya da sil", true),
+             ("zaman", "string", "ekle için kullanıcının söylediği zaman, ör. 'yarın 9'da', 'akşam 8'de', 'pazartesi 10:30'da'", false),
+             ("metin", "string", "Hatırlatılacak şey (ekle) ya da silinecek hatırlatmada geçen sözcük (sil)", false)]),
+        Tool("not", "Kullanıcının sesli notlarını kaydeder ya da son notları okur (D:\\Friday\\data\\notes.md).",
+            [("islem", "string", "ekle ya da oku", true), ("metin", "string", "ekle için not", false)]),
+        Tool("hesap", "Aritmetik, yüzde ve birim çevirme hesaplarını kesin olarak yapar. Hesap sorularında kendi hesaplama, bunu kullan.",
+            [("soru", "string", "Ör. '345 çarpı 12', '200'ün yüzde 15'i kaç', '5 mil kaç kilometre'", true)]),
+        Tool("gun_sayaci", "Bir güne kaç gün kaldığını söyler: yılbaşı, bayramlar, bir tarih ya da hafızadaki doğum günü gibi tarihler.",
+            [("hedef", "string", "Ör. 'yılbaşı', '23 nisan', 'doğum günüm'", true)]),
         Tool("ekrana_bak", "Kullanıcının ekranına bakar ve soruyu ekranda görünene göre cevaplar (ör. bu hata ne, burada ne yazıyor, bunu çevir).",
             [("soru", "string", "Ekranla ilgili soru", true), ("tum_ekran", "boolean", "Sadece aktif pencere yerine tüm ekran", false)]),
         Tool("pano", "Kullanıcının kopyaladığı (panodaki) metinle çalışır. oku dışındaki işlemlerin sonucu panoya geri konur.",
@@ -110,7 +125,7 @@ public sealed partial class AssistantTools(
         Tool("gecmis", "Belirli bir günde kullanıcıyla neler konuşulduğunu verir.",
             [("gun", "string", "bugun, dun ya da yyyy-aa-gg", false)]),
         Tool("ritim", "Çalışma ritmi koçu: mola başlatır, odak oturumu açar/bitirir, molayı erteler, sesli nefes egzersizi ya da esneme yaptırır, içilen suyu sayar, günün çalışma özetini ve moladan önce kalınan yeri söyler.",
-            [("islem", "string", "mola, odak, odak_bitir, ertele, nefes, esneme, su, durum ya da kaldigim_yer", true),
+            [("islem", "string", "mola, odak, odak_bitir, ertele, nefes, esneme, su, durum (bugün), hafta ya da kaldigim_yer", true),
              ("dakika", "number", "odak ya da erteleme süresi (dakika)", false)]),
         Tool("linguaflow", "LinguaFlow canlı çeviri uygulamasını açıp ekrandaki video/toplantı için çeviriyi başlatır ya da durdurur.",
             [("islem", "string", "baslat ya da durdur", true)]),
@@ -126,7 +141,7 @@ public sealed partial class AssistantTools(
                 "uygulama_ac" => OpenApp(Argument(call, "ad")),
                 "web_sitesi_ac" => OpenWebsite(Argument(call, "adres")),
                 "web_ara" => Search(Argument(call, "sorgu")),
-                "medya" => await MediaAsync(Argument(call, "komut")).ConfigureAwait(false),
+                "medya" => await MediaAsync(Argument(call, "komut"), Argument(call, "deger")).ConfigureAwait(false),
                 "hava_durumu" => await WeatherAsync(Argument(call, "sehir"), cancellationToken,
                     int.TryParse(Argument(call, "gun"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var days) ? days : 2).ConfigureAwait(false),
                 "zamanlayici" => StartTimer(Argument(call, "dakika"), Argument(call, "not")),
@@ -144,6 +159,10 @@ public sealed partial class AssistantTools(
                 "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),
                 "doviz" => await ExchangeRatesAsync(Argument(call, "birim"), cancellationToken).ConfigureAwait(false),
                 "ritim" => RhythmCommand(Argument(call, "islem"), Argument(call, "dakika")).Text,
+                "hatirlatici" => ReminderCommand(Argument(call, "islem"), Argument(call, "zaman"), Argument(call, "metin")),
+                "not" => NoteCommand(Argument(call, "islem"), Argument(call, "metin")),
+                "hesap" => SpokenMath.Answer(Argument(call, "soru")) ?? "Bu hesabı çözemedim; sayıları ve işlemi açıkça söyle.",
+                "gun_sayaci" => CountdownAnswer(Argument(call, "hedef")),
                 "internette_ara" => await SearchWebAsync(Argument(call, "soru"), cancellationToken).ConfigureAwait(false),
                 "sayfayi_oku" => await ReadPageAsync(Argument(call, "adres"), cancellationToken).ConfigureAwait(false),
                 // UI Automation çağrıları zaman alabilir; asistanın akışını bekletmesin diye arka planda çalışır.
@@ -203,8 +222,15 @@ public sealed partial class AssistantTools(
         return $"'{query}' için arama sonuçları tarayıcıda açıldı.";
     }
 
-    private async Task<string> MediaAsync(string command)
+    private async Task<string> MediaAsync(string command, string value = "")
     {
+        if (Simplify(command) is "sesayarla" or "sesseviyesi")
+        {
+            return SystemVolume.Apply(Simplify(command) == "sesayarla"
+                ? int.TryParse(value.Split('.')[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var level) ? level : -1
+                : -1);
+        }
+
         if (Simplify(command) is "necaliyor" or "calan")
         {
             ledger.Record(DataFlow.Local, "Medya", "Çalan şarkının bilgisi Windows'tan okundu");
@@ -264,27 +290,11 @@ public sealed partial class AssistantTools(
             return "Geçerli bir süre söylenmedi.";
         }
 
-        // "çamaşırı hatırlat" → "Çamaşırı unutma, zamanı geldi."; notsuz → "10 dakika doldu."
-        var message = string.IsNullOrWhiteSpace(note)
-            ? $"{TurkishGrammar.Capitalize(TurkishGrammar.Duration(minutes))} doldu."
-            : TurkishGrammar.IsAccusative(note)
-                ? $"{TurkishGrammar.Capitalize(note.Trim())} unutma, zamanı geldi."
-                : $"Hatırlatma: {note.Trim()}.";
-        var entry = (Due: DateTime.Now.AddMinutes(minutes), Note: string.IsNullOrWhiteSpace(note) ? "zamanlayıcı" : note);
-        lock (_timers)
-        {
-            _timers.Add(entry);
-        }
-
-        _ = Task.Delay(TimeSpan.FromMinutes(minutes)).ContinueWith(_ =>
-        {
-            lock (_timers)
-            {
-                _timers.Remove(entry);
-            }
-
-            TimerElapsed?.Invoke(this, message);
-        }, TaskScheduler.Default);
+        // Hatırlatma kalıcıdır: Friday kapanıp açılsa da kaybolmaz. Notsuzsa "10 dakika doldu." diye söylenir.
+        var now = DateTime.Now;
+        reminders.Add(now.AddMinutes(minutes), note.Trim(), now);
+        EnsureReminderClock();
+        ledger.Record(DataFlow.Local, "Hatırlatma", $"{TurkishGrammar.Duration(minutes)} sonrasına kuruldu");
         return $"{minutes.ToString("0.#", Turkish)} dakikalık zamanlayıcı kuruldu.";
     }
 

@@ -199,6 +199,22 @@ public sealed partial class RhythmCoach : IDisposable
         }
     }
 
+    /// <summary>Son 7 günün ritmi (bugün dahil), eskiden yeniye.</summary>
+    public IReadOnlyList<RhythmDay> Week()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var days = new List<RhythmDay>();
+        for (var offset = 6; offset >= 0; offset--)
+        {
+            var date = today.AddDays(-offset);
+            days.Add(offset == 0 ? Today : Load(date) ?? new RhythmDay { Date = date });
+        }
+
+        return days;
+    }
+
+    public QuickReply WeekSummary() => new(RhythmCoachLines.Week(Week()));
+
     public QuickReply Where()
     {
         lock (_gate)

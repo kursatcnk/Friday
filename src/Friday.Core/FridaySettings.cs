@@ -3,6 +3,12 @@ namespace Friday.Core;
 /// <summary>data\settings.json içeriği. Dosya yoksa varsayılanlarla oluşturulur.</summary>
 public sealed class FridaySettings
 {
+    /// <summary>En güncel ayar sürümü. Eski dosyalar açılışta bu sürüme taşınır (yeni rutinler, yeni varsayılanlar).</summary>
+    public const int CurrentVersion = 2;
+
+    /// <summary>Dosyanın ayar sürümü; sürümsüz eski dosyalar 0 sayılır.</summary>
+    public int SettingsVersion { get; set; }
+
     public string AssistantName { get; set; } = "Friday";
 
     /// <summary>Asistanın sana nasıl hitap edeceği; boşsa isimsiz konuşur.</summary>
@@ -11,11 +17,11 @@ public sealed class FridaySettings
     public string Hotkey { get; set; } = "Ctrl+Alt+F";
 
     /// <summary>
-    /// Uyandırma kelimesi: "hey_jarvis" deyince kısayola basılmış gibi dinlemeye başlar. Boş bırakılırsa kapalıdır ve
+    /// Uyandırma kelimesi: "hey_friday" ("Hey Friday") deyince kısayola basılmış gibi dinlemeye başlar. Boş bırakılırsa kapalıdır ve
     /// mikrofon yalnızca kısayolla açılır. Açıkken mikrofon sürekli açıktır ama ses 80 ms'lik parçalar halinde yalnızca
     /// bellekte işlenip atılır; kaydedilmez, hiçbir yere gönderilmez.
     /// </summary>
-    public string WakeWord { get; set; } = "hey_jarvis";
+    public string WakeWord { get; set; } = "hey_friday";
 
     /// <summary>Uyandırma kelimesinin eşik puanı (0–1). Yanlışlıkla uyanıyorsa artır, duymuyorsa azalt.</summary>
     public double WakeWordThreshold { get; set; } = 0.5;
@@ -134,6 +140,8 @@ public sealed class FridaySettings
         ["çalışma modu"] = ["uygulama:Visual Studio", "site:github.com", "soyle:Çalışma modu hazır. Kolay gelsin."],
         ["günaydın"] = ["ozet"],
         ["mola"] = ["ritim:mola"],
+        ["toplantı modu"] = ["ritim:odak 45", "soyle:Toplantıda başarılar."],
+        ["iyi geceler"] = ["ritim:durum", "soyle:İyi geceler, yarın görüşürüz."],
     };
 
     /// <summary>

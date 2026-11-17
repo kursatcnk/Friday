@@ -10,6 +10,9 @@ namespace Friday.Infrastructure;
 /// </summary>
 public sealed record QuickReply(string Text, bool Silent = false, IReadOnlyList<CoachStep>? Script = null);
 
+/// <summary>"Bugün" ekranındaki hava özeti.</summary>
+public sealed record WeatherCard(string Place, int Temperature, string Description, int Max, int Min, int RainChance);
+
 /// <summary>
 /// Dil modelsiz hızlı yol: kalıbı belli komutlar burada çalışır ve sonucu doğrudan konuşulacak bir cümleye çevrilir.
 /// Cümleler veriden kurulur; model olmadığı için uydurma ihtimali de yoktur.
@@ -44,12 +47,16 @@ public sealed partial class AssistantTools
                     : $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."),
                 "hava_durumu" => new QuickReply(await WeatherSpeechAsync(Arg("sehir"), Arg("odak"), Arg("soru") == "yagmur", cancellationToken).ConfigureAwait(false)),
                 "doviz" => new QuickReply(await CurrencySpeechAsync(Arg("birim"), cancellationToken).ConfigureAwait(false)),
-                "medya" => await MediaReplyAsync(Arg("komut")).ConfigureAwait(false),
+                "medya" => await MediaReplyAsync(Arg("komut"), Arg("deger")).ConfigureAwait(false),
                 "zamanlayici" => new QuickReply(TimerSpeech(Arg("dakika"), Arg("not"))),
                 "uygulama_ac" => FindApp(Arg("ad")) is { } app ? new QuickReply(Open(app)) : null,
                 "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
                 "ritim" => RhythmCommand(Arg("islem"), Arg("dakika")),
+                "hatirlatici" => new QuickReply(ReminderCommand(Arg("islem"), Arg("zaman"), Arg("metin"))),
+                "not" => new QuickReply(NoteCommand(Arg("islem"), Arg("metin"))),
+                "hesap" => SpokenMath.Answer(Arg("soru")) is { } answer ? new QuickReply(answer) : null,
+                "gun_sayaci" => DayCountdown.Answer(Arg("hedef"), memory.Items, DateOnly.FromDateTime(DateTime.Now)) is { } left ? new QuickReply(left) : null,
                 _ => null
             };
         }
@@ -111,6 +118,26 @@ public sealed partial class AssistantTools
         var feels = Math.Abs(forecast.Feels - forecast.Temperature) >= 3 ? $", hissedilen {Degrees(forecast.Feels)}" : "";
         return $"{TurkishGrammar.Capitalize(where)} şu an {Degrees(forecast.Temperature)} derece{feels}, hava {WeatherCodes.Describe(forecast.Code)}. " +
                $"Gün içinde en yüksek {Degrees(target.Max)} derece; {rain}";
+    }
+
+    /// <summary>"Bugün" ekranındaki hava kartı; internet yoksa ya da yer bulunamazsa null.</summary>
+    public async Task<WeatherCard?> WeatherCardAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (await FetchForecastAsync("", 2, cancellationToken).ConfigureAwait(false) is not { } forecast)
+            {
+                return null;
+            }
+
+            var today = forecast.Days[0];
+            return new WeatherCard(forecast.Place, (int)Math.Round(forecast.Temperature), WeatherCodes.Describe(forecast.Code),
+                (int)Math.Round(today.Max), (int)Math.Round(today.Min), (int)Math.Round(today.RainChance));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Open-Meteo'dan anlık durum ve gün gün tahmin; yer bulunamazsa null.</summary>
@@ -261,12 +288,13 @@ public sealed partial class AssistantTools
         _ => code
     };
 
-    private async Task<QuickReply> MediaReplyAsync(string command)
+    private async Task<QuickReply> MediaReplyAsync(string command, string value)
     {
-        var result = await MediaAsync(command).ConfigureAwait(false);
+        var result = await MediaAsync(command, value).ConfigureAwait(false);
         return command switch
         {
-            "ne_caliyor" => new QuickReply(result),
+            "ne_caliyor" or "ses_seviyesi" => new QuickReply(result),
+            "ses_ayarla" => new QuickReply(result, Silent: true),
             "oynat_duraklat" => new QuickReply("Müzik durduruldu ya da devam ettirildi.", Silent: true),
             "sonraki" => new QuickReply("Sonraki parçaya geçildi.", Silent: true),
             "onceki" => new QuickReply("Önceki parçaya dönüldü.", Silent: true),
@@ -306,12 +334,46 @@ public sealed partial class AssistantTools
             return null;
         }
 
-        await RunRoutineAsync(name, cancellationToken).ConfigureAwait(false);
-        var script = TakeScript();
-        var said = steps.Where(step => step.Action == RoutineAction.Say).Select(step => step.Value)
-            .Concat(steps.Where(step => step.Action == RoutineAction.Rhythm && script is null).Select(_ => _lastRhythmText))
-            .Where(text => text.Length > 0)
-            .ToList();
+        // Adımlar sırayla çalışır; söylenecekler de aynı sırayla birleşir ("Odak başladı… Toplantı modu açık.").
+        var said = new List<string>();
+        IReadOnlyList<CoachStep>? script = null;
+        foreach (var step in steps)
+        {
+            switch (step.Action)
+            {
+                case RoutineAction.App:
+                    OpenApp(step.Value);
+                    break;
+                case RoutineAction.Website:
+                    OpenWebsite(step.Value);
+                    break;
+                case RoutineAction.Search:
+                    Search(step.Value);
+                    break;
+                case RoutineAction.Media:
+                    await MediaAsync(step.Value).ConfigureAwait(false);
+                    break;
+                case RoutineAction.LinguaFlow:
+                    await LinguaFlowAsync("baslat", cancellationToken).ConfigureAwait(false);
+                    break;
+                case RoutineAction.Rhythm:
+                    var parts = step.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    var reply = RhythmCommand(parts[0], parts.Length > 1 ? parts[1] : "");
+                    script ??= reply.Script;
+                    if (reply.Script is null)
+                    {
+                        said.Add(reply.Text);
+                    }
+
+                    break;
+                case RoutineAction.Say:
+                    said.Add(step.Value);
+                    break;
+            }
+        }
+
+        _ = TakeScript();
+        ledger.Record(DataFlow.Local, "Rutin", $"{match.Key} çalıştı");
         var text = said.Count > 0 ? string.Join(" ", said) : $"{TurkishGrammar.Capitalize(match.Key)} hazır.";
         return new QuickReply(text, Script: script);
     }
@@ -340,6 +402,7 @@ public sealed partial class AssistantTools
             "esneme" => RhythmCoach.Stretch(),
             "su" => coach.Water(),
             "durum" => coach.Status(),
+            "hafta" => coach.WeekSummary(),
             "kaldigimyer" => coach.Where(),
             _ => new QuickReply($"Bilinmeyen ritim işlemi: {action}")
         };

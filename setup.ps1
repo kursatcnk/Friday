@@ -8,7 +8,7 @@
   D:\Friday\models\ollama    Dil modeli (varsayılan gemma4:e4b)
   D:\Friday\models\piper     Türkçe ses modeli
   D:\Friday\models\whisper   Whisper (yalnızca D:\LinguaFlowModels'te yoksa iner)
-  D:\Friday\models\wakeword  "Hey Jarvis" uyandırma kelimesi (openWakeWord, ~4 MB)
+  D:\Friday\models\wakeword  "Hey Friday" uyandırma kelimesi (openWakeWord özellikleri ~2,4 MB + Friday'in modeli)
 #>
 param(
     [string]$FridayHome = $(if ($env:FRIDAY_HOME) { $env:FRIDAY_HOME } else { 'D:\Friday' }),
@@ -87,14 +87,16 @@ if (Test-Path (Join-Path 'D:\LinguaFlowModels' $WhisperFile)) {
     Get-File "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$WhisperFile" (Join-Path $whisperDir $WhisperFile)
 }
 
-Write-Host "[5/6] Uyandırma kelimesi (Hey Jarvis)"
+Write-Host "[5/6] Uyandırma kelimesi (Hey Friday)"
 $wakeDir = Join-Path $models 'wakeword'
 New-Item -ItemType Directory -Force $wakeDir | Out-Null
-# openWakeWord'ün hazır modelleri; ses yalnızca bu bilgisayarda işlenir. Lisans: CC BY-NC-SA 4.0 (ticari olmayan).
+# openWakeWord'ün özellik çıkarıcıları (Apache 2.0); ses yalnızca bu bilgisayarda işlenir.
 $wakeBase = 'https://github.com/dscripka/openWakeWord/releases/download/v0.5.1'
-foreach ($file in 'melspectrogram.onnx', 'embedding_model.onnx', 'hey_jarvis_v0.1.onnx') {
+foreach ($file in 'melspectrogram.onnx', 'embedding_model.onnx') {
     Get-File "$wakeBase/$file" (Join-Path $wakeDir $file)
 }
+# "Hey Friday" sınıflandırıcısı Friday için eğitildi ve depoyla birlikte gelir (training\train-wakeword.ps1).
+Copy-Item (Join-Path $PSScriptRoot 'models\wakeword\hey_friday_v0.1.onnx') $wakeDir -Force
 
 Write-Host "[6/6] Dil modeli ($Model)"
 # Bu değişkenler yalnızca bu süreç ve alt süreçleri içindir; Ollama'nın C:\Users\...\.ollama'ya

@@ -42,7 +42,7 @@ public static partial class ConversationStyle
     [GeneratedRegex(@"(?<=[.!?])\s+")]
     private static partial Regex SentenceEnd();
 
-    [GeneratedRegex(@"^(?:peki,? |o zaman,? |şimdi,? |bugün )?(?:(?:sana|size) (?:başka )?(?:nasıl|ne konuda|hangi konuda) yardımcı olabilirim|başka (?:bir )?(?:şey(?:e|ler)?|konu(?:da|ya)?|sorun)(?: için)? (?:ihtiyacın|ihtiyacınız|yardımcı|var mı|sormak)|(?:başka )?bir şeye ihtiyacın(?:ız)? (?:var mı|olursa)|(?:sana |size )?yardımcı olmak için (?:her zaman )?buradayım|(?:her zaman )?emrindeyim|başka bir isteğin var mı)[^.!?]*[.!?]?$")]
+    [GeneratedRegex(@"^(?:peki,? |o zaman,? |şimdi,? |bugün )?(?:(?:sana|size) (?:başka )?(?:nasıl|ne konuda|hangi konuda) yardımcı olabilirim|başka (?:bir )?(?:şey(?:e|ler)?|konu(?:da|ya)?|sorun)(?: için)? (?:ihtiyacın|ihtiyacınız|yardımcı|var mı|sormak)|(?:başka )?bir şeye ihtiyacın(?:ız)? (?:var mı|olursa)|(?:sana |size )?yardımcı olmak için (?:her zaman )?buradayım|(?:her zaman )?emrindeyim|başka bir isteğin var mı|ben (?:sadece )?bir yapay zek[aâ]|(?:bir yapay zek[aâ] olarak )?(?:benim )?duygularım yok)[^.!?]*[.!?]?$")]
     private static partial Regex Filler();
 
     [GeneratedRegex(@"[.,!?;:'’""]+")]
@@ -51,7 +51,7 @@ public static partial class ConversationStyle
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();
 
-    [GeneratedRegex(@"^(?:(?:hey |selam |merhaba )?(?:friday|jarvis) ?)?(?:merhaba|selam|selamlar|hey|günaydın|iyi akşamlar|iyi geceler|iyi günler|tünaydın|naber|ne haber|nasılsın|iyi misin|nasıl gidiyor|keyfin nasıl|teşekkürler|teşekkür ederim|çok teşekkürler|sağ ol|sağol|sağ olasın|eyvallah|eline sağlık|harikasın|süpersin|aferin|çok iyi|güzel|tamam|anladım|görüşürüz|hoşça kal|kendine iyi bak|kimsin|sen kimsin|adın ne|ne yapabilirsin|neler yapabilirsin|seni seviyorum|canım sıkıldı|sıkıldım|yoruldum|mutluyum|üzgünüm)(?: (?:friday|jarvis|dostum|kanka|ya|bakalım|o zaman))*(?: (?:sen nasılsın|nasılsın|naber))?$")]
+    [GeneratedRegex(@"^(?:(?:hey |selam |merhaba )?friday ?)?(?:merhaba|selam|selamlar|hey|günaydın|iyi akşamlar|iyi geceler|iyi günler|tünaydın|naber|ne haber|nasılsın|iyi misin|nasıl gidiyor|keyfin nasıl|teşekkürler|teşekkür ederim|çok teşekkürler|sağ ol|sağol|sağ olasın|eyvallah|eline sağlık|harikasın|süpersin|aferin|çok iyi|güzel|tamam|anladım|görüşürüz|hoşça kal|kendine iyi bak|kimsin|sen kimsin|adın ne|ne yapabilirsin|neler yapabilirsin|seni seviyorum|canım sıkıldı|sıkıldım|yoruldum|mutluyum|üzgünüm)(?: (?:friday|dostum|kanka|ya|bakalım|o zaman))*(?: (?:sen nasılsın|nasılsın|naber))?$")]
     private static partial Regex Greeting();
 
     [GeneratedRegex(@"\b(?:espri|fıkra|şaka|bilmece|tekerleme|kafiye|şiir|hikaye|masal|beni güldür|motive et|moral ver)")]

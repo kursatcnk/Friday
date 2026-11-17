@@ -383,6 +383,29 @@ public sealed class RhythmCoachLines(Random random)
         return text;
     }
 
+    /// <summary>"Bu hafta 18 saat 20 dakika aktiftin, 4 saati odak. En yoğun günün salıydı (5 saat 10 dakika)."</summary>
+    public static string Week(IReadOnlyList<RhythmDay> days)
+    {
+        var active = days.Sum(day => day.ActiveMinutes);
+        if (active < 1)
+        {
+            return "Bu hafta için henüz bir ritim kaydım yok.";
+        }
+
+        var focus = days.Sum(day => day.FocusMinutes);
+        var busiest = days.MaxBy(day => day.ActiveMinutes)!;
+        var text = $"Bu hafta toplam {Span(TimeSpan.FromMinutes(active))} aktiftin";
+        text += focus >= 1 ? $", {Span(TimeSpan.FromMinutes(focus))} odak." : ".";
+        text += $" En yoğun günün {busiest.Date.ToString("dddd", Turkish).ToLower(Turkish)} ({Span(TimeSpan.FromMinutes(busiest.ActiveMinutes))}).";
+        var breaks = days.Sum(day => day.Breaks);
+        if (breaks > 0)
+        {
+            text += $" {breaks} mola verdin.";
+        }
+
+        return text;
+    }
+
     public static string Where(string? where) =>
         where is null ? "Henüz bir mola kaydım yok, o yüzden bilmiyorum." : $"Son molandan önce {where} açıktı.";
 

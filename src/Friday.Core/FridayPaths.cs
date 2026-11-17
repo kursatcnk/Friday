@@ -39,7 +39,7 @@ public sealed class FridayPaths
 
     public string Temp => Path.Combine(Data, "tmp");
 
-    /// <summary>openWakeWord modelleri ("Hey Jarvis").</summary>
+    /// <summary>Uyandırma kelimesi modelleri ("Hey Friday") ve openWakeWord özellik çıkarıcıları.</summary>
     public string WakeWordModels => Path.Combine(Models, "wakeword");
 
     public string Logs => Path.Combine(Data, "logs");

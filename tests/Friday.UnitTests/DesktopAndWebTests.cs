@@ -13,7 +13,8 @@ public sealed class ConfirmationTests : IDisposable
     {
         var paths = new FridayPaths(_temp.Path);
         _tools = new AssistantTools(_http, new OllamaChatClient(_http, new OllamaServer(paths, _http)),
-            new MemoryStore(Path.Combine(_temp.Path, "memory.json")), new PrivacyLedger(_temp.Path), new ConversationLog(_temp.Path));
+            new MemoryStore(Path.Combine(_temp.Path, "memory.json")), new PrivacyLedger(_temp.Path), new ConversationLog(_temp.Path),
+            new ReminderStore(Path.Combine(_temp.Path, "reminders.json")), new NoteStore(Path.Combine(_temp.Path, "notes.md")));
     }
 
     [Fact]

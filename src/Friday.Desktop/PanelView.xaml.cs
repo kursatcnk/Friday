@@ -42,5 +42,6 @@ public partial class PanelView : UserControl
     {
         NavRing.FrozenTime = time;
         HeroRing.FrozenTime = time;
+        TodayRing.FrozenTime = time;
     }
 }

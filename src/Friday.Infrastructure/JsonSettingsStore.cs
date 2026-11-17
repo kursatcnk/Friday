@@ -20,7 +20,7 @@ public sealed class JsonSettingsStore(FridayPaths paths)
         Directory.CreateDirectory(paths.Data);
         if (!File.Exists(paths.SettingsFile))
         {
-            var defaults = new FridaySettings();
+            var defaults = new FridaySettings { SettingsVersion = FridaySettings.CurrentVersion };
             Save(defaults);
             return defaults;
         }
@@ -37,9 +37,35 @@ public sealed class JsonSettingsStore(FridayPaths paths)
             settings.Routines["mola"] = ["ritim:mola"];
         }
 
+        Migrate(settings);
+
         // Yeni sürümde eklenen ayarlar dosyaya varsayılan değerleriyle yazılır; kullanıcı hepsini dosyada görür.
         Save(settings);
         return settings;
+    }
+
+    /// <summary>
+    /// Sürüm 2: uyandırma kelimesi Friday'in kendi adıyla "Hey Friday" olur (eski varsayılan "hey_jarvis" idi) ve
+    /// "toplantı modu" ile "iyi geceler" rutinleri eklenir. Kullanıcının kendi değiştirdiği değerlere dokunulmaz.
+    /// </summary>
+    private static void Migrate(FridaySettings settings)
+    {
+        if (settings.SettingsVersion >= FridaySettings.CurrentVersion)
+        {
+            return;
+        }
+
+        if (settings.WakeWord == "hey_jarvis")
+        {
+            settings.WakeWord = "hey_friday";
+        }
+
+        foreach (var (name, steps) in new FridaySettings().Routines)
+        {
+            settings.Routines.TryAdd(name, steps);
+        }
+
+        settings.SettingsVersion = FridaySettings.CurrentVersion;
     }
 
     public void Save(FridaySettings settings)
