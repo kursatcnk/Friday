@@ -9,6 +9,8 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | | |
 |---|---|
 | **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
+| **Sohbetler** | Her konuşma ayrı bir sohbet olarak saklanır; başlığı ilk sorudan kendiliğinden çıkar. Sol listede Bugün, Dün, Bu hafta diye gruplanır; sabitle, yeniden adlandır, Markdown olarak kaydet ya da sil. Bütün sohbetlerde arama yapılır ("istanbul" yazınca "İstanbul" geçenler de bulunur). Eski bir sohbeti açıp kaldığı yerden sürdürebilirsin; Friday o sohbetin bağlamıyla devam eder. "Yeni sohbet", "konuyu değiştirelim" ya da "sohbeti temizle" demen de yeter. Bir süre konuşmazsan (varsayılan 30 dk) sonraki soru kendiliğinden yeni bir sohbet olur. |
+| **Hızlı komut kutusu** | **Ctrl+Alt+Space** ile her yerden küçük bir kutu açılır (Raycast ya da Spotlight gibi): yaz, Enter'a bas, kutu kapanır, cevap köşede görünür ve okunur. Yazdıkça rutinlerin, son sorduğun şeyler ve hazır komutlar süzülür; ok tuşlarıyla seç, Tab ile tamamla. |
 | **Bugün ekranı** | Panel açılınca günün saatine göre selam, hava, yaklaşan hatırlatmalar ve tarihler, son notlar ve ritim özeti. İlk açılışta kısa bir tanışma: adın, şehrin, istersen başka bir yapay zekânın hafızası. |
 | **Hatırlatıcı** | "Yarın 9'da doktoru hatırlat", "akşam 8'de ilacımı hatırlat", "pazartesi 10:30'da toplantıyı hatırlat". Friday kapansa da kaybolmaz; kapalıyken kaçırılanları açılışta söyler. "Hatırlatmalarım neler?", "doktor hatırlatmasını iptal et". |
 | **Sesli notlar** | "Not al: süt ve ekmek", "notlarımı oku". Notlar D:\Friday\data\notes.md'de, Not Defteri'yle de açılır. |
@@ -16,17 +18,17 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Gün sayacı** | "Yılbaşına kaç gün kaldı", "29 Ekim'e kaç gün var", "doğum günüme kaç gün kaldı" (hafızadan bulur). |
 | **Ekranını görür** | "Bu hata ne?", "Ekranımda ne var?" deyince aktif pencerenin görüntüsünü alır ve Gemma 4'ün görme yeteneğiyle bilgisayarında yorumlar. Görüntü diske yazılmaz. |
 | **Pano büyüsü** | Bir metni kopyala, "özetle", "İngilizceye çevir", "yazımını düzelt" ya da "resmileştir" de. Sonuç panoya geri konur; Ctrl+V ile yapıştırırsın. |
-| **Ritim koçu** | Kaç dakikadır aralıksız çalıştığını bilir; yazarken değil bir duraksamada, tam ekran oyun ya da film açık değilken mola önerir. Her seferinde başka bir öneri gelir: 20 saniye sayarak göz molası, rehberli esneme, su (içtiklerini sayar), uzun oturumda yürüyüş, gece geç saatte günü kapatma. "Nefes egzersizi" deyince seni sesli yönlendirir, "25 dakika odaklanacağım" deyince odak oturumu açar. |
+| **Ritim koçu** | Ritim sayfasında büyük bir halka o anki durumu saniye saniye gösterir: "Çalışıyorsun · 32:10 aralıksız · molaya 18 dakika var", "Odaktasın · 11:58 kaldı", "Moladasın · 02:30 kaldı". Altında günün özeti, günün akışı, son 7 gün ve nasıl çalıştığının kısa açıklaması var. Kaç dakikadır aralıksız çalıştığını bilir; yazarken değil bir duraksamada, tam ekran oyun ya da film açık değilken mola önerir. Her seferinde başka bir öneri gelir: 20 saniye sayarak göz molası, rehberli esneme, su (içtiklerini sayar), uzun oturumda yürüyüş, gece geç saatte günü kapatma. "Nefes egzersizi" deyince seni sesli yönlendirir, "25 dakika odaklanacağım" deyince odak oturumu açar. |
 | **Kaldığın yer** | Moladan dönünce "Tekrar hoş geldin, 6 dakika mola verdin. Kaldığın yer: Visual Studio Code, FridayAssistant.cs." der. "Nerede kalmıştım?" diye de sorabilirsin. |
 | **Sabah karşılaması** | Günün ilk oturuşunda havayı ve yaklaşan tarihleri kısaca söyler. |
 | **Kalıcı hafıza** | "Unutma, arabamın muayenesi 20 Kasım'da." Haftalar sonra da hatırlar; tarihli bilgilerde "3 gün kaldı" diye sayar ve sabah söyler. |
 | **Hafızanı taşı** | ChatGPT'nin, Claude'un ya da Gemini'nin hafıza listesini .txt, .md ya da .json olarak içe aktar (ya da yapıştır); önizlemede seç, Friday zaten bildiklerini işaretler. Tersine, Friday'in hafızasını tek tıkla başka bir yapay zekâya yapıştırılacak bir mesaja ya da Markdown dosyasına çevir. |
 | **Dosya radarı** | "Dün indirdiğim PDF'i bul", "içinde fatura geçen Excel'i aç". Windows Arama dizinini kullanır. |
 | **Gizlilik defteri** | Mikrofonun ne zaman ve ne kadar açık kaldığı, neyin bilgisayarda kaldığı ve neyin dışarı çıktığı zaman çizelgesinde görünür. "Seni dinlemiyorum" iddiası denetlenebilir. |
-| **Rutinler** | "Çalışma modunu aç" deyince uygulamalar ve siteler açılır. "Günaydın" deyince tarih, hava ve yaklaşan hatırlatmalar okunur. "Toplantı modu" 45 dakikalık odak açar, "iyi geceler" günün özetini söyler. |
+| **Rutinler** | "Çalışma modunu aç" deyince uygulamalar ve siteler açılır. "Günaydın" deyince tarih, hava ve yaklaşan hatırlatmalar okunur. "Toplantı modu" 45 dakikalık odak açar, "iyi geceler" günün özetini söyler. Rutinler sayfasından yeni rutin ekle, düzenle, adımlarını sırala ya da sil; ya da yedi hazır şablondan (sabah, odak modu, kod zamanı, oyun modu, film gecesi, çay molası, gün sonu) başla. Adımlar: uygulama, site, arama, medya, ses seviyesi, söyle, günün özeti, ritim, hatırlatma, bekle, LinguaFlow. |
 | **"Bilgisayar neden yavaş?"** | İşlemci, bellek, disk ve ekran kartını ölçer; en çok kaynak yiyen uygulamaları söyler. |
 | **"Şu an ne çalıyor?"** | Spotify ya da tarayıcıdaki YouTube'da çalan şarkıyı Windows'tan okur; müziği durdurur ya da geçer. "Sesi yüzde 30 yap" ile sesi tam ayarlar. |
-| **"Bugün ne konuştuk?"** | Günlük sohbet geçmişini bilgisayarında tutar ve özetler. |
+| **"Bugün ne konuştuk?"** | Sohbetlerini bilgisayarında tutar ve özetler. "Geçen hafta kampanya hakkında ne konuşmuştuk?" diye sorarsan bütün sohbetlerde arar. |
 | **LinguaFlow bağlantısı** | "Bu videoyu çevir" deyince [LinguaFlow](https://github.com/kursatcnk/LinguaFlow) açılır ve canlı çeviri başlar. |
 | **Devam sorusu** | Cevaptan sonra mikrofon 4 sn daha açık kalır; tuşa basmadan "peki yarın?" diye sorabilirsin. Ayarlardan kapatılır. |
 | **Kesme** | Friday konuşurken kısayola basarsan ya da "Hey Friday" dersen susar ve seni dinlemeye başlar. |
@@ -170,7 +172,7 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 | `D:\Friday\tools` | Ollama ve Piper (taşınabilir) |
 | `D:\Friday\models` | Gemma 4 (~6 GB), Türkçe Piper sesi, "Hey Friday" modelleri (`wakeword\`) |
 | `D:\LinguaFlowModels` | Whisper, LinguaFlow ile paylaşılır (yoksa `D:\Friday\models\whisper`) |
-| `D:\Friday\data` | `settings.json`, `memory.json`, gizlilik defteri (`ledger\`), sohbet geçmişi (`history\`), hata günlüğü (`logs\`, 14 gün) |
+| `D:\Friday\data` | `settings.json`, `memory.json`, gizlilik defteri (`ledger\`), sohbetler (`chats\`, eski sürümün `history\` klasörü ilk açılışta buraya aktarılır), dışa aktarılanlar (`exports\`), hata günlüğü (`logs\`, 14 gün) |
 | `D:\CodexCache\Friday` | .NET SDK ev klasörü, NuGet paketleri, NuGet indirme önbelleği ve derlemenin geçici dosyaları |
 
 ## Kullanım
@@ -182,20 +184,26 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 5. Beklenmeyen bir hata Friday'i kapatmaz; ayrıntısı `D:\Friday\data\logs` altındaki günlüğe yazılır. Ollama kapanırsa bir sonraki soruda kendiliğinden yeniden başlatılır.
 
 ![Bugün](docs/images/panel-today.png)
-![Sohbet](docs/images/panel-chat.png)
+![Sohbetler](docs/images/panel-chat.png)
 ![Ritim](docs/images/panel-rhythm.png)
+![Rutin düzenleyici](docs/images/panel-routines-edit.png)
+![Ayarlar](docs/images/panel-settings.png)
 ![Hafıza](docs/images/panel-memory.png)
 ![Gizlilik defteri](docs/images/panel-privacy.png)
 
 ## Ayarlar
 
-Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasından (yeni sürümde eklenen ayarlar dosyaya kendiliğinden yazılır):
+Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatma, uyandırma, dinleme sabrı, ritim, kişilik, yeni sohbet süresi, ses motoru ve Piper sesi, konuşma hızı, ekran kartını boşaltma süresi, verileri silme, güncelleme denetimi) ya da `D:\Friday\data\settings.json` dosyasından (yeni sürümde eklenen ayarlar dosyaya kendiliğinden yazılır):
 
 | Ayar | Varsayılan | Açıklama |
 |---|---|---|
 | `UserName` | boş | Sana nasıl hitap edeceği |
 | `Personality` | `esprili` | `esprili`, `sade` ya da `resmi` |
-| `Hotkey` | `Ctrl+Alt+F` | `Ctrl`/`Alt`/`Shift`/`Win` + tuş |
+| `Hotkey` | `Ctrl+Alt+F` | `Ctrl`/`Alt`/`Shift`/`Win` + tuş; panelden değiştirince hemen geçerli olur |
+| `QuickAskHotkey` | `Ctrl+Alt+Space` | Hızlı komut kutusu; boş bırakılırsa kapalı |
+| `StartWithWindows` | `false` | Windows açılınca tepside sessizce başlar (yalnızca kullanıcı kayıt defterindeki Run satırı) |
+| `ConversationMemoryMinutes` | `30` | Bu kadar konuşulmazsa sonraki soru yeni bir sohbet olur |
+| `SpeechSpeed` / `SilenceMilliseconds` | `1.0` / `1200` | Konuşma hızı; sustuktan sonra kaydın bitmesi için beklenen süre |
 | `WakeWord` / `WakeWordThreshold` | `hey_friday` / `0.50` | Uyandırma kelimesi; boş bırakılırsa kapalı. Yanlışlıkla uyanıyorsa eşiği artır, duymuyorsa azalt |
 | `FollowUpSeconds` | `4` | Cevaptan sonra devam sorusu bekleme süresi; `0` kapatır |
 | `SpeechEngine` | `piper` | `piper`, `xtts` ya da `azure` |
@@ -208,9 +216,9 @@ Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasın
 | `MorningGreeting` | `true` | Günün ilk oturuşunda kısa karşılama |
 | `GpuIdleMinutes` | `2` | Bu kadar boşta kalınca dil modeli, Whisper ve Piper kapanır (GPU ve RAM boşalır) |
 | `City` | `İstanbul` | Hava durumunda şehir söylenmezse |
-| `KeepHistory` | `true` | Günlük sohbet geçmişi |
+| `KeepHistory` | `true` | Sohbetleri `D:\Friday\data\chats` altında sakla |
 | `LinguaFlowPath` | LinguaFlow yayını | "Bu videoyu çevir" komutu |
-| `Routines` | çalışma modu, günaydın, mola | Adımlar: `uygulama:`, `site:`, `ara:`, `medya:`, `soyle:`, `ozet`, `linguaflow` |
+| `Routines` | çalışma modu, günaydın, mola, toplantı modu, iyi geceler | Panelden düzenlenir. Adımlar: `uygulama:`, `site:`, `ara:`, `medya:`, `ses:30`, `soyle:`, `ozet`, `ritim:odak 25`, `hatirlat:5 dakika sonra\|çay`, `bekle:3`, `linguaflow` |
 | `Apps` | not defteri, hesap makinesi… | Sesli ad → komut; olmayanlar Başlat menüsünde aranır |
 
 ## Gizlilik
@@ -218,15 +226,17 @@ Panelin **Ayarlar** bölümünden ya da `D:\Friday\data\settings.json` dosyasın
 - "Hey Friday" açıkken mikrofon sürekli açıktır ama ses 80 ms'lik parçalar halinde yalnızca bellekte puanlanıp atılır. `WakeWord` boşsa mikrofon yalnızca kısayoldan sonra, bir soru boyunca açılır. Sorunun sesi de bellekte işlenir, diske yazılmaz, hiçbir yere gönderilmez.
 - Konuşma tanıma, dil modeli, ekran yorumlama ve pano işlemleri tamamen yereldir.
 - Ritim koçu yalnızca Windows'un tuttuğu "son klavye/fare kullanımı" zamanını okur; tuşlar, ekran ve pencere içerikleri okunmaz. Moladan önce yalnızca öndeki pencerenin başlığı hatırlanır. Günlük süreler `D:\Friday\data\rhythm` altında, 90 gün tutulur.
-- Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden).
+- Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden); "Güncellemeleri denetle"ye basarsan GitHub'daki son sürüm numarası sorgusu.
+- Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
 
 ## Geliştirme
 
 ```
 src/Friday.Core            Saf mantık: konuşma sonu algılama, hızlı yol kalıpları, Türkçe zaman ve sayı, hesap,
-                           hafıza ve aktarımı, hatırlatma ve notlar, ritim, gizlilik defteri, talimatlar
+                           sohbetler, hafıza ve aktarımı, hatırlatma ve notlar, ritim, rutinler, gizlilik defteri, talimatlar
 src/Friday.Infrastructure  Mikrofon, uyandırma kelimesi, Whisper, Ollama, Azure + Piper ses, 29 araç, ritim koçu, asistan döngüsü
-src/Friday.Desktop         Bugün ekranı, cam kapsül, ses küresi, kontrol paneli, genel kısayol, sistem tepsisi
+src/Friday.Desktop         Bugün ekranı, sohbetler, ritim halkası, rutin düzenleyici, ayarlar, hızlı komut kutusu, cam kapsül,
+                           ses küresi, genel kısayollar, sistem tepsisi
 tests/Friday.UnitTests     Birim testleri
 training/                  "Hey Friday" uyandırma kelimesi eğitimi (train-wakeword.ps1)
 models/wakeword            Eğitilmiş "Hey Friday" modeli
