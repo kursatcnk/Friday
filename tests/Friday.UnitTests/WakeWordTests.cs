@@ -10,12 +10,12 @@ public class WakeWordTests
     [Fact]
     public void SilenceAndNoiseNeverWake()
     {
-        if (!WakeWordEngine.IsInstalled(Folder, "hey_jarvis"))
+        if (!WakeWordEngine.IsInstalled(Folder, "hey_friday"))
         {
             return;
         }
 
-        using var engine = new WakeWordEngine(Folder, "hey_jarvis");
+        using var engine = new WakeWordEngine(Folder, "hey_friday");
         var tracker = engine.CreateStream();
         var random = new Random(3);
         var chunk = new short[WakeWordEngine.ChunkSamples];
@@ -37,12 +37,12 @@ public class WakeWordTests
     [Fact]
     public void FindsTheVersionedModelFile()
     {
-        if (!WakeWordEngine.IsInstalled(Folder, "hey_jarvis"))
+        if (!WakeWordEngine.IsInstalled(Folder, "hey_friday"))
         {
             return;
         }
 
-        using var engine = new WakeWordEngine(Folder, "hey_jarvis");
+        using var engine = new WakeWordEngine(Folder, "hey_friday");
         Assert.Equal(16, engine.FeatureFrames);
         Assert.False(WakeWordEngine.IsInstalled(Folder, "ok_nabu"));
     }
@@ -50,12 +50,12 @@ public class WakeWordTests
     [Fact]
     public void RejectsWrongChunkSize()
     {
-        if (!WakeWordEngine.IsInstalled(Folder, "hey_jarvis"))
+        if (!WakeWordEngine.IsInstalled(Folder, "hey_friday"))
         {
             return;
         }
 
-        using var engine = new WakeWordEngine(Folder, "hey_jarvis");
+        using var engine = new WakeWordEngine(Folder, "hey_friday");
         Assert.Throws<ArgumentException>(() => engine.CreateStream().Process(new short[100]));
     }
 }
