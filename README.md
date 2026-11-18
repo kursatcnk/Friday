@@ -11,6 +11,11 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
 | **Sohbetler** | Her konuşma ayrı bir sohbet olarak saklanır; başlığı ilk sorudan kendiliğinden çıkar. Sol listede Bugün, Dün, Bu hafta diye gruplanır; sabitle, yeniden adlandır, Markdown olarak kaydet ya da sil. Bütün sohbetlerde arama yapılır ("istanbul" yazınca "İstanbul" geçenler de bulunur). Eski bir sohbeti açıp kaldığı yerden sürdürebilirsin; Friday o sohbetin bağlamıyla devam eder. "Yeni sohbet", "konuyu değiştirelim" ya da "sohbeti temizle" demen de yeter. Bir süre konuşmazsan (varsayılan 30 dk) sonraki soru kendiliğinden yeni bir sohbet olur. |
 | **Hızlı komut kutusu** | **Ctrl+Alt+Space** ile her yerden küçük bir kutu açılır (Raycast ya da Spotlight gibi): yaz, Enter'a bas, kutu kapanır, cevap köşede görünür ve okunur. Yazdıkça rutinlerin, son sorduğun şeyler ve hazır komutlar süzülür; ok tuşlarıyla seç, Tab ile tamamla. |
+| **Durum raporu** | "Durum raporu" ya da "her şey yolunda mı?" deyince yarım saniyede: işlemci, bellek, ekran kartı sıcaklığı, dolmak üzere olan disk, sıradaki hatırlatma, bugün ne kadar çalıştığın, bekleyen nöbetler. Bir sorun yoksa "Her şey yolunda." |
+| **Nöbetçiler** | "İndirme bitince haber ver", "render bitince haber ver" (işlemci ya da ekran kartı yoğun çalıştıktan sonra boşa çıkınca), "internet gelince söyle", "ekran kartı 85 dereceyi geçerse uyar". Friday o an konuşuyorsa haber kaybolmaz, sırası gelince söylenir. "Neyi bekliyorsun?", "nöbeti iptal et". |
+| **Bilgisayar kontrolü** | "Bilgisayarı kilitle", "uyku moduna al", "ekranı kapat", "masaüstünü göster", "karanlık moda geç", "ekran görüntüsü al", "30 dakika sonra bilgisayarı kapat" (en az 1 dakika sonraya kurulur), "kapatmayı iptal et". |
+| **Özel komutlar** | "Baha dediğimde 'çayı tazeleyelim' de", "ders çalışıyorum deyince Spotify'ı aç". Sonra cümlende o söz geçince ("Baha geldi") Friday söyler ya da açar. Rutinler sayfasından düzenlenir. |
+| **Küçük işler** | "Beni yarın 7'de uyandır", "kronometreyi başlat / kaç oldu / durdur", "yazı tura at", "iki zar at", "1 ile 100 arasında bir sayı tut". "Teşekkürler" ya da "bu kadar" deyince kısa bir karşılık verip dinlemeyi bırakır. Ayarlardan bir hitap seçersen ("patron") ara sıra öyle seslenir. |
 | **Bugün ekranı** | Panel açılınca günün saatine göre selam, hava, yaklaşan hatırlatmalar ve tarihler, son notlar ve ritim özeti. İlk açılışta kısa bir tanışma: adın, şehrin, istersen başka bir yapay zekânın hafızası. |
 | **Hatırlatıcı** | "Yarın 9'da doktoru hatırlat", "akşam 8'de ilacımı hatırlat", "pazartesi 10:30'da toplantıyı hatırlat". Friday kapansa da kaybolmaz; kapalıyken kaçırılanları açılışta söyler. "Hatırlatmalarım neler?", "doktor hatırlatmasını iptal et". |
 | **Sesli notlar** | "Not al: süt ve ekmek", "notlarımı oku". Notlar D:\Friday\data\notes.md'de, Not Defteri'yle de açılır. |
@@ -50,7 +55,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 29 araç             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 32 araç, nöbetçiler             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -197,7 +202,9 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 
 | Ayar | Varsayılan | Açıklama |
 |---|---|---|
-| `UserName` | boş | Sana nasıl hitap edeceği |
+| `UserName` | boş | Adın |
+| `AddressAs` | boş | Hitap ("patron", "Kürşat Bey"); ara sıra kullanılır |
+| `Triggers` | boş | Özel komutlar: cümlede bu söz geçince çalışacak adımlar (`{"baha": ["soyle:Çayı tazeleyelim."]}`) |
 | `Personality` | `esprili` | `esprili`, `sade` ya da `resmi` |
 | `Hotkey` | `Ctrl+Alt+F` | `Ctrl`/`Alt`/`Shift`/`Win` + tuş; panelden değiştirince hemen geçerli olur |
 | `QuickAskHotkey` | `Ctrl+Alt+Space` | Hızlı komut kutusu; boş bırakılırsa kapalı |
@@ -228,6 +235,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Ritim koçu yalnızca Windows'un tuttuğu "son klavye/fare kullanımı" zamanını okur; tuşlar, ekran ve pencere içerikleri okunmaz. Moladan önce yalnızca öndeki pencerenin başlığı hatırlanır. Günlük süreler `D:\Friday\data\rhythm` altında, 90 gün tutulur.
 - Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden); "Güncellemeleri denetle"ye basarsan GitHub'daki son sürüm numarası sorgusu.
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
+- "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur.
 
 ## Geliştirme
 
