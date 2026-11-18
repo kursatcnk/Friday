@@ -45,6 +45,54 @@ public sealed partial class PanelViewModel
     private bool _focusGuard = true;
 
     [ObservableProperty]
+    private bool _documentMemory = true;
+
+    [ObservableProperty]
+    private string _documentFoldersText = "";
+
+    [ObservableProperty]
+    private string _documentStatus = "Henüz taranmadı.";
+
+    [ObservableProperty]
+    private bool _remoteAccessEnabled;
+
+    [ObservableProperty]
+    private string _remoteAddress = "";
+
+    [ObservableProperty]
+    private string _lastLatency = "Henüz ölçülmedi; ilk sorudan sonra burada görünür.";
+
+    [RelayCommand]
+    private void ScanDocuments()
+    {
+        _actions.ScanDocuments();
+        DocumentStatus = "Tarama başladı…";
+    }
+
+    [RelayCommand]
+    private void CopyRemoteAddress()
+    {
+        if (RemoteAddress.Length > 0)
+        {
+            System.Windows.Clipboard.SetText(RemoteAddress.Split('\n')[0]);
+            SavedMessage = "Bağlantı panoya kopyalandı; telefona gönder ya da tarayıcısına yapıştır.";
+        }
+    }
+
+    [RelayCommand]
+    private void NewRemoteKey()
+    {
+        _settings.RemoteKey = Friday.Infrastructure.RemotePanel.NewKey();
+        _actions.Save(_settings);
+        UpdateRemoteAddress();
+        SavedMessage = "Yeni anahtar üretildi; eski bağlantı artık çalışmaz.";
+    }
+
+    private void UpdateRemoteAddress() => RemoteAddress = _settings.RemoteAccess && _settings.RemoteKey.Length > 0
+        ? string.Join("\n", Friday.Infrastructure.RemotePanel.Addresses(_settings.RemotePort, _settings.RemoteKey))
+        : "";
+
+    [ObservableProperty]
     private bool _brainFast = true;
 
     [ObservableProperty]
@@ -359,6 +407,10 @@ public sealed partial class PanelViewModel
         _settings.GpuRendering = GpuRendering;
         _settings.ScreenTime = ScreenTimeEnabled;
         _settings.FocusGuard = FocusGuard;
+        _settings.DocumentMemory = DocumentMemory;
+        var folders = DocumentFoldersText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        _settings.DocumentFolders = folders.SequenceEqual(Friday.Infrastructure.DocumentLibrary.DefaultFolders(), StringComparer.OrdinalIgnoreCase) ? [] : folders;
+        _settings.RemoteAccess = RemoteAccessEnabled;
         _settings.VoiceRoom = RoomDry ? 0 : RoomWarm ? 0.14 : 0.07;
         _settings.VoiceModelPath = SelectedPiperVoice?.Name ?? "";
         _settings.KeepHistory = KeepHistory;
@@ -447,6 +499,10 @@ public sealed partial class PanelViewModel
         GpuRendering = _settings.GpuRendering;
         ScreenTimeEnabled = _settings.ScreenTime;
         FocusGuard = _settings.FocusGuard;
+        DocumentMemory = _settings.DocumentMemory;
+        DocumentFoldersText = string.Join("\n", _settings.DocumentFolders.Count > 0 ? _settings.DocumentFolders : Friday.Infrastructure.DocumentLibrary.DefaultFolders());
+        RemoteAccessEnabled = _settings.RemoteAccess;
+        UpdateRemoteAddress();
         Gpu5 = _settings.GpuIdleMinutes is >= 4 and < 10;
         Gpu15 = _settings.GpuIdleMinutes >= 10;
         Gpu2 = !Gpu1 && !Gpu5 && !Gpu15;

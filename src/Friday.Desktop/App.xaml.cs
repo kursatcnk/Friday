@@ -212,6 +212,7 @@ public sealed partial class App : Application, IDisposable
             OpenSettingsFile = () => Open(paths.SettingsFile),
             OpenDataFolder = () => Open(paths.Data),
             PreviewVoice = assistant.PreviewVoice,
+            ScanDocuments = () => _ = assistant.ScanDocumentsAsync(),
             Save = changed =>
             {
                 store.Save(changed);
@@ -349,6 +350,8 @@ public sealed partial class App : Application, IDisposable
         _weatherClock.Start();
         _ = RefreshWeatherAsync();
         memory.Changed += (_, _) => Ui(() => panel.ShowMemories(memory.Items));
+        assistant.DocumentsChanged += (_, status) => Ui(() => panel.DocumentStatus = status);
+        assistant.LatencyMeasured += (_, latency) => Ui(() => panel.LastLatency = latency);
         ledger.Added += (_, entry) => Ui(() => panel.AddLedger(entry));
         assistant.StatusChanged += (_, status) => Ui(() =>
         {

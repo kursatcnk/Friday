@@ -20,6 +20,9 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Ekran süresi** | "Bugün ne kadar bilgisayardaydım", "dün en çok ne kullandım", "bugün ne kadar YouTube izledim". Bugün ekranında en çok kullanılan 5 uygulama çubuklarla görünür. Öndeki uygulamanın adı 15 sn'de bir sayılır; başlıklar saklanmaz, 2 dakika dokunulmazsa sayılmaz. |
 | **Odak bekçisi** | Odak oturumundayken YouTube, Netflix, Instagram gibi bir sitede kalırsan bir kez, nazikçe hatırlatır ve kaç dakika kaldığını söyler. |
 | **Vikipedi'den doğrulama** | Kişi, yer, uzunluk, nüfus, tarih gibi ansiklopedik sorularda model emin değilse Vikipedi özetine bakar; sayı uydurmak yerine kaynağa gider. |
+| **Belge hafızası** | "Kira sözleşmesinde iptal şartı neydi?", "raporda bütçe kaçtı?", "sunumu özetle". Belgeler ve Masaüstü (ya da seçtiğin klasörler) bu bilgisayarda dizinlenir: PDF, Word, Excel, PowerPoint, metin, Markdown, HTML, RTF. Friday cevabı hangi dosyadan aldığını söyler. Hiçbir şey indirilmez ya da dışarı gitmez: PDF ve Office okuyucusu Friday'in içinde, arama Türkçe eklere uygun yerel bir dizinle (BM25) yapılır. Tarama düşük öncelikle, açılıştan 2 dakika sonra ve saatte bir; yalnızca değişen dosyalar yeniden okunur. |
+| **Ajan modu** | "Dün indirdiğim PDF'i bul, özetle ve notlarıma ekle", "raporu oku, üç maddede özetle ve kaydet". Çok adımlı istekleri tanır, önce planı tek cümleyle söyler, araçları sırayla çalıştırır (bir adımın sonucunu sonrakinde kullanır), geri alınamaz işlerden önce sorar ve sonunda ne yaptığını özetler. Özetler `D:\Friday\Kaydedilenler` klasörüne kaydedilir. |
+| **Telefondan erişim** | İsteğe bağlı: evdeki Wi-Fi'da telefonun tarayıcısından Friday'e yaz, rutin başlat, müziği ve sesi yönet, bilgisayarı kilitle. Cevap telefonda görünür; istersen bilgisayarda da sesli söylenir. Yalnızca ev ağından ve gizli anahtarlı bağlantıyla çalışır; varsayılan kapalıdır. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
 | **Küçük ama işe yarar** | "100 dolar kaç lira", "250 euro kaç dolar" (güncel kurla), "Discord'u kapat", "bu pencereyi kapat", "tekrar et" / "ne dedin". |
 | **Araştırma raporu** | "Yerel sesli asistanlar hakkında rapor hazırla" ya da "elektrikli arabaları araştır": Friday arka planda arar, en iyi dört sayfayı okur, yerel modelle kaynaklı bir rapor yazar (`D:\Friday\data\reports`, Markdown). Sen işine devam edersin; hazır olunca özetini söyler, "raporu aç" deyince açar. |
@@ -75,7 +78,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 41 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 44 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -148,6 +151,8 @@ Friday boşta **toplam ~60 MB RAM ve 0 GB VRAM**, konuşurken ~3,5 GB RAM ve ~4 
 - **Oyunda kenara çekilir.** Oyun, tam ekran video ya da sunum açıkken Friday yine tam güçle cevap verir ama modelleri ~20 sn sonra ekran kartından çıkarır (Windows'un "rahatsız etme" durumundan anlar; pencere taranmaz).
 - **Arayüz ekran kartını kullanmaz.** Pencereler varsayılan olarak işlemciyle çizilir: arayüz VRAM tutmaz, oyunla ve dil modeliyle yarışmaz, ekran kartı sürücüsü takıldığında beyaz pencere sorunu yaşanmaz. İstenirse Ayarlar'dan ekran kartıyla çizim açılır. Küre boştayken yalnızca pencere öndeyken saniyede 15 kare nefes alır, arkadayken hiç çizilmez.
 - **Uyandırma kelimesi odanın gürültüsüne uyar.** Fan sesi gibi sabit gürültüyü öğrenir, o seviyedeki parçalarda modelleri hiç çalıştırmaz; müziğin ya da konuşmanın üstünden söylenen "Hey Friday" yine tam işlenir.
+- **Akıllı modda düşünme adımı yok.** Gemma 4 12B araçları düşünmeden de doğru çağırıyor; düşünme cevap başına 0,7–9 sn ekliyordu. Küçük model düşünmeden araç çağırmak yerine anlatmaya kaçtığı için onda ilk turda açık kalır; çok adımlı görevlerde plan için her iki modelde de ilk turda düşünülür.
+- **Gecikme ölçülür.** Her cevapta konuşmanın bittiği andan ilk cümlenin sese gittiği ana kadar geçen süre günlüğe yazılır ve Ayarlar › Akıl ve performans'ta görünür.
 - **Hızlı ya da Akıllı.** Ayarlar › Akıl ve performans'tan beyin seçilir. Hızlı (varsayılan) Gemma 4 E4B'dir. Akıllı, Gemma 4 12B'nin görmesiz varyantıdır (`friday-smart`): niyeti, bağlamı ve genel bilgiyi çok daha iyi tutturur, ~8 GB VRAM ister ve kısa cevaplarda birkaç yüz milisaniye daha yavaştır. Geçiş anında olur: eski model ekran kartından çıkar, yenisi arkada yüklenir. 12B'yi indirmek için `.\setup.ps1 -Smart` (7,5 GB). Ekrana bakmak için küçük model kullanılmaya devam eder.
 - **Görme modülü ayrı.** Sohbet, Gemma 4'ün görme modülü olmayan varyantıyla (`friday-text`) yapılır: 4,7 GB yerine 3,5 GB. Aynı model dosyasını paylaşır, diskte ek yer kaplamaz ve ilk açılışta otomatik oluşturulur. Görme modülü yalnızca "ekrana bak" denince yüklenir ve iş bitince boşaltılır.
 - **Ön ısıtma.** "Hey Friday" duyulunca ya da kısayola basınca modeller hemen yüklenmeye başlar. Yükleme (~3 sn) sen konuşurken biter, bu yüzden uyandırma neredeyse hissedilmez.
@@ -264,6 +269,8 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `HabitSuggestions` / `ClipboardHistory` | `true` / `false` | Alışkanlık önerileri; pano geçmişi (yalnızca bellekte) |
 | `AmbientVolume` | `0.25` | Ortam seslerinin düzeyi (0–1) |
 | `RoutineSchedules` / `RoutineHotkeys` | boş | Rutin adı → `"09:00 haftaici"`, `"18:30 hergun"`, `"acilis"`; rutin adı → `"Ctrl+Alt+1"` |
+| `DocumentMemory` / `DocumentFolders` | `true` / boş | Belge hafızası; taranacak klasörler (boşsa Belgeler ve Masaüstü) |
+| `RemoteAccess` / `RemotePort` / `RemoteKey` | `false` / `8765` / üretilir | Telefondan erişim; ev ağı portu; bağlantının gizli anahtarı |
 | `ScreenTime` / `FocusGuard` | `true` / `true` | Ekran süresi sayacı; odak oturumunda dikkat dağıtan site hatırlatması |
 | `YieldToFullScreen` / `GpuRendering` | `true` / `false` | Oyunda modelleri erken bırak; arayüzü ekran kartıyla çiz |
 | `KeepHistory` | `true` | Sohbetleri `D:\Friday\data\chats` altında sakla |
@@ -280,6 +287,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
 - "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur. "Gündem ne" haber akışını (TRT Haber) indirir; bu da deftere yazılır.
 - Araştırma raporu arama motoruna yalnızca konuyu gönderir, sayfaları okur ve raporu yerel modelle yazar; her sayfa deftere yazılır. Takvim adresi yalnızca `settings.json`'da durur, takvim 15 dk'da bir okunur.
+- Belge hafızası belgelerin metnini yalnızca bu bilgisayarda, `data\documents.txt` ve `data\documents.json` içinde tutar; dil modeline yalnızca soruyla ilgili birkaç parça verilir. Telefondan erişim varsayılan kapalıdır; açılınca yalnızca özel ağ adreslerinden (192.168.x, 10.x, 172.16–31.x) ve her istekte 12 haneli gizli anahtarla cevap verir.
 - Ekran süresi (`screentime.json`) yalnızca uygulama ya da bilinen site adını ve saniyeyi tutar; pencere başlıkları, adresler ve içerikler saklanmaz, 14 günden eskisi silinir. Masa düzenleri (`workspaces.json`) yalnızca program yolunu ve pencere yerini tutar. Vikipedi'ye yalnızca konu adı gider.
 - Pano geçmişi varsayılan kapalıdır; açılırsa metinler yalnızca bellekte tutulur ve Friday kapanınca silinir. Alışkanlık kaydı (`habits.json`) yalnızca hangi rutinin ya da uygulamanın ne zaman açıldığını tutar, 30 günden eskisini siler.
 - Seçili metin komutları seçimi Ctrl+C ile alır, yerel modelde işler ve panonun eski içeriğini geri koyar. Dikte sesi kaydetmez; yazılan metin sohbete de yazılmaz.

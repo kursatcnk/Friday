@@ -64,6 +64,8 @@ public sealed class PanelActions
 {
     public Action<string> Send { get; init; } = _ => { };
 
+    public Action ScanDocuments { get; init; } = () => { };
+
     public Action<string> Remember { get; init; } = _ => { };
 
     public Action<string> Forget { get; init; } = _ => { };
@@ -830,6 +832,7 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings.MorningGreeting = MorningEnabled;
         SaveMoreSettings();
         _actions.Save(_settings);
+        UpdateRemoteAddress();
         OnPropertyChanged(nameof(Greeting));
         OnPropertyChanged(nameof(WakeHint));
         OnPropertyChanged(nameof(WakeLabel));

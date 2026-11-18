@@ -89,6 +89,105 @@ public sealed class FridayAssistant : IDisposable
 
     private bool _yielding;
 
+    /// <summary>Konuşmanın bittiği (ya da yazının gönderildiği) an; ilk cümle sese gidince gecikme ölçülür.</summary>
+    private long _turnStart;
+
+    private long _transcribeMs = -1;
+
+    /// <summary>Telefondan gelen ve sessiz cevaplanacak tur.</summary>
+    private volatile bool _quiet;
+
+    private RemotePanel? _remote;
+
+    /// <summary>Her tur bittiğinde: soru ve cevap.</summary>
+    public event EventHandler<TurnResult>? TurnFinished;
+
+    /// <summary>Son cevabın gecikmesi ölçüldü (Ayarlar'da gösterilir).</summary>
+    public event EventHandler<string>? LatencyMeasured;
+
+    /// <summary>Belge hafızasının durumu değişti.</summary>
+    public event EventHandler<string>? DocumentsChanged;
+
+    public string LastLatency { get; private set; } = "Henüz ölçülmedi; ilk sorudan sonra burada görünür.";
+
+    public string DocumentStatus => _tools.Documents?.Status ?? "Kapalı";
+
+    public Task ScanDocumentsAsync() => _tools.Documents?.ScanAsync() ?? Task.CompletedTask;
+
+    /// <summary>Belge hafızasını ayara göre açar, kapatır ya da klasörlerini günceller.</summary>
+    private void UpdateDocuments()
+    {
+        if (_settings.DocumentMemory && _tools.Documents is null)
+        {
+            var library = new DocumentLibrary(_paths.Data) { Folders = _settings.DocumentFolders };
+            library.Changed += (_, status) => DocumentsChanged?.Invoke(this, status);
+            library.Start();
+            _tools.Documents = library;
+            _ledger.Record(DataFlow.Local, "Belge hafızası", "Belgeler bu bilgisayarda dizinleniyor; hiçbir şey dışarı gönderilmiyor");
+        }
+        else if (!_settings.DocumentMemory && _tools.Documents is { } running)
+        {
+            _tools.Documents = null;
+            running.Dispose();
+            DocumentsChanged?.Invoke(this, "Kapalı");
+        }
+        else if (_tools.Documents is { } library)
+        {
+            library.Folders = _settings.DocumentFolders;
+        }
+    }
+
+    /// <summary>Telefondan erişimi ayara göre açar ya da kapatır; anahtar yoksa üretir.</summary>
+    private void UpdateRemote()
+    {
+        if (!_settings.RemoteAccess)
+        {
+            _remote?.Stop();
+            return;
+        }
+
+        if (_settings.RemoteKey.Length < 8)
+        {
+            _settings.RemoteKey = RemotePanel.NewKey();
+            _tools.SaveSettings?.Invoke(_settings);
+        }
+
+        _remote ??= new RemotePanel(AskRemoteAsync, () => [.. _settings.Routines.Keys]);
+        try
+        {
+            _remote.Start(_settings.RemotePort, _settings.RemoteKey);
+            _ledger.Record(DataFlow.Local, "Telefondan erişim", $"Ev ağında {_settings.RemotePort} numaralı kapıdan, gizli anahtarla açık");
+        }
+        catch (System.Net.Sockets.SocketException exception)
+        {
+            FridayLog.Warn($"Telefondan erişim açılamadı (port {_settings.RemotePort}): {exception.Message}");
+        }
+    }
+
+    /// <summary>Telefondan gelen mesaj: yazılmış gibi cevaplanır; istenmediyse bilgisayarda sesli okunmaz.</summary>
+    public async Task<string> AskRemoteAsync(string text, bool speak, CancellationToken cancellationToken)
+    {
+        var done = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Finished(object? sender, TurnResult result) => done.TrySetResult(result.Reply);
+        TurnFinished += Finished;
+        _quiet = !speak;
+        _ledger.Record(DataFlow.Local, "Telefondan erişim", "Telefondan bir mesaj geldi");
+        try
+        {
+            SubmitText(text);
+            return await done.Task.WaitAsync(TimeSpan.FromSeconds(120), cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            return "Friday zamanında cevap veremedi; bilgisayarda başka bir işle meşgul olabilir.";
+        }
+        finally
+        {
+            TurnFinished -= Finished;
+            _quiet = false;
+        }
+    }
+
     /// <summary>GPU'ya yüklenmiş sohbet modeli (Hızlı ↔ Akıllı geçişinde eskisi boşaltılır).</summary>
     private string _loadedModel = "";
 
@@ -129,6 +228,7 @@ public sealed class FridayAssistant : IDisposable
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
+        _tools.SaveFolder = Path.Combine(paths.Home, "Kaydedilenler");
         _tools.Workspaces = new WorkspaceStore(Path.Combine(paths.Data, "workspaces.json"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
@@ -145,6 +245,8 @@ public sealed class FridayAssistant : IDisposable
     {
         ScheduleRoutines();
         UpdateActivity();
+        UpdateDocuments();
+        UpdateRemote();
         if (_settings.OllamaModel != _loadedModel && _brainReady.IsCompleted)
         {
             // Akıl değişti (Hızlı ↔ Akıllı): eski model GPU'dan çıkar, yenisi arkada hazırlanır.
@@ -294,6 +396,8 @@ public sealed class FridayAssistant : IDisposable
         ScheduleRoutines();
         _ = RunStartupRoutinesAsync();
         UpdateActivity();
+        UpdateDocuments();
+        UpdateRemote();
         _tools.Clipboard.Enable(settings.ClipboardHistory);
         StartWakeWord();
         _rhythm.Apply(settings);
@@ -597,12 +701,15 @@ public sealed class FridayAssistant : IDisposable
         }
 
         Report(AssistantState.Thinking, "Anlamaya çalışıyorum…");
+        Interlocked.Exchange(ref _turnStart, Stopwatch.GetTimestamp());
         var clock = Stopwatch.StartNew();
         var text = recording.Transcript ?? await _whisper.TranscribeAsync(audio, cancellationToken).ConfigureAwait(false);
+        _transcribeMs = clock.ElapsedMilliseconds;
         Diagnostics?.Invoke(this, string.Create(CultureInfo.InvariantCulture,
             $"yazıya dökme: {(recording.Transcript is null ? $"{clock.ElapsedMilliseconds} ms" : "tahmin hazırdı, 0 ms")}"));
         if (text.Length == 0)
         {
+            Interlocked.Exchange(ref _turnStart, 0);
             Report(AssistantState.Idle, "Anlayamadım, tekrar dener misin?");
             return null;
         }
@@ -710,6 +817,11 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
     public async Task AskAsync(string text, CancellationToken cancellationToken)
     {
+        if (Interlocked.CompareExchange(ref _turnStart, Stopwatch.GetTimestamp(), 0) == 0)
+        {
+            _transcribeMs = -1;
+        }
+
         if (Interlocked.Exchange(ref _reload, null) is { } turns)
         {
             _memory.Load(turns);
@@ -808,6 +920,9 @@ public sealed class FridayAssistant : IDisposable
             _chats.Append(text, reply);
         }
 
+        TurnFinished?.Invoke(this, new TurnResult(text, reply));
+        Interlocked.Exchange(ref _turnStart, 0);
+
         if (reply.Length > 0)
         {
             _lastReply = reply;
@@ -894,11 +1009,24 @@ public sealed class FridayAssistant : IDisposable
         // Düşünme adımı yalnızca hangi aracın çağrılacağına karar verirken gerekir. Selamlaşma ve sohbette, ya da araç
         // sonucu geldikten sonra cevabı cümleye dökerken kapalıdır: bu ikisi cevap başına 0,5–2 sn kazandırıyor.
         var smallTalk = ConversationStyle.IsSmallTalk(question);
-        for (var round = 0; round <= MaxToolRounds; round++)
+        // Ajan modu: "PDF'i bul, özetle, notlarıma ekle" gibi çok adımlı isteklerde daha çok adım, her adımda düşünme ve
+        // önce planı söyleyip sonra sırayla yapma talimatı.
+        var multiStep = !smallTalk && AgentPlan.IsMultiStep(question);
+        var maxRounds = multiStep ? 8 : MaxToolRounds;
+        var documents = !smallTalk && !multiStep && AgentPlan.MentionsDocuments(question)
+            ? await Task.Run(() => _tools.DocumentContext(question), cancellationToken).ConfigureAwait(false)
+            : null;
+        var step = 0;
+        if (multiStep)
+        {
+            FridayLog.Info("Ajan modu: çok adımlı istek");
+        }
+
+        for (var round = 0; round <= maxRounds; round++)
         {
             var messages = new List<ChatMessage>
             {
-                new(ChatRole.System, SystemPrompt.Build(_settings, _longTermMemory.Items, DateTime.Now))
+                new(ChatRole.System, SystemPrompt.Build(_settings, _longTermMemory.Items, DateTime.Now) + (multiStep ? "\n" + AgentPlan.Instruction : "") + (documents is null ? "" : "\n" + documents))
             };
             messages.AddRange(_memory.Messages);
 
@@ -906,8 +1034,12 @@ public sealed class FridayAssistant : IDisposable
             var content = new StringBuilder();
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
-            var tools = round < MaxToolRounds ? _tools.Definitions : [];
-            var think = round == 0 && !smallTalk;
+            var tools = round < maxRounds ? _tools.Definitions : [];
+            // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
+            // kadar ekliyordu. Kesin bilgi isteyen sorularda düşünme kalır: yoksa model aracı atlayıp sayı uydurabiliyor.
+            // Küçük model düşünmeden aracı çağırmak yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
+            var think = round == 0 && !smallTalk && documents is null
+                        && (multiStep || _settings.OllamaModel != FridaySettings.SmartTextModel || AgentPlan.IsFactual(question));
 
             var thinking = 0;
             await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken, think).ConfigureAwait(false))
@@ -972,7 +1104,7 @@ public sealed class FridayAssistant : IDisposable
 
             foreach (var call in calls)
             {
-                Report(AssistantState.Thinking, AssistantTools.DescribeActivity(call.Name) + "…");
+                Report(AssistantState.Thinking, (multiStep ? $"{++step}. adım: " : "") + AssistantTools.DescribeActivity(call.Name) + "…");
                 ToolStarted?.Invoke(this, call.Name);
                 // Uzun süren işlerde sessiz beklemek yerine kısa bir cümle: gerçek bir asistan gibi "bakıyorum" der.
                 if (!filled && reply.Length == 0 && SlowTools.Contains(call.Name))
@@ -982,6 +1114,12 @@ public sealed class FridayAssistant : IDisposable
                 }
 
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+                if (result.Length > 7500)
+                {
+                    // Bağlam penceresi (8192 belirteç) sabit: uzun araç sonuçları sistem talimatını dışarı itmesin.
+                    result = result[..7500] + " …(kısaltıldı)";
+                }
+
                 if (_tools.TakeCard() is { } toolCard)
                 {
                     CardShown?.Invoke(this, toolCard);
@@ -1040,9 +1178,21 @@ public sealed class FridayAssistant : IDisposable
     private void Say(string sentence)
     {
         var spoken = Pronunciation.Apply(SpokenText.Clean(sentence), _settings.Pronunciations);
-        if (spoken.Length == 0)
+        if (spoken.Length == 0 || _quiet)
         {
             return;
+        }
+
+        // 45 sn'den eskiyse ölçüm yarıda kalmış bir turdan kalmıştır; gösterilmez.
+        if (Interlocked.Exchange(ref _turnStart, 0) is var started and > 0 && Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(45))
+        {
+            var seconds = Stopwatch.GetElapsedTime(started).TotalSeconds;
+            var ms = _transcribeMs;
+            LastLatency = ms >= 0
+                ? string.Create(CultureInfo.GetCultureInfo("tr-TR"), $"Son cevap: konuşman bitince {seconds:0.0} sn'de söze başladı (yazıya dökme {ms} ms, gerisi düşünme).")
+                : string.Create(CultureInfo.GetCultureInfo("tr-TR"), $"Son cevap: yazınca {seconds:0.0} sn'de söze başladı.");
+            FridayLog.Info(string.Create(CultureInfo.InvariantCulture, $"Gecikme: ilk cümle {seconds:0.00} sn (yazıya dökme {ms} ms)"));
+            LatencyMeasured?.Invoke(this, LastLatency);
         }
 
         if (State != AssistantState.Speaking)
@@ -1364,6 +1514,8 @@ public sealed class FridayAssistant : IDisposable
         _habitTimer?.Dispose();
         _routineTimer?.Dispose();
         _tools.Activity?.Dispose();
+        _tools.Documents?.Dispose();
+        _remote?.Dispose();
         _announcement?.Cancel();
         _announcement?.Dispose();
         _rhythm.Dispose();
@@ -1377,3 +1529,6 @@ public sealed class FridayAssistant : IDisposable
         _ollama.Dispose();
     }
 }
+
+/// <summary>Biten bir tur: kullanıcının sorusu ve Friday'in cevabı.</summary>
+public sealed record TurnResult(string Question, string Reply);

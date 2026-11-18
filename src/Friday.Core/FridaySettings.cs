@@ -107,6 +107,20 @@ public sealed class FridaySettings
     /// <summary>Odak oturumunda YouTube, Netflix, Instagram gibi bir sitede kalınca Friday nazikçe hatırlatır.</summary>
     public bool FocusGuard { get; set; } = true;
 
+    /// <summary>Belge hafızası: seçilen klasörlerdeki belgeler yerelde dizinlenir, sorulara kaynak gösterilerek cevap verilir.</summary>
+    public bool DocumentMemory { get; set; } = true;
+
+    /// <summary>Belge hafızasının taradığı klasörler; boşsa Belgeler ve Masaüstü.</summary>
+    public List<string> DocumentFolders { get; set; } = [];
+
+    /// <summary>Telefondan erişim: ev ağında küçük bir web sayfası (varsayılan kapalı, gizli anahtarla).</summary>
+    public bool RemoteAccess { get; set; }
+
+    public int RemotePort { get; set; } = 8765;
+
+    /// <summary>Telefon bağlantısının gizli anahtarı; ilk açılışta üretilir, Ayarlar'dan yenilenir.</summary>
+    public string RemoteKey { get; set; } = "";
+
     /// <summary>
     /// Arayüzü ekran kartıyla çiz. Kapalıyken (varsayılan) pencereler işlemciyle çizilir: Friday'in arayüzü ekran
     /// kartında hiç bellek tutmaz, oyunla ve dil modeliyle yarışmaz, sürücü takıldığında beyaz pencere sorunu yaşanmaz.

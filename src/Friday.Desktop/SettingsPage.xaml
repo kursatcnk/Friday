@@ -45,6 +45,8 @@
                 <Button Style="{StaticResource ChipButton}" Content="Ritim" Tag="Section3" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Karakter" Tag="Section4" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Yardımcılar" Tag="Section5" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Belgeler" Tag="SectionDocs" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Telefon" Tag="SectionRemote" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Takvim" Tag="Section6" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Ses" Tag="Section7" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Mikrofon" Tag="Section8" Click="OnJump" Margin="0,0,6,6"/>
@@ -403,6 +405,42 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ================= Belge hafızası ================= -->
+                <Border x:Name="SectionDocs" Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Belge hafızası" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                                   Text="&quot;Kira sözleşmesinde iptal şartı neydi?&quot;, &quot;raporu özetle&quot;: Friday bu klasörlerdeki PDF, Word, Excel, PowerPoint ve metin belgelerini bu bilgisayarda dizinler ve cevabı hangi dosyadan aldığını söyler. Hiçbir şey dışarı gitmez; tarama düşük öncelikle, saatte bir yapılır."/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DocumentMemory}" Margin="0,0,0,12">
+                            <TextBlock Text="Belgelerimden cevap ver" FontWeight="SemiBold"/>
+                        </CheckBox>
+                        <TextBlock Text="Klasörler (her satıra bir tane)" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding DocumentFoldersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="58" TextWrapping="NoWrap"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Style="{StaticResource GhostButton}" Content="Şimdi tara" Command="{Binding ScanDocumentsCommand}" Margin="0,0,12,0"/>
+                            <TextBlock Text="{Binding DocumentStatus}" Style="{StaticResource Hint}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Telefondan erişim ================= -->
+                <Border x:Name="SectionRemote" Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Telefondan erişim" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                                   Text="Evdeki Wi-Fi'da telefonun tarayıcısından Friday'e yaz, rutin başlat, müziği ve sesi yönet. Yalnızca ev ağından ve gizli anahtarlı bağlantıyla çalışır. İlk açılışta Windows güvenlik duvarı izin isteyebilir: yalnızca &quot;Özel ağlar&quot;ı seç."/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RemoteAccessEnabled}" Margin="0,0,0,12">
+                            <TextBlock Text="Telefondan erişime izin ver" FontWeight="SemiBold"/>
+                        </CheckBox>
+                        <TextBox Text="{Binding RemoteAddress, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                 Visibility="{Binding RemoteAddress, Converter={StaticResource TextVisible}}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding RemoteAddress, Converter={StaticResource TextVisible}}">
+                            <Button Style="{StaticResource GhostButton}" Content="Bağlantıyı kopyala" Command="{Binding CopyRemoteAddressCommand}" Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource GhostButton}" Content="Anahtarı yenile" Command="{Binding NewRemoteKeyCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- ================= Akıl ve performans ================= -->
                 <Border x:Name="Section9" Style="{StaticResource SettingsCard}">
                     <StackPanel>
@@ -416,7 +454,8 @@
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource Hint}" Text="{Binding BrainHint}" Margin="150,2,0,16"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding BrainHint}" Margin="150,2,0,4"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding LastLatency}" Margin="150,0,0,16" Foreground="{StaticResource AccentBrush}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="Ekran kartını boşalt" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
                             <Border Style="{StaticResource SegmentTrack}">
