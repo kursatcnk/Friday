@@ -39,6 +39,15 @@ public sealed class TodoStore
     public event EventHandler? Changed;
 
     /// <summary>Açık işler (eskiden yeniye) ve son bir günde tamamlananlar.</summary>
+    /// <summary>Bu tarihten sonra tamamlanan işlerin sayısı.</summary>
+    public int DoneSince(DateTime since)
+    {
+        lock (_gate)
+        {
+            return _items.Count(item => item.Done >= since);
+        }
+    }
+
     public IReadOnlyList<TodoItem> Visible(DateTime now)
     {
         lock (_gate)

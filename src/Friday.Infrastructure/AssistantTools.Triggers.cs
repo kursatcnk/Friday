@@ -54,6 +54,51 @@ public sealed partial class AssistantTools
         return RhythmCommand("ertele", (given ?? 15).ToString(CultureInfo.InvariantCulture));
     }
 
+    /// <summary>Son 7 gün: ekran süresi ve en çok kullanılanlar, işler, sohbetler, yaklaşan hatırlatmalar.</summary>
+    private string WeeklyReview()
+    {
+        var now = DateTime.Now;
+        var parts = new List<string>();
+        if (Activity is { } activity)
+        {
+            var days = Enumerable.Range(0, 7).Select(offset => activity.Day(now.AddDays(-offset))).ToList();
+            var total = days.Sum(day => day.Sum(item => item.Seconds));
+            if (total > 0)
+            {
+                var active = Math.Max(1, days.Count(day => day.Count > 0));
+                var top = days.SelectMany(day => day).GroupBy(item => item.App)
+                    .Select(group => (App: group.Key, Seconds: group.Sum(item => item.Seconds)))
+                    .OrderByDescending(item => item.Seconds).Take(3);
+                parts.Add($"Son 7 günde {ScreenTimeLog.Spoken(total)} bilgisayar başındaydın, kullandığın günlerde ortalama {ScreenTimeLog.Spoken(total / active)}. "
+                          + $"En çok: {string.Join(", ", top.Select(item => $"{item.App} ({ScreenTimeLog.Spoken(item.Seconds)})"))}.");
+            }
+        }
+
+        if (Todos is { } todos)
+        {
+            var done = todos.DoneSince(now.AddDays(-7));
+            var open = todos.Open.Count;
+            if (done + open > 0)
+            {
+                parts.Add($"{done} iş tamamladın{(open > 0 ? $", {open} iş bekliyor" : "")}.");
+            }
+        }
+
+        var chats = history.List().Count(chat => chat.Updated >= now.AddDays(-7));
+        if (chats > 0)
+        {
+            parts.Add($"{chats} sohbetimiz oldu.");
+        }
+
+        var upcoming = reminders.Upcoming.Count(item => item.Trigger is null && item.Due <= now.AddDays(7));
+        if (upcoming > 0)
+        {
+            parts.Add($"Önümüzdeki 7 günde {upcoming} hatırlatma var.");
+        }
+
+        return parts.Count == 0 ? "Bu hafta için henüz yeterli kayıt yok." : string.Join(" ", parts);
+    }
+
     private string ListCommand(string action, string name, string items)
     {
         if (Lists is not { } lists)

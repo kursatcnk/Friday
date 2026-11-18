@@ -28,6 +28,25 @@ public static class RepeatRule
 {
     public static readonly IReadOnlyList<string> Known = ["gunluk", "haftaici", "haftasonu", "haftalik", "aylik"];
 
+    /// <summary>Aralıklı hatırlatmalar gece susar: 22.00'den sonraki ilk tekrar ertesi sabah 08.00'e kayar.</summary>
+    private static readonly TimeSpan DayStart = TimeSpan.FromHours(8);
+    private static readonly TimeSpan DayEnd = TimeSpan.FromHours(22);
+
+    /// <summary>"her:30" → 30 dakika; aralık kuralı değilse null.</summary>
+    public static int? Interval(string? rule) =>
+        rule is not null && rule.StartsWith("her:", StringComparison.Ordinal)
+        && int.TryParse(rule.AsSpan(4), NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes) && minutes >= 5
+            ? minutes
+            : null;
+
+    /// <summary>Bilinen tekrar kuralı mı (günlük, hafta içi… ya da "her:N" dakika)?</summary>
+    public static bool IsKnown(string? rule) => rule is not null && (Known.Contains(rule) || Interval(rule) is not null);
+
+    private static DateTime Awake(DateTime time) =>
+        time.TimeOfDay < DayStart ? time.Date + DayStart
+        : time.TimeOfDay >= DayEnd ? time.Date.AddDays(1) + DayStart
+        : time;
+
     /// <summary>"gün" → "gunluk", "hafta içi" → "haftaici", "pazartesi" → "haftalik"; tanınmazsa null.</summary>
     public static string? FromWords(string words) => words.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR")) switch
     {
@@ -71,6 +90,11 @@ public static class RepeatRule
     /// <summary>İlk tarih kurala uymuyorsa (ör. hafta içi ama cumartesi) uyan ilk güne kaydırılır.</summary>
     public static DateTime First(DateTime due, string rule)
     {
+        if (Interval(rule) is not null)
+        {
+            return Awake(due);
+        }
+
         var date = due;
         while (!Fits(date, rule))
         {
@@ -83,6 +107,18 @@ public static class RepeatRule
     /// <summary>Bir sonraki tekrar; "now"dan sonraki ilk uygun zaman.</summary>
     public static DateTime Next(DateTime due, string rule, DateTime now)
     {
+        if (Interval(rule) is { } minutes)
+        {
+            var step = due;
+            do
+            {
+                step = step.AddMinutes(minutes);
+            }
+            while (step <= now);
+
+            return Awake(step);
+        }
+
         var next = due;
         do
         {
@@ -108,6 +144,17 @@ public static class RepeatRule
     /// <summary>"her gün 09:00", "hafta içi her gün 08:30", "her pazartesi 10:00", "her ay 5'inde 09:00".</summary>
     public static string Describe(DateTime due, string rule)
     {
+        if (Interval(rule) is { } every)
+        {
+            return every switch
+            {
+                60 => "her saat",
+                30 => "her yarım saatte bir",
+                _ when every % 60 == 0 => $"her {every / 60} saatte bir",
+                _ => $"her {every} dakikada bir"
+            };
+        }
+
         var time = due.ToString("HH:mm", CultureInfo.InvariantCulture);
         return rule switch
         {

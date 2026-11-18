@@ -222,3 +222,34 @@ public class TriggerAndListTests
     public void AssemblyStyleDescriptionsAreShortened() => Assert.Equal("WhatsApp", ScreenTimeLog.Label("WhatsApp", "WhatsApp.Root", "WhatsApp"));
 }
 
+public class IntervalReminderTests
+{
+    [Theory]
+    [InlineData("her 30 dakikada bir su içmeyi hatırlat", "her:30", "su içmeyi")]
+    [InlineData("her saat başı esnemeyi hatırlat", "her:60", "esnemeyi")]
+    [InlineData("her 2 saatte bir gözlerimi dinlendirmeyi hatırlat", "her:120", "gözlerimi dinlendirmeyi")]
+    [InlineData("her yarım saatte bir duruşumu hatırlat", "her:30", "duruşumu")]
+    public void RecognisesIntervals(string sentence, string rule, string text)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("hatirlatici", command?.Tool);
+        Assert.Equal(rule, command!.Arguments["tekrar"]);
+        Assert.Equal(text, command.Arguments["metin"]);
+    }
+
+    [Fact]
+    public void IntervalsSleepAtNight()
+    {
+        var evening = new DateTime(2026, 11, 18, 21, 50, 0);
+        Assert.Equal(new DateTime(2026, 11, 19, 8, 0, 0), RepeatRule.Next(evening, "her:30", evening));
+        var morning = new DateTime(2026, 11, 19, 9, 0, 0);
+        Assert.Equal(new DateTime(2026, 11, 19, 10, 0, 0), RepeatRule.Next(morning, "her:60", morning.AddMinutes(5)));
+        Assert.Equal("her 2 saatte bir", RepeatRule.Describe(morning, "her:120"));
+        Assert.True(RepeatRule.IsKnown("her:45"));
+        Assert.False(RepeatRule.IsKnown("her:2"));
+    }
+
+    [Fact]
+    public void RecognisesWeeklyReview() => Assert.Equal("haftalik_ozet", QuickIntents.Match("bu hafta neler yaptım")?.Tool);
+}
+

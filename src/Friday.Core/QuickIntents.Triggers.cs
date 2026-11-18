@@ -10,6 +10,27 @@ public static partial class QuickIntents
     /// </summary>
     private static QuickCommand? Triggers(string sentence)
     {
+        if (IntervalReminderRequest().Match(sentence) is { Success: true } every)
+        {
+            var amount = every.Groups["n"].Value switch
+            {
+                "" or "bir" => 1,
+                "yarım" => 0.5,
+                "iki" => 2,
+                "üç" => 3,
+                "dört" => 4,
+                var digits => double.TryParse(digits, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : 1
+            };
+            var minutes = Math.Clamp((int)Math.Round(every.Groups["u"].Value == "saat" ? amount * 60 : amount), 5, 12 * 60);
+            var text = minutes.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return Command("hatirlatici", ("islem", "kur"), ("zaman", $"{text} dakika sonra"), ("metin", every.Groups["t"].Value.Trim()), ("tekrar", $"her:{text}"));
+        }
+
+        if (WeeklyReviewRequest().IsMatch(sentence))
+        {
+            return Command("haftalik_ozet");
+        }
+
         if (ReturnReminderRequest().Match(sentence) is { Success: true } back)
         {
             return Command("kosullu_hatirlatici", ("kosul", "donus"), ("metin", back.Groups["t"].Value.Trim()));
@@ -50,6 +71,12 @@ public static partial class QuickIntents
 
         return ListNamesRequest().IsMatch(sentence) ? Command("liste", ("islem", "listeler")) : null;
     }
+
+    [GeneratedRegex(@"^her (?:(?<n>\d+|yarım|bir|iki|üç|dört) )?(?<u>dakika|saat)(?:da|ta|te)?(?: başı)?(?: bir)? (?<t>.+?) (?:bana )?hatırlat$")]
+    private static partial Regex IntervalReminderRequest();
+
+    [GeneratedRegex(@"^(?:bu haftayı özetle|haftamı özetle|haftalık özet|haftalık rapor|bu hafta neler yaptım|bu hafta nasıl geçti|bu haftanın özeti)$")]
+    private static partial Regex WeeklyReviewRequest();
 
     [GeneratedRegex(@"^(?:bilgisayara |masaya )?(?:dönünce|döndüğümde|geri gelince|geri geldiğimde|gelince) (?<t>.+?) (?:bana )?hatırlat$")]
     private static partial Regex ReturnReminderRequest();

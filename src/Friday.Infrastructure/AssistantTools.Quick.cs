@@ -79,6 +79,7 @@ public sealed partial class AssistantTools
                 "rahatsiz_etme" => new QuickReply(QuietCommand(Arg("islem"), Arg("dakika"))),
                 "kosullu_hatirlatici" => new QuickReply(TriggeredReminder(Arg("kosul"), Arg("metin"))),
                 "liste" => new QuickReply(ListCommand(Arg("islem"), Arg("ad"), Arg("oge"))),
+                "haftalik_ozet" => new QuickReply(WeeklyReview()),
                 "ertele" => Snooze(Arg("dakika")),
                 "haber" => await NewsAsync(Arg("kategori"), cancellationToken).ConfigureAwait(false),
                 "rapor" => ResearchCommand(Arg("islem"), Arg("konu")),

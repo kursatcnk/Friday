@@ -82,8 +82,8 @@ public sealed partial class AssistantTools
                     return "Ne zaman hatırlatacağımı anlayamadım; ör. 'yarın 9'da' ya da 'akşam 8'de' de.";
                 }
 
-                var rule = RepeatRule.Known.Contains(repeat) ? repeat : null;
-                var added = reminders.Add(rule is null ? due : RepeatRule.Start(due, when, rule, now), text, now, rule);
+                var rule = RepeatRule.IsKnown(repeat) ? repeat : null;
+                var added = reminders.Add(rule is null || RepeatRule.Interval(rule) is not null ? due : RepeatRule.Start(due, when, rule, now), text, now, rule);
                 EnsureReminderClock();
                 ledger.Record(DataFlow.Local, "Hatırlatma", rule is null ? $"{TurkishTime.Describe(due, now)} için kuruldu" : $"{RepeatRule.Describe(added.Due, rule)} için kuruldu");
                 var subject = text.Trim();

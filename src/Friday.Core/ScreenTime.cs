@@ -64,8 +64,13 @@ public sealed class ScreenTimeLog
             return TurkishGrammar.Capitalize(process);
         }
 
-        // Bazı uygulamalar açıklama yerine derleme adı yazar ("WhatsApp.Root"): ilk parça yeter.
-        var clean = description.Trim();
+        return CleanName(description);
+    }
+
+    /// <summary>Bazı uygulamalar açıklama yerine derleme adı yazar ("WhatsApp.Root"): ilk parça yeter.</summary>
+    public static string CleanName(string name)
+    {
+        var clean = name.Trim();
         return !clean.Contains(' ', StringComparison.Ordinal) && clean.IndexOf('.', StringComparison.Ordinal) is > 0 and var dot ? clean[..dot] : clean;
     }
 
@@ -138,9 +143,11 @@ public sealed class ScreenTimeLog
     public static ScreenTimeLog FromJson(string json)
     {
         var days = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(json) ?? [];
+        // Eski kayıtlardaki adlar da sadeleşir; aynı uygulamanın iki adı varsa süreleri birleşir.
         return new ScreenTimeLog(days.ToDictionary(
             pair => pair.Key,
-            pair => new Dictionary<string, int>(pair.Value, StringComparer.OrdinalIgnoreCase)));
+            pair => pair.Value.GroupBy(item => CleanName(item.Key), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.Sum(item => item.Value), StringComparer.OrdinalIgnoreCase)));
     }
 
     private static string Key(DateTime when) => when.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
