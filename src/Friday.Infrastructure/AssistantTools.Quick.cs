@@ -73,6 +73,11 @@ public sealed partial class AssistantTools
                 "yaz" => TypeText(Arg("metin")),
                 "pencere" => WindowCommand(Arg("islem")),
                 "haber" => await NewsAsync(Arg("kategori"), cancellationToken).ConfigureAwait(false),
+                "rapor" => ResearchCommand(Arg("islem"), Arg("konu")),
+                "takvim" => await CalendarCommandAsync(Arg("gun"), cancellationToken).ConfigureAwait(false),
+                "indirilenler" => DownloadsCommand(Arg("islem")),
+                "gun_sonu" => await DayEndAsync(cancellationToken).ConfigureAwait(false),
+                "onay" => Confirm(Arg("cevap") == "evet"),
                 _ => null
             };
             return reply is not null && TakeCard() is { } card ? reply with { Card = card } : reply;
@@ -402,6 +407,16 @@ public sealed partial class AssistantTools
         try
         {
             parts.Add(await WeatherSpeechAsync("", "bugun", rainQuestion: false, cancellationToken).ConfigureAwait(false));
+            if (Calendar.IsConfigured)
+            {
+                var now = DateTime.Now;
+                var events = await Calendar.EventsAsync(now, now.Date.AddDays(1), cancellationToken).ConfigureAwait(false);
+                if (events.Count > 0)
+                {
+                    var first = events[0];
+                    parts.Add($"Bugün takviminde {events.Count} etkinlik var; ilki {(first.AllDay ? "tüm gün" : first.Start.ToString("HH:mm", CultureInfo.InvariantCulture) + "'" + RhythmText.TimeSuffix(first.Start))} {first.Title}.");
+                }
+            }
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
         {

@@ -134,6 +134,9 @@ public sealed class PanelActions
     public Func<Task<IReadOnlyList<ReclaimItem>>> ScanReclaimable { get; init; } = () => Task.FromResult<IReadOnlyList<ReclaimItem>>([]);
 
     public Func<IReadOnlyList<ReclaimItem>, Task<long>> Reclaim { get; init; } = _ => Task.FromResult(0L);
+
+    /// <summary>Takvim adresini dener; sonucu anlatan cümle.</summary>
+    public Func<string, Task<string>> TestCalendar { get; init; } = _ => Task.FromResult("");
 }
 
 public sealed record VoiceOption(string Name, string Label);
@@ -531,13 +534,14 @@ public sealed partial class PanelViewModel : ObservableObject
     }
 
     /// <summary>"Bugün" ekranındaki yaklaşanlar: kurulu hatırlatmalar ve 30 gün içinde tarihi gelen hafıza bilgileri.</summary>
-    public void ShowToday(IReadOnlyList<Reminder> reminders, IEnumerable<MemoryItem> memories)
+    public void ShowToday(IReadOnlyList<Reminder> reminders, IEnumerable<MemoryItem> memories, IReadOnlyList<CalendarEvent>? events = null)
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
         Upcoming.Clear();
         var items = reminders.Select(item => (Sort: item.Due, View: new UpcomingView(item.Id, TurkishTime.Describe(item.Due, now),
                 item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")))
+            .Concat((events ?? []).Select(item => (Sort: item.Start, View: new UpcomingView(null, Friday.Core.Calendar.Describe(item, now), item.Title))))
             .Concat(memories
                 .Select(item => (Item: item, Next: MemoryDates.NextOccurrence(item.Text, today)))
                 .Where(entry => entry.Next is { } next && next.DayNumber - today.DayNumber <= 30)

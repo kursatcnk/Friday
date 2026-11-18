@@ -218,6 +218,24 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ================= Takvim ================= -->
+                <Border Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Takvim" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
+                                   Text="Google Takvim › Ayarlar › takvimin › Takvimi entegre et › &quot;iCal biçiminde gizli adres&quot;i (Outlook'ta Takvimi yayımla › ICS) buraya yapıştır. Friday bugünün ve yarının etkinliklerini söyler, 10 dk önce haber verir, sabah karşılamasına ekler. Adres yalnızca bu bilgisayarda durur."/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding CalendarUrl, UpdateSourceTrigger=PropertyChanged}" FontSize="12"/>
+                            <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Bağlantıyı dene" Command="{Binding TestCalendarCommand}" Margin="8,0,0,0"/>
+                        </Grid>
+                        <TextBlock Text="{Binding CalendarMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12" Margin="2,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- ================= Ses ================= -->
                 <Border Style="{StaticResource SettingsCard}">
                     <StackPanel>

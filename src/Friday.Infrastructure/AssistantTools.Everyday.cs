@@ -131,6 +131,9 @@ public sealed partial class AssistantTools
         }
 
         _watches?.Dispose();
+        _calendar?.Dispose();
+        _background.Cancel();
+        _background.Dispose();
     }
 }
 

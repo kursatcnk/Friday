@@ -116,6 +116,12 @@ public sealed class FridaySettings
     public string City { get; set; } = "İstanbul";
 
     /// <summary>
+    /// Takvimin gizli iCal adresi (Google Takvim › Ayarlar › Takvimi entegre et › "iCal biçiminde gizli adres"; Outlook ›
+    /// Takvimi yayımla › ICS). Boşsa takvim kapalıdır. Adres yalnızca bu dosyada durur.
+    /// </summary>
+    public string CalendarUrl { get; set; } = "";
+
+    /// <summary>
     /// Kullanılacak mikrofonun adında geçen sözcük (ör. "Headset"). Boşsa Windows varsayılanı denenir; ondan hiç ses
     /// gelmiyorsa (sanal cihazlar) Friday çalışan mikrofonu kendisi bulur.
     /// </summary>

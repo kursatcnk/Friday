@@ -63,6 +63,12 @@ public sealed partial class AssistantTools(
         ["pencere"] = "Pencereyi yerleştiriyorum",
         ["haber"] = "Haberlere bakıyorum",
         ["haberler"] = "Haberlere bakıyorum",
+        ["rapor"] = "Araştırmayı başlatıyorum",
+        ["arastirma_raporu"] = "Araştırmayı başlatıyorum",
+        ["takvim"] = "Takvime bakıyorum",
+        ["indirilenler"] = "İndirilenlere bakıyorum",
+        ["gun_sonu"] = "Günü özetliyorum",
+        ["onay"] = "Uyguluyorum",
         ["hatirlatici"] = "Hatırlatıcıya bakıyorum",
         ["not"] = "Not defterine bakıyorum",
         ["hesap"] = "Hesaplıyorum",
@@ -152,6 +158,10 @@ public sealed partial class AssistantTools(
             [("kategori", "string", "gundem, spor, ekonomi, teknoloji ya da dunya", false)]),
         Tool("pencere", "Kullanıcının etkin penceresini yerleştirir: sola ya da sağa yaslar, tam ekran yapar, küçültür ya da son iki pencereyi yan yana koyar.",
             [("islem", "string", "sol, sag, buyut, kucult ya da bol", true)]),
+        Tool("arastirma_raporu", "Bir konuyu arka planda internette araştırıp kaynaklı bir rapor dosyası hazırlar; bitince kullanıcıya haber verilir. 'X hakkında rapor hazırla', 'X'i detaylı araştır' için.",
+            [("konu", "string", "Araştırılacak konu", true)]),
+        Tool("takvim", "Kullanıcının takvimindeki etkinlikleri söyler (Google/Outlook takvimi bağlıysa).",
+            [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
     ];
 
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
@@ -182,6 +192,8 @@ public sealed partial class AssistantTools(
                 "bilgisayar" => SystemCommand(Argument(call, "islem"), Argument(call, "dakika")).Text,
                 "nobet" => (await WatchCommandAsync(Argument(call, "islem"), Argument(call, "derece"), cancellationToken).ConfigureAwait(false)).Text,
                 "haberler" => (await NewsAsync(Argument(call, "kategori"), cancellationToken).ConfigureAwait(false)).Text,
+                "arastirma_raporu" => ResearchCommand("hazirla", Argument(call, "konu")).Text,
+                "takvim" => (await CalendarCommandAsync(Argument(call, "gun"), cancellationToken).ConfigureAwait(false)).Text,
                 "pencere" => WindowCommand(Argument(call, "islem")).Text,
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),

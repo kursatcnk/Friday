@@ -197,6 +197,7 @@ public sealed partial class App : Application, IDisposable
             CheckForUpdate = () => UpdateCheck.CheckAsync(_http!, typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0), ledger, CancellationToken.None),
             PiperVoices = PiperVoices(paths),
             BackupData = () => BackupData(paths, ledger),
+            TestCalendar = url => tools.Calendar.TestAsync(url, CancellationToken.None),
             RestoreData = () => RestoreData(paths),
             Restart = RestartFriday,
             ScanReclaimable = () => Task.Run(() => DataMaintenance.Reclaimable(paths, settings)),
@@ -244,7 +245,8 @@ public sealed partial class App : Application, IDisposable
         _rhythmClock.Start();
 
         // "Bugün" ekranı: yaklaşanlar, notlar ve saatte bir yenilenen hava.
-        void ShowToday() => panel.ShowToday(reminders.Upcoming, memory.Items);
+        void ShowToday() => panel.ShowToday(reminders.Upcoming, memory.Items, tools.Calendar.Cached(DateTime.Now, DateTime.Now.AddDays(7)));
+        tools.Calendar.Changed += (_, _) => Ui(ShowToday);
         reminders.Changed += (_, _) => Ui(ShowToday);
         memory.Changed += (_, _) => Ui(ShowToday);
         notes.Changed += (_, _) => Ui(() => panel.ShowNotes(notes.All));

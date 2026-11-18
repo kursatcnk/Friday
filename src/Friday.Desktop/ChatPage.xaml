@@ -266,7 +266,7 @@
                     BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
                 <Grid>
                     <TextBox x:Name="DraftBox" Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" Padding="18,13,60,13" FontSize="14"
-                             Background="Transparent" BorderThickness="0">
+                             Background="Transparent" BorderThickness="0" AutomationProperties.Name="Mesaj">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" Command="{Binding SendCommand}"/>
                         </TextBox.InputBindings>
@@ -285,7 +285,7 @@
                         </TextBlock.Style>
                     </TextBlock>
                     <Button Style="{StaticResource AccentButton}" Command="{Binding SendCommand}" HorizontalAlignment="Right"
-                            Width="36" Height="36" Padding="0" Margin="0,0,8,0">
+                            Width="36" Height="36" Padding="0" Margin="0,0,8,0" AutomationProperties.Name="Gönder" ToolTip="Gönder (Enter)">
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE724;" FontSize="13"/>
                     </Button>
                 </Grid>

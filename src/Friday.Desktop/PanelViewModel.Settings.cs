@@ -26,6 +26,12 @@ public sealed partial class PanelViewModel
     private string _addressAs = "";
 
     [ObservableProperty]
+    private string _calendarUrl = "";
+
+    [ObservableProperty]
+    private string _calendarMessage = "";
+
+    [ObservableProperty]
     private string _selectedHotkey = "Ctrl+Alt+F";
 
     [ObservableProperty]
@@ -189,6 +195,13 @@ public sealed partial class PanelViewModel
     private void OpenLogs() => _actions.OpenLogs();
 
     [RelayCommand]
+    private async Task TestCalendarAsync()
+    {
+        CalendarMessage = "Deniyorum…";
+        CalendarMessage = await _actions.TestCalendar(CalendarUrl).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
     private void Backup()
     {
         if (_actions.BackupData() is { } message)
@@ -305,6 +318,7 @@ public sealed partial class PanelViewModel
         _settings.VoiceModelPath = SelectedPiperVoice?.Name ?? "";
         _settings.KeepHistory = KeepHistory;
         _settings.AddressAs = AddressAs.Trim();
+        _settings.CalendarUrl = CalendarUrl.Trim();
 
         var notes = new List<string>();
         if (StartWithWindows != _settings.StartWithWindows)
@@ -391,6 +405,7 @@ public sealed partial class PanelViewModel
             ?? (PiperVoices.Count > 0 ? PiperVoices[0] : null);
         KeepHistory = _settings.KeepHistory;
         AddressAs = _settings.AddressAs;
+        CalendarUrl = _settings.CalendarUrl;
         StartWithWindows = _settings.StartWithWindows;
         SelectedHotkey = HotkeyOptions.FirstOrDefault(option => string.Equals(option, _settings.Hotkey, StringComparison.OrdinalIgnoreCase)) ?? _settings.Hotkey;
         SelectedQuickAsk = _settings.QuickAskHotkey.Length == 0 ? "Kapalı" : _settings.QuickAskHotkey;

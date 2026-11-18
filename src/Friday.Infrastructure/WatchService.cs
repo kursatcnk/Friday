@@ -14,7 +14,7 @@ public sealed partial class WatchService(PrivacyLedger ledger) : IDisposable
 {
     private static readonly TimeSpan Tick = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan MaxAge = TimeSpan.FromHours(8);
-    private static readonly Guid DownloadsFolder = new("374DE290-123F-4565-9164-39C4925E467B");
+    private static readonly Guid DownloadsFolderId = new("374DE290-123F-4565-9164-39C4925E467B");
 
     private readonly object _gate = new();
     private readonly List<ActiveWatch> _active = [];
@@ -44,7 +44,7 @@ public sealed partial class WatchService(PrivacyLedger ledger) : IDisposable
         switch (request.Kind)
         {
             case WatchKind.Download:
-                var folder = Downloads();
+                var folder = DownloadsFolder();
                 var partial = Directory.Exists(folder) ? Directory.GetFiles(folder).Where(DownloadFiles.IsPartial).ToList() : [];
                 watch.Known = Directory.Exists(folder) ? [.. Directory.GetFiles(folder).Select(Path.GetFileName).OfType<string>()] : [];
                 watch.SawPartial = partial.Count > 0;
@@ -186,7 +186,7 @@ public sealed partial class WatchService(PrivacyLedger ledger) : IDisposable
         switch (watch.Request.Kind)
         {
             case WatchKind.Download:
-                var folder = Downloads();
+                var folder = DownloadsFolder();
                 if (!Directory.Exists(folder))
                 {
                     return null;
@@ -273,9 +273,9 @@ public sealed partial class WatchService(PrivacyLedger ledger) : IDisposable
     }
 
     /// <summary>Kullanıcının İndirilenler klasörü (başka bir sürücüye taşınmış olabilir).</summary>
-    private static string Downloads()
+    internal static string DownloadsFolder()
     {
-        if (NativeMethods.SHGetKnownFolderPath(DownloadsFolder, 0, IntPtr.Zero, out var pointer) == 0 && pointer != IntPtr.Zero)
+        if (NativeMethods.SHGetKnownFolderPath(DownloadsFolderId, 0, IntPtr.Zero, out var pointer) == 0 && pointer != IntPtr.Zero)
         {
             try
             {

@@ -112,6 +112,8 @@ public sealed class FridayAssistant : IDisposable
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
+        _tools.ReportFolder = Path.Combine(paths.Data, "reports");
+        _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
         _speaker.FellBack += (_, reason) =>
             _ledger.Record(DataFlow.Local, "Ses", $"Azure kullanılamadı, yerel Piper'a geçildi ({reason})");
     }
@@ -123,6 +125,7 @@ public sealed class FridayAssistant : IDisposable
     public void ApplySettings()
     {
         _memory.Expiry = TimeSpan.FromMinutes(Math.Max(1, _settings.ConversationMemoryMinutes));
+        _tools.Calendar.Configure(_settings.CalendarUrl);
         _chat.KeepAlive = $"{Math.Max(1, _settings.GpuIdleMinutes)}m";
         ReconfigureVoice();
         StartWakeWord();
@@ -248,6 +251,8 @@ public sealed class FridayAssistant : IDisposable
         // okunur. Yavaş bir diskte ikisi aynı anda okunursa ikisi de gecikir.
         var voiceReady = Task.WhenAll(_whisper.EnsureLoadedAsync(cancellationToken), _speaker.WarmUpAsync(cancellationToken));
         _brainReady = PrepareBrainAsync(settings, voiceReady, clock, cancellationToken);
+        _tools.BrainReady = _brainReady;
+        _tools.Calendar.Configure(settings.CalendarUrl);
         await voiceReady.ConfigureAwait(false);
         FridayLog.Info($"Konuşma tanıma ve ses hazır ({clock.Elapsed.TotalSeconds:0.0} sn)");
 
@@ -645,7 +650,10 @@ public sealed class FridayAssistant : IDisposable
             Volatile.Write(ref _reload, null);
         }
 
-        var command = QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
+        // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
+        var command = _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
+            ? new QuickCommand("onay", new Dictionary<string, string> { ["cevap"] = QuickIntents.IsYes(text) ? "evet" : "hayir" })
+            : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
         if (command is { Tool: "sohbet" })
         {
             ChatCommand(command.Arguments.TryGetValue("islem", out var action) ? action : "yeni");
