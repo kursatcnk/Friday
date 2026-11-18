@@ -59,7 +59,14 @@ public sealed class ScreenTimeLog
             return browser;
         }
 
-        return string.IsNullOrWhiteSpace(description) ? TurkishGrammar.Capitalize(process) : description.Trim();
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return TurkishGrammar.Capitalize(process);
+        }
+
+        // Bazı uygulamalar açıklama yerine derleme adı yazar ("WhatsApp.Root"): ilk parça yeter.
+        var clean = description.Trim();
+        return !clean.Contains(' ', StringComparison.Ordinal) && clean.IndexOf('.', StringComparison.Ordinal) is > 0 and var dot ? clean[..dot] : clean;
     }
 
     public void Add(DateTime when, string label, int seconds)

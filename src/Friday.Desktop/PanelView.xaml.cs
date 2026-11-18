@@ -4,7 +4,18 @@ namespace Friday.Desktop;
 
 public partial class PanelView : UserControl
 {
-    public PanelView() => InitializeComponent();
+    public PanelView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is PanelViewModel model)
+            {
+                TodayCards.Order = model.HomeOrder;
+                model.HomeLayoutChanged += (_, _) => TodayCards.Order = model.HomeOrder;
+            }
+        };
+    }
 
     /// <summary>Anlık görüntü çekerken halkalar sabit bir ana dondurulur.</summary>
     public void FreezeAnimation(double time)

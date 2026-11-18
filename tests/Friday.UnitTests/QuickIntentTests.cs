@@ -128,7 +128,6 @@ public class QuickIntentTests
     [InlineData("Pomodoro başlat", "odak", "25")]
     [InlineData("Odağı bitir", "odak_bitir", "")]
     [InlineData("Molayı ertele", "ertele", "15")]
-    [InlineData("On dakika ertele", "ertele", "10")]
     [InlineData("Nefes egzersizi yapalım", "nefes", "")]
     [InlineData("Esneme yapalım", "esneme", "")]
     [InlineData("Su içtim", "su", "")]

@@ -87,6 +87,13 @@
                 </StackPanel>
                 <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,0,0">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource ChipButton}" Padding="9,3" Margin="0,0,10,0" ToolTip="Rahatsız etmeyi kapat"
+                                Command="{Binding EndQuietNowCommand}" Visibility="{Binding QuietBadge, Converter={StaticResource TextVisible}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE708;" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding QuietBadge}" FontSize="11" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <Border CornerRadius="9" Padding="9,3" Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}"
                                 BorderThickness="1" Margin="0,0,10,0" Visibility="{Binding WakeEnabled, Converter={StaticResource Visible}}">
                             <TextBlock Text="{Binding WakeLabel}" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
@@ -106,9 +113,55 @@
             <Grid Grid.Row="1">
                 <!-- ================= Bugün ================= -->
                 <ScrollViewer Visibility="{Binding IsToday, Converter={StaticResource Visible}}" VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
-                    <StackPanel Margin="0,0,12,0" MaxWidth="900" HorizontalAlignment="Stretch">
+                    <StackPanel Margin="0,0,12,0" MaxWidth="1180" HorizontalAlignment="Stretch">
+                        <DockPanel Margin="0,0,0,10" LastChildFill="False">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Padding="12,6" Command="{Binding ToggleHomeEditorCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding HomeEditorLabel}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </DockPanel>
+                        <!-- Ana ekranı düzenle: kartları aç/kapat ve sırala. -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,14" BorderBrush="#40FF8A5B"
+                                Visibility="{Binding IsCustomizingHome, Converter={StaticResource Visible}}">
+                            <StackPanel>
+                                <TextBlock Text="Ana ekranı düzenle" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,10" TextWrapping="Wrap"
+                                           Text="Kartları aç, kapat ve oklarla sırala; değişiklik hemen uygulanır. Geniş kartlar tam satır, diğerleri ikişer yan yana durur."/>
+                                <ItemsControl ItemsSource="{Binding HomeCards}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,1">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Visible}" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center"/>
+                                                </CheckBox>
+                                                <Button Grid.Column="1" Style="{StaticResource IconButton}" Padding="7" ToolTip="Yukarı taşı"
+                                                        Command="{Binding DataContext.MoveHomeCardUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70E;" FontSize="11"/>
+                                                </Button>
+                                                <Button Grid.Column="2" Style="{StaticResource IconButton}" Padding="7" ToolTip="Aşağı taşı"
+                                                        Command="{Binding DataContext.MoveHomeCardDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70D;" FontSize="11"/>
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Button Style="{StaticResource AccentButton}" Content="Bitti" Command="{Binding ToggleHomeEditorCommand}" Padding="16,7" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Varsayılana dön" Command="{Binding ResetHomeCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <local:CardFlowPanel x:Name="TodayCards" Gap="14">
                         <!-- Selam ve hava. -->
-                        <Border Style="{StaticResource Card}" Padding="26,22" Margin="0,0,0,14">
+                        <Border local:CardFlowPanel.Key="greeting" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}" Padding="26,22">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -131,7 +184,7 @@
                         </Border>
 
                         <!-- İlk açılış: tanışma. -->
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="{Binding NeedsIntro, Converter={StaticResource Visible}}"
+                        <Border local:CardFlowPanel.Key="intro" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}" Visibility="{Binding NeedsIntro, Converter={StaticResource Visible}}"
                                 BorderBrush="#40FF8A5B">
                             <StackPanel>
                                 <TextBlock Text="Tanışalım" Style="{StaticResource SectionTitle}"/>
@@ -164,14 +217,8 @@
                             </StackPanel>
                         </Border>
 
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="14"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <!-- Yaklaşanlar. -->
-                            <Border Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="upcoming" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Yaklaşanlar" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
                                     <TextBlock Style="{StaticResource Body}" FontSize="12" Visibility="{Binding HasUpcoming, Converter={StaticResource Hidden}}"
@@ -207,7 +254,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Ritim. -->
-                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="rhythm" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Ritim" Style="{StaticResource SectionTitle}"/>
@@ -239,16 +286,8 @@
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="14"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <!-- Yapılacaklar. -->
-                            <Border Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="todos" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Yapılacaklar" Style="{StaticResource SectionTitle}"/>
@@ -308,7 +347,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Notlar. -->
-                            <Border Grid.Column="2" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="notes" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Notlar" Style="{StaticResource SectionTitle}"/>
@@ -335,9 +374,8 @@
                                     </ItemsControl>
                                 </StackPanel>
                             </Border>
-                        </Grid>
                         <!-- Ekran süresi: en çok kullanılan uygulamalar ve siteler. -->
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                        <Border local:CardFlowPanel.Key="screentime" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}">
                             <StackPanel>
                                 <Grid Margin="0,0,0,10">
                                     <TextBlock Text="Ekran süresi" Style="{StaticResource SectionTitle}"/>
@@ -362,9 +400,8 @@
                                 </ItemsControl>
                             </StackPanel>
                         </Border>
-                        <Grid>
                             <!-- Söyleyebileceklerin. -->
-                            <Border Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="ideas" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Dene" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
                                     <ItemsControl ItemsSource="{Binding TodayIdeas}">
@@ -383,7 +420,74 @@
                                     </ItemsControl>
                                 </StackPanel>
                             </Border>
-                        </Grid>
+                        <!-- Rutinler: tek tıkla çalıştır. -->
+                        <Border local:CardFlowPanel.Key="routines" Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <TextBlock Text="Rutinler" Style="{StaticResource SectionTitle}"/>
+                                    <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right" Padding="4" ToolTip="Rutinler sayfası"
+                                            Command="{Binding GoToCommand}" CommandParameter="routines">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11"/>
+                                    </Button>
+                                </Grid>
+                                <TextBlock Style="{StaticResource Caption}" Text="Henüz rutin yok; Rutinler sayfasından ekleyebilirsin." TextWrapping="Wrap"
+                                           Visibility="{Binding HomeRoutines.Count, Converter={StaticResource ZeroVisible}}"/>
+                                <ItemsControl ItemsSource="{Binding HomeRoutines}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Margin="-4,0,0,0"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource ChipButton}" Padding="11,6"
+                                                    Command="{Binding DataContext.RunRoutineHereCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="10" Margin="0,0,7,0" VerticalAlignment="Center"
+                                                               Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <!-- Sistem: işlemci, bellek, ekran kartı, disk. -->
+                        <Border local:CardFlowPanel.Key="system" Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Sistem" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
+                                <ItemsControl ItemsSource="{Binding SystemRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="92"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                                                <Grid Grid.Column="1" Height="6" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <Border CornerRadius="3" Background="{StaticResource LineBrush}"/>
+                                                    <Border CornerRadius="3" HorizontalAlignment="Left" Background="{StaticResource AccentBrush}" Opacity="0.85">
+                                                        <Border.Width>
+                                                            <MultiBinding Converter="{StaticResource Fraction}">
+                                                                <Binding Path="Fraction"/>
+                                                                <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                                            </MultiBinding>
+                                                        </Border.Width>
+                                                    </Border>
+                                                </Grid>
+                                                <TextBlock Grid.Column="2" Text="{Binding Value}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding SystemNote}" Style="{StaticResource Caption}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                        </local:CardFlowPanel>
                     </StackPanel>
                 </ScrollViewer>
 

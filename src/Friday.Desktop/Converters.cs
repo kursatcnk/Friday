@@ -33,3 +33,13 @@ public sealed class TextVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>[kesir 0–1, kabın genişliği] → çubuğun genişliği.</summary>
+public sealed class FractionWidthConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) =>
+        values is [double fraction, double width] && width > 0 ? Math.Clamp(fraction, 0, 1) * width : 0.0;
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

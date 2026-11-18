@@ -2,7 +2,9 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using Friday.Core;
 
 namespace Friday.Desktop;
@@ -26,6 +28,31 @@ public sealed partial class MainWindow : Window, IDisposable
         _hotkey = new GlobalHotkey(this, onHotkey);
         _quickAskGesture = quickAsk;
         _quickAsk = new GlobalHotkey(this, onQuickAsk, 0x4653);
+        PreviewKeyDown += OnShortcut;
+    }
+
+    /// <summary>Arayüz boyutu (0.9–1.25); yazılar ve kartlar birlikte ölçeklenir.</summary>
+    public void ApplyScale(double scale) =>
+        Panel.LayoutTransform = Math.Abs(scale - 1) < 0.01 ? Transform.Identity : new ScaleTransform(scale, scale);
+
+    /// <summary>Ctrl+1…7 sayfalar arasında geçer; Esc ana ekran düzenlemesini kapatır.</summary>
+    private void OnShortcut(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not PanelViewModel model)
+        {
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key is >= Key.D1 and <= Key.D7)
+        {
+            model.ShowPage(e.Key - Key.D0);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && model.IsCustomizingHome)
+        {
+            model.IsCustomizingHome = false;
+            e.Handled = true;
+        }
     }
 
     /// <summary>Pencerenin son yeri ve boyutu bu dosyada tutulur; bir sonraki açılışta aynı yerde açılır.</summary>

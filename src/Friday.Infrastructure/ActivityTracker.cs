@@ -21,6 +21,8 @@ public sealed class ActivityTracker : IDisposable
     private DateTime _saved = DateTime.Now;
     private int _distractedSeconds;
     private bool _warned;
+    private bool _away;
+    private string _lastLabel = "";
 
     public ActivityTracker(string file)
     {
@@ -30,6 +32,15 @@ public sealed class ActivityTracker : IDisposable
 
     /// <summary>Dikkat dağıtan bir sitede ~45 sn kalındı (YouTube, Netflix, Instagram…); site adıyla.</summary>
     public event EventHandler<string>? Distracted;
+
+    /// <summary>Öne başka bir uygulama geldi: (gösterilen ad, süreç adı).</summary>
+    public event EventHandler<(string Label, string Process)>? AppFocused;
+
+    /// <summary>Kullanıcı en az 5 dakika uzakta kaldıktan sonra klavyeye ya da fareye döndü.</summary>
+    public event EventHandler? Returned;
+
+    /// <summary>Ekran süresi kaydı (kapalıyken yalnızca olaylar için yoklanır, süre yazılmaz).</summary>
+    public bool Records { get; set; } = true;
 
     public bool IsRunning => _timer is not null;
 
@@ -62,16 +73,33 @@ public sealed class ActivityTracker : IDisposable
     {
         try
         {
-            if (RhythmCoach.IdleTime() > AwayAfter || Desktop.Foreground() is not { } window)
+            var idle = RhythmCoach.IdleTime();
+            if (idle > AwayAfter || Desktop.Foreground() is not { } window)
             {
                 _distractedSeconds = 0;
+                _away |= idle > TimeSpan.FromMinutes(5);
                 return;
             }
 
-            var label = ScreenTimeLog.Label(window.Process, Description(window.ProcessId, window.Process), window.Title);
-            lock (_log)
+            if (_away)
             {
-                _log.Add(DateTime.Now, label, TickSeconds);
+                _away = false;
+                Returned?.Invoke(this, EventArgs.Empty);
+            }
+
+            var label = ScreenTimeLog.Label(window.Process, Description(window.ProcessId, window.Process), window.Title);
+            if (label != _lastLabel)
+            {
+                _lastLabel = label;
+                AppFocused?.Invoke(this, (label, window.Process));
+            }
+
+            if (Records)
+            {
+                lock (_log)
+                {
+                    _log.Add(DateTime.Now, label, TickSeconds);
+                }
             }
 
             if (ScreenTimeLog.IsDistraction(label))

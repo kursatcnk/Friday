@@ -40,6 +40,7 @@
         <!-- Uzun sayfada bölümler arasında tek tıkla geçiş. -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="36,0,24,8">
             <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource ChipButton}" Content="Görünüm" Tag="SectionLook" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Kısayollar" Tag="Section1" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Uyandırma" Tag="Section2" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Ritim" Tag="Section3" Click="OnJump" Margin="0,0,6,6"/>
@@ -58,6 +59,23 @@
 
         <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
             <StackPanel x:Name="Sections" Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
+
+                <!-- ================= Görünüm ================= -->
+                <Border x:Name="SectionLook" Style="{StaticResource SettingsCard}">
+                    <StackPanel>
+                        <TextBlock Text="Görünüm" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Vurgu rengi" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="Düğmeler, çubuklar ve seçili öğeler bu renkte olur; kaydedince hemen uygulanır." Margin="0,2,0,8"/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding AccentOptions}" SelectedItem="{Binding SelectedAccent}"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Arayüz boyutu" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="Yazılar ve kartlar birlikte büyür ya da küçülür. Kısayollar: Ctrl+1…7 sayfalar arasında geçer, Esc düzenlemeyi kapatır." Margin="0,2,0,8"/>
+                            <ListBox Style="{StaticResource Pills}" ItemsSource="{Binding ScaleOptions}" SelectedItem="{Binding SelectedScale}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
                 <!-- ================= Kısayollar ================= -->
                 <Border x:Name="Section1" Style="{StaticResource SettingsCard}">

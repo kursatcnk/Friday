@@ -111,3 +111,114 @@ public class RemotePanelTests
         Assert.Contains("çalışma modu", await (await http.SendAsync(routines)).Content.ReadAsStringAsync());
     }
 }
+
+public class TriggerAndListTests
+{
+    [Theory]
+    [InlineData("bilgisayara dönünce çamaşırları hatırlat", "donus", "çamaşırları")]
+    [InlineData("döndüğümde annemi aramayı hatırlat", "donus", "annemi aramayı")]
+    [InlineData("chrome'u açınca faturayı hatırlat", "uygulama:chrome", "faturayı")]
+    [InlineData("spotify açılınca podcasti hatırlat", "uygulama:spotify", "podcasti")]
+    public void RecognisesConditionalReminders(string sentence, string condition, string text)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("kosullu_hatirlatici", command?.Tool);
+        Assert.Equal(condition, command!.Arguments["kosul"]);
+        Assert.Equal(text, command.Arguments["metin"]);
+    }
+
+    [Theory]
+    [InlineData("ertele", "")]
+    [InlineData("10 dakika ertele", "10")]
+    [InlineData("hatırlatmayı beş dakika ertele", "5")]
+    [InlineData("sonra hatırlat", "")]
+    public void RecognisesSnooze(string sentence, string minutes)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("ertele", command?.Tool);
+        Assert.Equal(minutes, command!.Arguments.GetValueOrDefault("dakika", ""));
+    }
+
+    [Fact]
+    public void BreakSnoozeStaysWithTheRhythm() => Assert.Equal("ritim", QuickIntents.Match("molayı ertele")?.Tool);
+
+    [Theory]
+    [InlineData("market listesine süt ve ekmek ekle", "ekle", "market", "süt ve ekmek")]
+    [InlineData("market listesinden sütü çıkar", "cikar", "market", "sütü")]
+    [InlineData("market listemde ne var", "oku", "market", null)]
+    [InlineData("okunacaklar listesini temizle", "temizle", "okunacaklar", null)]
+    public void RecognisesLists(string sentence, string action, string list, string? item)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("liste", command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+        Assert.Equal(list, command.Arguments["ad"]);
+        if (item is not null)
+        {
+            Assert.Equal(item, command.Arguments["oge"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("1 saat rahatsız etme", "ac", "60")]
+    [InlineData("yarım saat sessiz ol", "ac", "30")]
+    [InlineData("beni rahatsız etme", "ac", "60")]
+    [InlineData("rahatsız etmeyi kapat", "kapat", null)]
+    public void RecognisesDoNotDisturb(string sentence, string action, string? minutes)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("rahatsiz_etme", command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+        if (minutes is not null)
+        {
+            Assert.Equal(minutes, command.Arguments["dakika"]);
+        }
+    }
+
+    [Fact]
+    public void MuteIsStillMute() => Assert.Equal("medya", QuickIntents.Match("sesi kapat")?.Tool);
+
+    [Fact]
+    public void ListsAddRemoveAndClear()
+    {
+        using var temp = new TempDirectory();
+        var lists = new ListStore(Path.Combine(temp.Path, "lists.json"));
+        Assert.Equal(["süt", "ekmek"], lists.Add("Market", "süt ve ekmek"));
+        Assert.Empty(lists.Add("market", "Süt"));
+        Assert.Equal("süt", lists.Remove("market", "sütü"));
+        Assert.Equal(["ekmek"], new ListStore(Path.Combine(temp.Path, "lists.json")).Items("market"));
+        Assert.Equal(1, lists.Clear("market"));
+        Assert.Empty(lists.Names);
+    }
+
+    [Fact]
+    public void TriggeredRemindersFireOnTheirEvent()
+    {
+        using var temp = new TempDirectory();
+        var store = new ReminderStore(Path.Combine(temp.Path, "reminders.json"));
+        var now = new DateTime(2026, 11, 18, 10, 0, 0);
+        store.AddTriggered("donus", "çamaşırları", now);
+        store.AddTriggered("uygulama:chrome", "faturayı", now);
+        Assert.Empty(store.TakeDue(now.AddDays(30)));
+        Assert.Empty(store.TakeTriggered("uygulama", "Spotify"));
+        Assert.Equal("faturayı", Assert.Single(store.TakeTriggered("uygulama", "Google Chrome")).Text);
+        var back = Assert.Single(store.TakeTriggered("donus"));
+        Assert.Equal("Hoş geldin! Çamaşırları unutma.", ReminderStore.Announcement(back));
+        Assert.Empty(store.Upcoming);
+    }
+
+    [Theory]
+    [InlineData("donus", "Bilgisayara dönünce")]
+    [InlineData("uygulama:Spotify", "Spotify açılınca")]
+    public void SchedulesCanBeEvents(string text, string description)
+    {
+        var schedule = RoutineSchedule.Parse(text)!;
+        Assert.Equal(description, schedule.Describe());
+        Assert.Equal(text, schedule.Format());
+        Assert.False(schedule.IsDue(DateTime.Now, null));
+    }
+
+    [Fact]
+    public void AssemblyStyleDescriptionsAreShortened() => Assert.Equal("WhatsApp", ScreenTimeLog.Label("WhatsApp", "WhatsApp.Root", "WhatsApp"));
+}
+

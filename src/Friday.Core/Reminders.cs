@@ -10,6 +10,17 @@ public sealed record Reminder(string Id, DateTime Due, string Text, DateTime Cre
     public string? Repeat { get; init; }
 
     public bool Repeats => Repeat is not null;
+
+    /// <summary>Saat yerine olay: "donus" (bilgisayara dönünce) ya da "uygulama:chrome" (o uygulama öne gelince).</summary>
+    public string? Trigger { get; init; }
+
+    /// <summary>"Bilgisayara dönünce", "Chrome açılınca".</summary>
+    public string? TriggerText => Trigger switch
+    {
+        null => null,
+        "donus" => "Bilgisayara dönünce",
+        var app => $"{TurkishGrammar.Capitalize(app["uygulama:".Length..])} açılınca"
+    };
 }
 
 /// <summary>Tekrarlayan hatırlatmaların kuralları: her gün, hafta içi, hafta sonu, her hafta, her ay.</summary>
@@ -188,6 +199,52 @@ public sealed class ReminderStore
         return due;
     }
 
+    /// <summary>Olaya bağlı hatırlatma: zamanı yoktur, olay gelince bir kez söylenir.</summary>
+    public Reminder AddTriggered(string trigger, string text, DateTime now)
+    {
+        var reminder = new Reminder(Guid.NewGuid().ToString("N")[..8], DateTime.MaxValue, text.Trim(), now) { Trigger = trigger };
+        lock (_gate)
+        {
+            _items.Add(reminder);
+            Save();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return reminder;
+    }
+
+    /// <summary>Olay geldi: "donus" ya da öne gelen uygulamanın adı. Eşleşenler listeden çıkar ve döner.</summary>
+    public IReadOnlyList<Reminder> TakeTriggered(string trigger, string? app = null)
+    {
+        List<Reminder> fired;
+        lock (_gate)
+        {
+            fired = _items.Where(item => item.Trigger is { } wanted && (wanted == trigger
+                || (app is not null && wanted.StartsWith("uygulama:", StringComparison.Ordinal) && AppMatches(wanted["uygulama:".Length..], app)))).ToList();
+            if (fired.Count == 0)
+            {
+                return [];
+            }
+
+            _items = [.. _items.Except(fired)];
+            Save();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return fired;
+    }
+
+    /// <summary>"chrome" ↔ "Chrome", "vs code" ↔ "Visual Studio Code"? Harfleri sadeleştirip içerme bakılır.</summary>
+    public static bool AppMatches(string wanted, string app)
+    {
+        static string Fold(string text) => new(text.ToLower(CultureInfo.GetCultureInfo("tr-TR"))
+            .Replace('ı', 'i').Replace('ğ', 'g').Replace('ü', 'u').Replace('ş', 's').Replace('ö', 'o').Replace('ç', 'c')
+            .Where(char.IsLetterOrDigit).ToArray());
+        var a = Fold(wanted);
+        var b = Fold(app);
+        return a.Length >= 3 && b.Length >= 3 && (b.Contains(a, StringComparison.Ordinal) || a.Contains(b, StringComparison.Ordinal));
+    }
+
     public bool Remove(string id)
     {
         lock (_gate)
@@ -230,7 +287,11 @@ public sealed class ReminderStore
 
     /// <summary>Söylenecek cümle: "Toplantıyı unutma, zamanı geldi." ya da "Hatırlatma: ilaç."</summary>
     public static string Announcement(Reminder reminder) =>
-        reminder.Text == QuickIntents.AlarmText
+        reminder.Trigger is not null
+            ? TurkishGrammar.IsAccusative(reminder.Text)
+                ? $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}{TurkishGrammar.Capitalize(reminder.Text)} unutma."
+                : $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}Hatırlatma: {reminder.Text}."
+            : reminder.Text == QuickIntents.AlarmText
             ? $"Günaydın! Saat {reminder.Due.ToString("HH:mm", CultureInfo.InvariantCulture)}, uyanma vakti."
             : reminder.Text.Length == 0
             ? $"{TurkishGrammar.Capitalize(TurkishGrammar.Duration((reminder.Due - reminder.Created).TotalMinutes))} doldu."

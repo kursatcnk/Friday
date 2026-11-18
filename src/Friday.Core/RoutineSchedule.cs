@@ -8,6 +8,9 @@ namespace Friday.Core;
 /// </summary>
 public sealed record RoutineSchedule(TimeOnly? At, string Days, bool OnStart)
 {
+    /// <summary>Olay: "donus" (bilgisayara dönünce) ya da "uygulama:spotify" (o uygulama öne gelince).</summary>
+    public string? Trigger { get; init; }
+
     public const string Startup = "acilis";
 
     /// <summary>Düzenleyicideki gün seçenekleri (anahtar, etiket).</summary>
@@ -25,7 +28,18 @@ public sealed record RoutineSchedule(TimeOnly? At, string Days, bool OnStart)
             return null;
         }
 
-        var parts = text.Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var trimmed = text.Trim();
+        if (trimmed.Equals("donus", StringComparison.OrdinalIgnoreCase))
+        {
+            return new RoutineSchedule(null, "hergun", OnStart: false) { Trigger = "donus" };
+        }
+
+        if (trimmed.StartsWith("uygulama:", StringComparison.OrdinalIgnoreCase) && trimmed.Length > "uygulama:".Length + 1)
+        {
+            return new RoutineSchedule(null, "hergun", OnStart: false) { Trigger = "uygulama:" + trimmed["uygulama:".Length..].Trim() };
+        }
+
+        var parts = trimmed.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts is [Startup])
         {
             return new RoutineSchedule(null, "hergun", OnStart: true);
@@ -41,10 +55,12 @@ public sealed record RoutineSchedule(TimeOnly? At, string Days, bool OnStart)
         return new RoutineSchedule(at, days, OnStart: false);
     }
 
-    public string Format() => OnStart ? Startup : $"{At!.Value.ToString("HH:mm", CultureInfo.InvariantCulture)} {Days}";
+    public string Format() => Trigger ?? (OnStart ? Startup : $"{At!.Value.ToString("HH:mm", CultureInfo.InvariantCulture)} {Days}");
 
     /// <summary>"Hafta içi her gün 09:00", "Her gün 18:30", "Friday açılınca".</summary>
-    public string Describe() => OnStart
+    public string Describe() => Trigger is { } trigger
+        ? trigger == "donus" ? "Bilgisayara dönünce" : $"{TurkishGrammar.Capitalize(trigger["uygulama:".Length..])} açılınca"
+        : OnStart
         ? "Friday açılınca"
         : $"{Days switch { "haftaici" => "Hafta içi her gün", "haftasonu" => "Hafta sonu", _ => "Her gün" }} {At!.Value.ToString("HH:mm", CultureInfo.InvariantCulture)}";
 

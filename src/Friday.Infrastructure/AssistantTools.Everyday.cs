@@ -34,7 +34,7 @@ public sealed partial class AssistantTools
     {
         lock (_clockGate)
         {
-            if (reminders.Upcoming.Count > 0 && _reminderClock is null)
+            if (reminders.Upcoming.Any(item => item.Trigger is null) && _reminderClock is null)
             {
                 _reminderClock = new Timer(_ => CheckReminders(), null, ReminderTick, ReminderTick);
             }
@@ -45,6 +45,7 @@ public sealed partial class AssistantTools
     {
         foreach (var reminder in reminders.TakeDue(DateTime.Now))
         {
+            RememberFired(reminder);
             TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder));
         }
 

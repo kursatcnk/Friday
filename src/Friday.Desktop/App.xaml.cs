@@ -25,6 +25,78 @@ public sealed partial class App : Application, IDisposable
 
     private int _screenTimeTicks;
 
+    /// <summary>Vurgu rengi ve arayüz boyutu. Fırça değiştirilir (dondurulmamışsa), böylece açık pencereler de hemen güncellenir.</summary>
+    private void ApplyLook(FridaySettings settings)
+    {
+        try
+        {
+            if (ColorConverter.ConvertFromString(settings.AccentColor) is Color accent)
+            {
+                if (Resources["AccentBrush"] is SolidColorBrush { IsFrozen: false } brush)
+                {
+                    brush.Color = accent;
+                }
+                else
+                {
+                    Resources["AccentBrush"] = new SolidColorBrush(accent);
+                }
+
+                Resources["AccentColor"] = accent;
+            }
+        }
+        catch (FormatException)
+        {
+            FridayLog.Warn($"Vurgu rengi anlaşılamadı: {settings.AccentColor}");
+        }
+
+        _window?.ApplyScale(Math.Clamp(settings.UiScale, 0.8, 1.4));
+    }
+
+    private (ulong Idle, ulong Total)? _cpuBefore;
+
+    private GpuReading? _gpu;
+
+    private DateTime _gpuAt;
+
+    /// <summary>Sistem kartı: işlemci (iki ölçüm arası), bellek, ekran kartı (nvidia-smi, 15 sn'de bir), Friday'in diski.</summary>
+    private async Task RefreshSystemAsync(PanelViewModel panel, FridayPaths paths)
+    {
+        var now = SystemProbe.CpuTimes();
+        var cpu = _cpuBefore is { } before ? SystemProbe.CpuBusy(before, now) : 0;
+        _cpuBefore = now;
+        if (DateTime.Now - _gpuAt > TimeSpan.FromSeconds(15))
+        {
+            _gpuAt = DateTime.Now;
+            _gpu = await SystemProbe.GpuAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+
+        var memory = SystemProbe.MemoryLoad();
+        var totalGb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 1073741824.0;
+        var rows = new List<SystemRow>
+        {
+            new("İşlemci", $"%{cpu:0}", cpu / 100),
+            new("Bellek", string.Create(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"), $"%{memory} · {totalGb * memory / 100:0.0}/{totalGb:0} GB"), memory / 100.0)
+        };
+        if (_gpu is { } gpu)
+        {
+            rows.Add(new("Ekran kartı", $"%{gpu.Utilization} · {gpu.Temperature}°C", gpu.Utilization / 100.0));
+        }
+
+        try
+        {
+            var drive = new DriveInfo(Path.GetPathRoot(paths.Home)!);
+            var used = 1 - ((double)drive.AvailableFreeSpace / drive.TotalSize);
+            rows.Add(new($"Disk {drive.Name.TrimEnd('\\')}", string.Create(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"), $"{drive.AvailableFreeSpace / 1073741824.0:0} GB boş"), used));
+        }
+        catch (IOException)
+        {
+            // Disk okunamadıysa satır gösterilmez.
+        }
+
+        using var self = Process.GetCurrentProcess();
+        panel.ShowSystem(rows, $"Friday {self.WorkingSet64 / 1048576} MB bellek kullanıyor.");
+    }
+
     /// <summary>Her rutinin kısayolu: basınca rutin, adı söylenmiş gibi çalışır; Friday arka plandayken de.</summary>
     private void RegisterRoutineKeys()
     {
@@ -213,11 +285,14 @@ public sealed partial class App : Application, IDisposable
             OpenDataFolder = () => Open(paths.Data),
             PreviewVoice = assistant.PreviewVoice,
             ScanDocuments = () => _ = assistant.ScanDocumentsAsync(),
+            Persist = store.Save,
+            EndQuiet = () => assistant.SetQuiet(null),
             Save = changed =>
             {
                 store.Save(changed);
                 assistant.ApplySettings();
                 RegisterRoutineKeys();
+                ApplyLook(changed);
             },
             PickImportFile = PickMemoryFile,
             KnownMemories = () => memory.Items,
@@ -320,10 +395,22 @@ public sealed partial class App : Application, IDisposable
             if (_window is { IsVisible: true, WindowState: not WindowState.Minimized } && (panel.IsRhythm || panel.IsToday))
             {
                 panel.TickRhythm(rhythm.Snapshot());
+                // Rahatsız etme süresi dolduysa rozet kalkar.
+                if (panel.QuietBadge.Length > 0 && assistant.QuietUntil is null)
+                {
+                    panel.QuietBadge = "";
+                }
+
                 // Ekran süresi kartı yarım dakikada bir tazelenir (sayaç 15 sn'de bir sayar).
                 if (panel.IsToday && ++_screenTimeTicks % 30 == 1 && tools.Activity is { } activity)
                 {
                     panel.ShowScreenTime(activity.Day(DateTime.Now));
+                }
+
+                // Sistem kartı yalnızca görünürken ve 3 sn'de bir ölçülür; ekran kartı 15 sn'de bir.
+                if (panel.IsToday && _screenTimeTicks % 3 == 1 && panel.ShowsHomeCard("system"))
+                {
+                    _ = RefreshSystemAsync(panel, paths);
                 }
             }
         };
@@ -352,6 +439,7 @@ public sealed partial class App : Application, IDisposable
         memory.Changed += (_, _) => Ui(() => panel.ShowMemories(memory.Items));
         assistant.DocumentsChanged += (_, status) => Ui(() => panel.DocumentStatus = status);
         assistant.LatencyMeasured += (_, latency) => Ui(() => panel.LastLatency = latency);
+        assistant.QuietChanged += (_, _) => Ui(() => panel.QuietBadge = assistant.QuietUntil is { } until ? $"Rahatsız etme · {until:HH:mm}" : "");
         ledger.Added += (_, entry) => Ui(() => panel.AddLedger(entry));
         assistant.StatusChanged += (_, status) => Ui(() =>
         {
@@ -420,6 +508,11 @@ public sealed partial class App : Application, IDisposable
         MainWindow = _window;
         _hud = new HudWindow(hud);
         _tray = new TrayIcon(settings.AssistantName, _window.ShowFromTray, ExitFriday);
+        _tray.AddSubmenu("Rutinler", () => settings.Routines.Keys, name => assistant.SubmitText(name));
+        _tray.AddItem(
+            () => assistant.QuietUntil is { } until ? $"Rahatsız etmeyi kapat ({until:HH:mm})" : "Rahatsız etme (1 saat)",
+            () => assistant.SetQuiet(assistant.QuietUntil is null ? TimeSpan.FromHours(1) : null));
+        ApplyLook(settings);
         if (_startHidden)
         {
             // Windows açılışı: pencere gösterilmez ama kısayollar için pencere tutamacı oluşturulur.

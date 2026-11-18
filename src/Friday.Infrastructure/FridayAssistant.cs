@@ -89,6 +89,33 @@ public sealed class FridayAssistant : IDisposable
 
     private bool _yielding;
 
+    private DateTime _quietUntil;
+
+    /// <summary>Rahatsız etme modu açıksa bitiş zamanı.</summary>
+    public DateTime? QuietUntil => _quietUntil > DateTime.Now ? _quietUntil : null;
+
+    /// <summary>Rahatsız etme modu açıldı ya da kapandı.</summary>
+    public event EventHandler? QuietChanged;
+
+    /// <summary>Kendiliğinden konuşmalar (ritim, alışkanlık, odak bekçisi, sabah selamı) susar; hatırlatmalar susmaz.</summary>
+    private bool Muted => _quietUntil > DateTime.Now;
+
+    /// <summary>Rahatsız etmeyi açar (süreyle) ya da kapatır (null).</summary>
+    public string SetQuiet(TimeSpan? duration)
+    {
+        _quietUntil = duration is { } span ? DateTime.Now + span : DateTime.MinValue;
+        QuietChanged?.Invoke(this, EventArgs.Empty);
+        if (duration is null)
+        {
+            FridayLog.Info("Rahatsız etme kapandı");
+            return "Rahatsız etme kapandı; yine öneride bulunabilirim.";
+        }
+
+        FridayLog.Info($"Rahatsız etme: {_quietUntil:HH:mm} olana kadar");
+        return string.Create(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"),
+            $"Tamam, saat {_quietUntil:HH:mm} olana kadar kendiliğinden konuşmayacağım. Kurduğun hatırlatmalar yine gelir.");
+    }
+
     /// <summary>Konuşmanın bittiği (ya da yazının gönderildiği) an; ilk cümle sese gidince gecikme ölçülür.</summary>
     private long _turnStart;
 
@@ -224,12 +251,20 @@ public sealed class FridayAssistant : IDisposable
         _tools.Rhythm = rhythm;
         // Koç yalnızca Friday boştayken konuşur; konuşma ya da dinleme sırasında öneri bir sonraki yoklamaya kalır.
         _rhythm.CanSpeak = () => State is AssistantState.Idle or AssistantState.Error;
-        _rhythm.Speak += (_, script) => Announce(script);
+        _rhythm.Speak += (_, script) =>
+        {
+            if (!Muted)
+            {
+                Announce(script);
+            }
+        };
+        _tools.QuietControl = SetQuiet;
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
         _tools.SaveFolder = Path.Combine(paths.Home, "Kaydedilenler");
         _tools.Workspaces = new WorkspaceStore(Path.Combine(paths.Data, "workspaces.json"));
+        _tools.Lists = new ListStore(Path.Combine(paths.Data, "lists.json"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -1210,28 +1245,90 @@ public sealed class FridayAssistant : IDisposable
     /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
     /// basılır ya da "Hey Friday" denirse hemen susar.
     /// </summary>
-    /// <summary>Ekran süresi sayacını ayara göre açar ya da kapatır.</summary>
+    /// <summary>
+    /// Etkinlik izleyicisi her zaman çalışır (koşullu hatırlatmalar ve olay tetikli rutinler için); ekran süresi
+    /// ayarı yalnızca sürelerin kaydedilip kaydedilmeyeceğini belirler.
+    /// </summary>
     private void UpdateActivity()
     {
+        if (_activity is null)
+        {
+            _activity = new ActivityTracker(Path.Combine(_paths.Data, "screentime.json"));
+            _activity.Distracted += (_, site) => OnDistracted(site);
+            _activity.AppFocused += (_, app) => OnAppFocused(app.Label, app.Process);
+            _activity.Returned += (_, _) => OnReturned();
+            _activity.Start();
+        }
+
         if (_settings.ScreenTime && _tools.Activity is null)
         {
-            var activity = new ActivityTracker(Path.Combine(_paths.Data, "screentime.json"));
-            activity.Distracted += (_, site) => OnDistracted(site);
-            activity.Start();
-            _tools.Activity = activity;
             _ledger.Record(DataFlow.Local, "Ekran süresi", "Öndeki uygulamanın adı 15 sn'de bir sayılıyor; pencere başlıkları ve içerikler saklanmıyor");
         }
-        else if (!_settings.ScreenTime && _tools.Activity is { } running)
+
+        _activity.Records = _settings.ScreenTime;
+        _tools.Activity = _settings.ScreenTime ? _activity : null;
+    }
+
+    private ActivityTracker? _activity;
+
+    /// <summary>Bir uygulama öne geldi: ona bağlı hatırlatmalar ve "X açılınca" rutinleri (aynı rutin en fazla 30 dk'da bir).</summary>
+    private void OnAppFocused(string label, string process)
+    {
+        _tools.FireTriggers("uygulama", label);
+        if (!string.Equals(label, process, StringComparison.OrdinalIgnoreCase))
         {
-            _tools.Activity = null;
-            running.Dispose();
+            _tools.FireTriggers("uygulama", process);
+        }
+
+        RunTriggeredRoutines(schedule => schedule.Trigger is { } trigger && trigger.StartsWith("uygulama:", StringComparison.Ordinal)
+            && (ReminderStore.AppMatches(trigger["uygulama:".Length..], label) || ReminderStore.AppMatches(trigger["uygulama:".Length..], process)),
+            TimeSpan.FromMinutes(30));
+    }
+
+    /// <summary>Kullanıcı bilgisayara döndü: "dönünce" hatırlatmaları ve rutinleri (en fazla saatte bir).</summary>
+    private void OnReturned()
+    {
+        _tools.FireTriggers("donus");
+        RunTriggeredRoutines(schedule => schedule.Trigger == "donus", TimeSpan.FromHours(1));
+    }
+
+    private void RunTriggeredRoutines(Func<RoutineSchedule, bool> matches, TimeSpan cooldown)
+    {
+        foreach (var (name, text) in _settings.RoutineSchedules.ToArray())
+        {
+            if (!_settings.Routines.ContainsKey(name) || RoutineSchedule.Parse(text) is not { } schedule || !matches(schedule))
+            {
+                continue;
+            }
+
+            lock (_routineRuns)
+            {
+                if (_routineRuns.TryGetValue(name, out var last) && DateTime.Now - last < cooldown)
+                {
+                    continue;
+                }
+
+                _routineRuns[name] = DateTime.Now;
+            }
+
+            lock (_gate)
+            {
+                if (State is not AssistantState.Idle)
+                {
+                    return;
+                }
+            }
+
+            FridayLog.Info($"Olayla rutin çalışıyor: {name} ({schedule.Describe()})");
+            SubmitText(name);
+            return;
         }
     }
 
     /// <summary>Odak oturumunda dikkat dağıtan bir sitede kalındı: oturum başına bir kez, nazikçe.</summary>
     private void OnDistracted(string site)
     {
-        if (!_settings.FocusGuard || _tools.Rhythm?.Snapshot() is not { FocusStart: { } start, FocusEnd: { } end } || end <= DateTime.Now
+        if (Muted || !_settings.FocusGuard || _tools.Rhythm?.Snapshot() is not { FocusStart: { } start, FocusEnd: { } end } || end <= DateTime.Now
             || _guardedFocus == start)
         {
             return;
@@ -1247,7 +1344,7 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Saati olan bir rutin varsa saati kurar, kalmadıysa durdurur.</summary>
     private void ScheduleRoutines()
     {
-        var timed = _settings.RoutineSchedules.Values.Any(text => RoutineSchedule.Parse(text) is { OnStart: false });
+        var timed = _settings.RoutineSchedules.Values.Any(text => RoutineSchedule.Parse(text) is { At: not null });
         lock (_routineRuns)
         {
             if (timed && _routineTimer is null)
@@ -1330,6 +1427,11 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Hep aynı saatlerde yapılan bir şey önerilir; soru okunduktan sonra cevap için mikrofon açılır.</summary>
     private void SuggestHabit()
     {
+        if (Muted)
+        {
+            return;
+        }
+
         try
         {
             lock (_gate)
@@ -1423,6 +1525,11 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Günün ilk oturuşu: "Günaydın, İstanbul'da hava açık, 9 derece. Arabanın muayenesi yarın."</summary>
     private async Task GreetAsync()
     {
+        if (Muted)
+        {
+            return;
+        }
+
         try
         {
             var greeting = await _tools.MorningGreetingAsync(_settings.UserName, CancellationToken.None).ConfigureAwait(false);
@@ -1513,7 +1620,7 @@ public sealed class FridayAssistant : IDisposable
         _idleTimer?.Dispose();
         _habitTimer?.Dispose();
         _routineTimer?.Dispose();
-        _tools.Activity?.Dispose();
+        _activity?.Dispose();
         _tools.Documents?.Dispose();
         _remote?.Dispose();
         _announcement?.Cancel();

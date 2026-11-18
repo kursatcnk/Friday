@@ -5,11 +5,12 @@ public sealed class TrayIcon : IDisposable
 {
     private readonly System.Windows.Forms.NotifyIcon _icon;
     private readonly System.Drawing.Icon _image;
+    private readonly System.Windows.Forms.ContextMenuStrip _menu;
 
     public TrayIcon(string name, Action show, Action exit)
     {
         _image = DrawIcon();
-        var menu = new System.Windows.Forms.ContextMenuStrip();
+        var menu = _menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("Göster", null, (_, _) => show());
         menu.Items.Add("Çıkış", null, (_, _) => exit());
 
@@ -26,6 +27,32 @@ public sealed class TrayIcon : IDisposable
             {
                 show();
             }
+        };
+    }
+
+    /// <summary>"Çıkış"ın üstüne, her açılışta yazısı yenilenen bir öğe ekler.</summary>
+    public void AddItem(Func<string> label, Action click)
+    {
+        var item = new System.Windows.Forms.ToolStripMenuItem(label(), null, (_, _) => click());
+        _menu.Items.Insert(Math.Max(0, _menu.Items.Count - 1), item);
+        _menu.Opening += (_, _) => item.Text = label();
+    }
+
+    /// <summary>"Çıkış"ın üstüne, her açılışta yeniden doldurulan bir alt menü ekler (ör. rutinler).</summary>
+    public void AddSubmenu(string label, Func<IEnumerable<string>> items, Action<string> click)
+    {
+        var parent = new System.Windows.Forms.ToolStripMenuItem(label);
+        _menu.Items.Insert(Math.Max(0, _menu.Items.Count - 1), parent);
+        _menu.Opening += (_, _) =>
+        {
+            parent.DropDownItems.Clear();
+            foreach (var name in items())
+            {
+                var text = name;
+                parent.DropDownItems.Add(System.Globalization.CultureInfo.GetCultureInfo("tr-TR").TextInfo.ToTitleCase(text), null, (_, _) => click(text));
+            }
+
+            parent.Enabled = parent.DropDownItems.Count > 0;
         };
     }
 

@@ -67,6 +67,8 @@ public static partial class QuickIntents
             ?? Stopwatch(sentence)
             ?? Selection(sentence)
             ?? Dictation(sentence)
+            ?? Triggers(sentence)
+            ?? Quiet(sentence)
             ?? ScreenTime(sentence)
             ?? Workspace(sentence)
             ?? WindowLayout(sentence)

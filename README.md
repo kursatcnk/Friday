@@ -23,6 +23,11 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Belge hafızası** | "Kira sözleşmesinde iptal şartı neydi?", "raporda bütçe kaçtı?", "sunumu özetle". Belgeler ve Masaüstü (ya da seçtiğin klasörler) bu bilgisayarda dizinlenir: PDF, Word, Excel, PowerPoint, metin, Markdown, HTML, RTF. Friday cevabı hangi dosyadan aldığını söyler. Hiçbir şey indirilmez ya da dışarı gitmez: PDF ve Office okuyucusu Friday'in içinde, arama Türkçe eklere uygun yerel bir dizinle (BM25) yapılır. Tarama düşük öncelikle, açılıştan 2 dakika sonra ve saatte bir; yalnızca değişen dosyalar yeniden okunur. |
 | **Ajan modu** | "Dün indirdiğim PDF'i bul, özetle ve notlarıma ekle", "raporu oku, üç maddede özetle ve kaydet". Çok adımlı istekleri tanır, önce planı tek cümleyle söyler, araçları sırayla çalıştırır (bir adımın sonucunu sonrakinde kullanır), geri alınamaz işlerden önce sorar ve sonunda ne yaptığını özetler. Özetler `D:\Friday\Kaydedilenler` klasörüne kaydedilir. |
 | **Telefondan erişim** | İsteğe bağlı: evdeki Wi-Fi'da telefonun tarayıcısından Friday'e yaz, rutin başlat, müziği ve sesi yönet, bilgisayarı kilitle. Cevap telefonda görünür; istersen bilgisayarda da sesli söylenir. Yalnızca ev ağından ve gizli anahtarlı bağlantıyla çalışır; varsayılan kapalıdır. |
+| **Özelleştirilebilir ana ekran** | Bugün ekranında "Ana ekranı düzenle": kartları aç, kapat, oklarla sırala; değişiklik hemen uygulanır. Yeni kartlar: **Rutinler** (tek tıkla çalıştır) ve **Sistem** (işlemci, bellek, ekran kartı, disk; yalnızca görünürken ölçülür). |
+| **Olaya bağlı hatırlatmalar ve rutinler** | "Bilgisayara dönünce çamaşırları hatırlat", "Chrome'u açınca faturayı hatırlat". Rutinler de "Bilgisayara dönünce" ya da "Spotify açılınca" çalışabilir (aynı rutin en fazla 30 dk'da bir). Saati gelen hatırlatmadan sonra "10 dakika ertele". |
+| **Listeler** | "Market listesine süt ve ekmek ekle", "market listemde ne var", "market listesinden sütü çıkar", "listelerim". |
+| **Rahatsız etme** | "1 saat rahatsız etme", "yarım saat sessiz ol", tepsi menüsü ya da başlıktaki rozet. Mola ve alışkanlık önerileri, odak hatırlatması ve sabah selamı susar; kurduğun hatırlatmalar yine gelir. |
+| **Görünüm ve kısayollar** | Ayarlar › Görünüm: vurgu rengi (anında uygulanır) ve arayüz boyutu. Ctrl+1…7 sayfalar arasında geçer, Esc düzenlemeyi kapatır. Tepsi menüsünden rutinler tek tıkla çalışır. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
 | **Küçük ama işe yarar** | "100 dolar kaç lira", "250 euro kaç dolar" (güncel kurla), "Discord'u kapat", "bu pencereyi kapat", "tekrar et" / "ne dedin". |
 | **Araştırma raporu** | "Yerel sesli asistanlar hakkında rapor hazırla" ya da "elektrikli arabaları araştır": Friday arka planda arar, en iyi dört sayfayı okur, yerel modelle kaynaklı bir rapor yazar (`D:\Friday\data\reports`, Markdown). Sen işine devam edersin; hazır olunca özetini söyler, "raporu aç" deyince açar. |
@@ -78,7 +83,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 44 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 47 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -151,6 +156,7 @@ Friday boşta **toplam ~60 MB RAM ve 0 GB VRAM**, konuşurken ~3,5 GB RAM ve ~4 
 - **Oyunda kenara çekilir.** Oyun, tam ekran video ya da sunum açıkken Friday yine tam güçle cevap verir ama modelleri ~20 sn sonra ekran kartından çıkarır (Windows'un "rahatsız etme" durumundan anlar; pencere taranmaz).
 - **Arayüz ekran kartını kullanmaz.** Pencereler varsayılan olarak işlemciyle çizilir: arayüz VRAM tutmaz, oyunla ve dil modeliyle yarışmaz, ekran kartı sürücüsü takıldığında beyaz pencere sorunu yaşanmaz. İstenirse Ayarlar'dan ekran kartıyla çizim açılır. Küre boştayken yalnızca pencere öndeyken saniyede 15 kare nefes alır, arkadayken hiç çizilmez.
 - **Uyandırma kelimesi odanın gürültüsüne uyar.** Fan sesi gibi sabit gürültüyü öğrenir, o seviyedeki parçalarda modelleri hiç çalıştırmaz; müziğin ya da konuşmanın üstünden söylenen "Hey Friday" yine tam işlenir.
+- **Ollama ayarları ölçülerek seçildi.** Flash attention, q8_0 KV önbelleği ve tek paralel yuva: Gemma 4 12B aynı hızda ~300 MB daha az VRAM kullanıyor (RTX 5070 Ti, 8192 bağlam).
 - **Akıllı modda düşünme adımı yok.** Gemma 4 12B araçları düşünmeden de doğru çağırıyor; düşünme cevap başına 0,7–9 sn ekliyordu. Küçük model düşünmeden araç çağırmak yerine anlatmaya kaçtığı için onda ilk turda açık kalır; çok adımlı görevlerde plan için her iki modelde de ilk turda düşünülür.
 - **Gecikme ölçülür.** Her cevapta konuşmanın bittiği andan ilk cümlenin sese gittiği ana kadar geçen süre günlüğe yazılır ve Ayarlar › Akıl ve performans'ta görünür.
 - **Hızlı ya da Akıllı.** Ayarlar › Akıl ve performans'tan beyin seçilir. Hızlı (varsayılan) Gemma 4 E4B'dir. Akıllı, Gemma 4 12B'nin görmesiz varyantıdır (`friday-smart`): niyeti, bağlamı ve genel bilgiyi çok daha iyi tutturur, ~8 GB VRAM ister ve kısa cevaplarda birkaç yüz milisaniye daha yavaştır. Geçiş anında olur: eski model ekran kartından çıkar, yenisi arkada yüklenir. 12B'yi indirmek için `.\setup.ps1 -Smart` (7,5 GB). Ekrana bakmak için küçük model kullanılmaya devam eder.
@@ -269,6 +275,8 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `HabitSuggestions` / `ClipboardHistory` | `true` / `false` | Alışkanlık önerileri; pano geçmişi (yalnızca bellekte) |
 | `AmbientVolume` | `0.25` | Ortam seslerinin düzeyi (0–1) |
 | `RoutineSchedules` / `RoutineHotkeys` | boş | Rutin adı → `"09:00 haftaici"`, `"18:30 hergun"`, `"acilis"`; rutin adı → `"Ctrl+Alt+1"` |
+| `HomeOrder` / `HomeHidden` | boş | Bugün ekranındaki kartların sırası ve gizlenenler |
+| `AccentColor` / `UiScale` | `#FF8A5B` / `1.0` | Vurgu rengi; arayüz boyutu (0.9–1.25) |
 | `DocumentMemory` / `DocumentFolders` | `true` / boş | Belge hafızası; taranacak klasörler (boşsa Belgeler ve Masaüstü) |
 | `RemoteAccess` / `RemotePort` / `RemoteKey` | `false` / `8765` / üretilir | Telefondan erişim; ev ağı portu; bağlantının gizli anahtarı |
 | `ScreenTime` / `FocusGuard` | `true` / `true` | Ekran süresi sayacı; odak oturumunda dikkat dağıtan site hatırlatması |

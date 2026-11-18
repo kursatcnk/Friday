@@ -407,6 +407,8 @@ public sealed partial class PanelViewModel
         _settings.GpuRendering = GpuRendering;
         _settings.ScreenTime = ScreenTimeEnabled;
         _settings.FocusGuard = FocusGuard;
+        _settings.AccentColor = Accents.FirstOrDefault(accent => accent.Name == SelectedAccent).Color ?? "#FF8A5B";
+        _settings.UiScale = ScaleValue(SelectedScale);
         _settings.DocumentMemory = DocumentMemory;
         var folders = DocumentFoldersText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         _settings.DocumentFolders = folders.SequenceEqual(Friday.Infrastructure.DocumentLibrary.DefaultFolders(), StringComparer.OrdinalIgnoreCase) ? [] : folders;
@@ -499,6 +501,9 @@ public sealed partial class PanelViewModel
         GpuRendering = _settings.GpuRendering;
         ScreenTimeEnabled = _settings.ScreenTime;
         FocusGuard = _settings.FocusGuard;
+        SelectedAccent = Accents.FirstOrDefault(accent => string.Equals(accent.Color, _settings.AccentColor, StringComparison.OrdinalIgnoreCase)).Name ?? "Turuncu";
+        SelectedScale = ScaleName(_settings.UiScale);
+        LoadHome();
         DocumentMemory = _settings.DocumentMemory;
         DocumentFoldersText = string.Join("\n", _settings.DocumentFolders.Count > 0 ? _settings.DocumentFolders : Friday.Infrastructure.DocumentLibrary.DefaultFolders());
         RemoteAccessEnabled = _settings.RemoteAccess;

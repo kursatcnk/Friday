@@ -43,13 +43,20 @@ public sealed partial class PanelViewModel
 
     public IReadOnlyList<RoutineTemplate> RoutineTemplates { get; } = RoutineStep.Templates;
 
-    public IReadOnlyList<string> ScheduleOptions { get; } = ["Kapalı", "Her gün", "Hafta içi", "Hafta sonu", "Friday açılınca"];
+    public IReadOnlyList<string> ScheduleOptions { get; } = ["Kapalı", "Her gün", "Hafta içi", "Hafta sonu", "Friday açılınca", "Bilgisayara dönünce", "Uygulama açılınca"];
+
+    /// <summary>"Uygulama açılınca" seçiliyken hangi uygulama (ör. Spotify).</summary>
+    [ObservableProperty]
+    private string _routineTriggerApp = "";
+
+    public bool ScheduleNeedsApp => SelectedSchedule == "Uygulama açılınca";
 
     public IReadOnlyList<string> RoutineHotkeyOptions { get; } =
         ["Yok", "Ctrl+Alt+1", "Ctrl+Alt+2", "Ctrl+Alt+3", "Ctrl+Alt+4", "Ctrl+Alt+5", "Ctrl+Alt+6", "Ctrl+Alt+7", "Ctrl+Alt+8", "Ctrl+Alt+9"];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ScheduleNeedsTime))]
+    [NotifyPropertyChangedFor(nameof(ScheduleNeedsApp))]
     private string _selectedSchedule = "Kapalı";
 
     [ObservableProperty]
@@ -210,12 +217,16 @@ public sealed partial class PanelViewModel
         if (!IsTriggerRoutine && SelectedSchedule != "Kapalı")
         {
             var days = SelectedSchedule switch { "Hafta içi" => "haftaici", "Hafta sonu" => "haftasonu", _ => "hergun" };
-            schedule = SelectedSchedule == "Friday açılınca"
-                ? RoutineSchedule.Startup
-                : RoutineSchedule.Parse($"{RoutineTime.Trim()} {days}")?.Format();
+            schedule = SelectedSchedule switch
+            {
+                "Friday açılınca" => RoutineSchedule.Startup,
+                "Bilgisayara dönünce" => "donus",
+                "Uygulama açılınca" => RoutineTriggerApp.Trim().Length >= 2 ? "uygulama:" + RoutineTriggerApp.Trim() : null,
+                _ => RoutineSchedule.Parse($"{RoutineTime.Trim()} {days}")?.Format()
+            };
             if (schedule is null)
             {
-                RoutineError = "Saati 09:00 ya da 18:30 gibi yaz.";
+                RoutineError = SelectedSchedule == "Uygulama açılınca" ? "Hangi uygulama açılınca çalışsın? Adını yaz (ör. Spotify)." : "Saati 09:00 ya da 18:30 gibi yaz.";
                 return;
             }
         }
@@ -322,12 +333,15 @@ public sealed partial class PanelViewModel
         SelectedSchedule = schedule switch
         {
             null => "Kapalı",
+            { Trigger: "donus" } => "Bilgisayara dönünce",
+            { Trigger: not null } => "Uygulama açılınca",
             { OnStart: true } => "Friday açılınca",
             { Days: "haftaici" } => "Hafta içi",
             { Days: "haftasonu" } => "Hafta sonu",
             _ => "Her gün"
         };
         RoutineTime = schedule?.At?.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture) ?? "09:00";
+        RoutineTriggerApp = schedule?.Trigger is { } trigger && trigger.StartsWith("uygulama:", StringComparison.Ordinal) ? trigger["uygulama:".Length..] : "";
         SelectedRoutineHotkey = view is { IsTrigger: false } && _settings.RoutineHotkeys.TryGetValue(view.Key, out var key) ? key : "Yok";
         EditorSteps.Clear();
         foreach (var text in steps)
@@ -367,6 +381,12 @@ public sealed partial class PanelViewModel
 
             Routines.Add(new RoutineView(name, TurkishGrammar.Capitalize(name), $"\"{TurkishGrammar.Capitalize(name)}\" de", Describe(steps),
                 When: string.Join(" · ", when)));
+        }
+
+        HomeRoutines.Clear();
+        foreach (var routine in Routines)
+        {
+            HomeRoutines.Add(routine);
         }
 
         foreach (var (phrase, steps) in _settings.Triggers.OrderBy(pair => pair.Key, comparer))

@@ -110,6 +110,18 @@ public sealed class FridaySettings
     /// <summary>Belge hafızası: seçilen klasörlerdeki belgeler yerelde dizinlenir, sorulara kaynak gösterilerek cevap verilir.</summary>
     public bool DocumentMemory { get; set; } = true;
 
+    /// <summary>Bugün ekranındaki kartların sırası (anahtarlar); listede olmayan yeni kartlar sona eklenir.</summary>
+    public List<string> HomeOrder { get; set; } = [];
+
+    /// <summary>Bugün ekranında gizlenen kartlar.</summary>
+    public List<string> HomeHidden { get; set; } = [];
+
+    /// <summary>Arayüzün vurgu rengi (#RRGGBB).</summary>
+    public string AccentColor { get; set; } = "#FF8A5B";
+
+    /// <summary>Arayüz boyutu (0.9 küçük, 1 normal, 1.1 büyük, 1.25 çok büyük).</summary>
+    public double UiScale { get; set; } = 1.0;
+
     /// <summary>Belge hafızasının taradığı klasörler; boşsa Belgeler ve Masaüstü.</summary>
     public List<string> DocumentFolders { get; set; } = [];
 

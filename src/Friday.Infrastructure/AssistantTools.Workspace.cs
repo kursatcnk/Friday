@@ -53,6 +53,26 @@ public sealed partial class AssistantTools
         }
     }
 
+    /// <summary>Rahatsız etme modunu açan/kapatan asistan işlevi (null süre kapatır).</summary>
+    public Func<TimeSpan?, string>? QuietControl { get; set; }
+
+    private string QuietCommand(string action, string minutes) =>
+        QuietControl is not { } control
+            ? "Rahatsız etme modu şu an kullanılamıyor."
+            : control(Simplify(action) is "kapat" or "bitir" or "iptal"
+                ? null
+                : TimeSpan.FromMinutes(int.TryParse(minutes, out var value) && value > 0 ? Math.Min(value, 24 * 60) : 60));
+
+    /// <summary>Olay geldi (bilgisayara dönüş ya da bir uygulamanın öne gelmesi): bağlı hatırlatmalar söylenir.</summary>
+    public void FireTriggers(string trigger, string? app = null)
+    {
+        foreach (var reminder in reminders.TakeTriggered(trigger, app))
+        {
+            RememberFired(reminder);
+            TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder));
+        }
+    }
+
     /// <summary>Ekran süresi sayacı; ayarlarda kapalıysa null.</summary>
     public ActivityTracker? Activity { get; set; }
 

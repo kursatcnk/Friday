@@ -351,6 +351,7 @@
         <local:InverseVisibilityConverter x:Key="Hidden"/>
         <local:ZeroVisibilityConverter x:Key="ZeroVisible"/>
         <local:TextVisibilityConverter x:Key="TextVisible"/>
+        <local:FractionWidthConverter x:Key="Fraction"/>
 
 
         <!-- Tuş görünümlü küçük kutu (Ctrl, Alt, F). -->

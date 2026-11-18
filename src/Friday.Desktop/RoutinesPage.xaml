@@ -180,6 +180,8 @@
                             <ListBox Style="{StaticResource RoutinePills}" ItemsSource="{Binding ScheduleOptions}" SelectedItem="{Binding SelectedSchedule}"/>
                             <TextBox Text="{Binding RoutineTime, UpdateSourceTrigger=PropertyChanged}" Width="74" Margin="6,0,0,0" VerticalAlignment="Center"
                                      ToolTip="Saat, ör. 09:00" Visibility="{Binding ScheduleNeedsTime, Converter={StaticResource Visible}}"/>
+                            <TextBox Text="{Binding RoutineTriggerApp, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="6,0,0,0" VerticalAlignment="Center"
+                                     ToolTip="Uygulamanın adı, ör. Spotify" Visibility="{Binding ScheduleNeedsApp, Converter={StaticResource Visible}}"/>
                         </StackPanel>
                         <TextBlock Text="Kısayol" Style="{StaticResource Label}" Margin="0,12,0,0"/>
                         <ListBox Style="{StaticResource RoutinePills}" ItemsSource="{Binding RoutineHotkeyOptions}" SelectedItem="{Binding SelectedRoutineHotkey}"/>
