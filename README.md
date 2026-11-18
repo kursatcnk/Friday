@@ -11,6 +11,11 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
 | **Sohbetler** | Her konuşma ayrı bir sohbet olarak saklanır; başlığı ilk sorudan kendiliğinden çıkar. Sol listede Bugün, Dün, Bu hafta diye gruplanır; sabitle, yeniden adlandır, Markdown olarak kaydet ya da sil. Bütün sohbetlerde arama yapılır ("istanbul" yazınca "İstanbul" geçenler de bulunur). Eski bir sohbeti açıp kaldığı yerden sürdürebilirsin; Friday o sohbetin bağlamıyla devam eder. "Yeni sohbet", "konuyu değiştirelim" ya da "sohbeti temizle" demen de yeter. Bir süre konuşmazsan (varsayılan 30 dk) sonraki soru kendiliğinden yeni bir sohbet olur. |
 | **Hızlı komut kutusu** | **Ctrl+Alt+Space** ile her yerden küçük bir kutu açılır (Raycast ya da Spotlight gibi): yaz, Enter'a bas, kutu kapanır, cevap köşede görünür ve okunur. Yazdıkça rutinlerin, son sorduğun şeyler ve hazır komutlar süzülür; ok tuşlarıyla seç, Tab ile tamamla. |
+| **Görsel cevaplar** | Hava, durum raporu, döviz, hatırlatmalar, notlar, haberler ve kronometre ekranın altındaki kapsülün üstünde küçük bir cam kart olarak da görünür: büyük sıcaklık, işlemci ve disk göstergeleri, kur listesi. Cevap yine sesli okunur. |
+| **Seçili metin** | Herhangi bir uygulamada metni seç ve "seçili metni düzelt", "seçili metni İngilizceye çevir", "seçili e-postayı resmileştir", "kısalt" ya da "özetle" de. Sonuç seçimin yerine yazılır (özet okunur); pano eski haline döner. |
+| **Dikte** | "Şunu yaz: yarın 10'da görüşelim" o an açık pencereye yazar. "Dikte modunu aç" deyince konuştukların yazılır; "yeni satır", "geri al" çalışır, "dikte bitti" deyince biter. |
+| **Pencere düzeni** | "Pencereyi sola yasla", "sağa al", "tam ekran yap", "pencereyi küçült", "ekranı ikiye böl" (son iki pencere yan yana). |
+| **Haberler** | "Gündem ne?", "spor / ekonomi / teknoloji / dünya haberleri": TRT Haber'in akışından son beş başlık (ulaşılamazsa Hürriyet ya da BBC Türkçe). |
 | **Durum raporu** | "Durum raporu" ya da "her şey yolunda mı?" deyince yarım saniyede: işlemci, bellek, ekran kartı sıcaklığı, dolmak üzere olan disk, sıradaki hatırlatma, bugün ne kadar çalıştığın, bekleyen nöbetler. Bir sorun yoksa "Her şey yolunda." |
 | **Nöbetçiler** | "İndirme bitince haber ver", "render bitince haber ver" (işlemci ya da ekran kartı yoğun çalıştıktan sonra boşa çıkınca), "internet gelince söyle", "ekran kartı 85 dereceyi geçerse uyar". Friday o an konuşuyorsa haber kaybolmaz, sırası gelince söylenir. "Neyi bekliyorsun?", "nöbeti iptal et". |
 | **Bilgisayar kontrolü** | "Bilgisayarı kilitle", "uyku moduna al", "ekranı kapat", "masaüstünü göster", "karanlık moda geç", "ekran görüntüsü al", "30 dakika sonra bilgisayarı kapat" (en az 1 dakika sonraya kurulur), "kapatmayı iptal et". |
@@ -35,7 +40,7 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **"Şu an ne çalıyor?"** | Spotify ya da tarayıcıdaki YouTube'da çalan şarkıyı Windows'tan okur; müziği durdurur ya da geçer. "Sesi yüzde 30 yap" ile sesi tam ayarlar. |
 | **"Bugün ne konuştuk?"** | Sohbetlerini bilgisayarında tutar ve özetler. "Geçen hafta kampanya hakkında ne konuşmuştuk?" diye sorarsan bütün sohbetlerde arar. |
 | **LinguaFlow bağlantısı** | "Bu videoyu çevir" deyince [LinguaFlow](https://github.com/kursatcnk/LinguaFlow) açılır ve canlı çeviri başlar. |
-| **Devam sorusu** | Cevaptan sonra mikrofon 4 sn daha açık kalır; tuşa basmadan "peki yarın?" diye sorabilirsin. Ayarlardan kapatılır. |
+| **Devam sorusu ve sohbet modu** | Cevaptan sonra mikrofon 4 sn daha açık kalır; tuşa basmadan "peki yarın?" diye sorabilirsin. Ayarlardan 7 sn ya da "Sohbet modu"na (15 sn) çıkarılır; "teşekkürler" ya da "bu kadar" deyince biter. |
 | **Kesme** | Friday konuşurken kısayola basarsan ya da "Hey Friday" dersen susar ve seni dinlemeye başlar. |
 | **Yazarak sorma** | Konuşamadığın yerde panelden yazabilirsin. |
 
@@ -55,7 +60,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 32 araç, nöbetçiler             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 34 araç, nöbetçiler, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -180,6 +185,15 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 | `D:\Friday\data` | `settings.json`, `memory.json`, gizlilik defteri (`ledger\`), sohbetler (`chats\`, eski sürümün `history\` klasörü ilk açılışta buraya aktarılır), dışa aktarılanlar (`exports\`), hata günlüğü (`logs\`, 14 gün) |
 | `D:\CodexCache\Friday` | .NET SDK ev klasörü, NuGet paketleri, NuGet indirme önbelleği ve derlemenin geçici dosyaları |
 
+### Kaldırma, yedek ve geri yükleme
+
+Friday'in kişisel verileri (ayarlar, hafıza, sohbetler, hatırlatmalar, notlar, ritim) birkaç MB'tır; geri kalanı (modeller, araçlar) yeniden indirilebilir.
+
+- **Yedekle**: Ayarlar › Verilerin › Yedekle, kişisel verileri tek bir zip'e yazar (varsayılan `D:\Friday-yedekler`).
+- **Yer aç**: aynı yerdeki "Yer aç" kullanılmayan XTTS ortamını, Python indirme önbelleğini ve eğitim verisini gösterir, onaylarsan siler (~20 GB). Kişisel verilere dokunmaz.
+- **Kaldır**: `.\uninstall.ps1` önce yedek alır, sonra `D:\Friday` ve `D:\CodexCache\Friday` klasörlerini siler (LinguaFlow'un da kullandığı Whisper için ayrıca sorar). C:'ye zaten bir şey yazılmamıştır.
+- **Geri getir**: sürümü indir, `.\setup.ps1 -Restore D:\Friday-yedekler\friday-yedek-….zip` de. Modeller yeniden iner, Friday ilk açılışta verilerini yerine koyar. Panelden "Yedekten geri yükle" de aynı işi yapar.
+
 ## Kullanım
 
 1. `.\run.ps1` ile başlat; ~8 sn sonra durum **Hazır** olur.
@@ -188,6 +202,8 @@ Gereksinimler: Windows 10/11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/dow
 4. Pencereyi kapatınca (ya da tepsi simgesi → **Çıkış**) Friday tamamen kapanır: başlattığı Ollama, llama-server, Piper ve XTTS süreçleri kapatılır, kapanmayan varsa 5 sn içinde zorla sonlandırılır, D:\Friday\tools altından çalışan sahipsiz bir süreç kalmışsa o da kapatılır ve Friday'in kendi süreci kesin olarak biter; RAM ve VRAM'in tamamı geri döner. Friday Görev Yöneticisi'nden sonlandırılsa ya da çökse bile bu süreçler açık kalmaz, bir sonraki açılışta da önceki oturumdan kalan bir şey varsa temizlenir. Kısayolun çalışmaya devam etmesi için pencereyi kapatma, simge durumuna küçült. Friday zaten açıkken yeniden başlatırsan ikinci bir kopya açılmaz; çalışan Friday'in paneli öne gelir.
 5. Beklenmeyen bir hata Friday'i kapatmaz; ayrıntısı `D:\Friday\data\logs` altındaki günlüğe yazılır. Ollama kapanırsa bir sonraki soruda kendiliğinden yeniden başlatılır.
 
+![Görsel kart: hava](docs/images/hud-card-weather.png)
+![Görsel kart: durum raporu](docs/images/hud-card-status.png)
 ![Bugün](docs/images/panel-today.png)
 ![Sohbetler](docs/images/panel-chat.png)
 ![Ritim](docs/images/panel-rhythm.png)
@@ -212,7 +228,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `ConversationMemoryMinutes` | `30` | Bu kadar konuşulmazsa sonraki soru yeni bir sohbet olur |
 | `SpeechSpeed` / `SilenceMilliseconds` | `1.0` / `1200` | Konuşma hızı; sustuktan sonra kaydın bitmesi için beklenen süre |
 | `WakeWord` / `WakeWordThreshold` | `hey_friday` / `0.50` | Uyandırma kelimesi; boş bırakılırsa kapalı. Yanlışlıkla uyanıyorsa eşiği artır, duymuyorsa azalt |
-| `FollowUpSeconds` | `4` | Cevaptan sonra devam sorusu bekleme süresi; `0` kapatır |
+| `FollowUpSeconds` | `4` | Cevaptan sonra devam sorusu bekleme süresi; `0` kapatır, `15` sohbet modu |
 | `SpeechEngine` | `piper` | `piper`, `xtts` ya da `azure` |
 | `PiperNoiseScale` / `PiperNoiseW` / `VoiceRoom` | `0.667` / `0.9` / `0.07` | Ton ve ritim değişkenliği, oda ve sıcaklık |
 | `XttsSpeaker` / `XttsVoiceSample` | `Ana Florence` / boş | XTTS sesi ya da klonlanacak .wav kaydı |
@@ -235,7 +251,8 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Ritim koçu yalnızca Windows'un tuttuğu "son klavye/fare kullanımı" zamanını okur; tuşlar, ekran ve pencere içerikleri okunmaz. Moladan önce yalnızca öndeki pencerenin başlığı hatırlanır. Günlük süreler `D:\Friday\data\rhythm` altında, 90 gün tutulur.
 - Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden); "Güncellemeleri denetle"ye basarsan GitHub'daki son sürüm numarası sorgusu.
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
-- "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur.
+- "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur. "Gündem ne" haber akışını (TRT Haber) indirir; bu da deftere yazılır.
+- Seçili metin komutları seçimi Ctrl+C ile alır, yerel modelde işler ve panonun eski içeriğini geri koyar. Dikte sesi kaydetmez; yazılan metin sohbete de yazılmaz.
 
 ## Geliştirme
 
