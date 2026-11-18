@@ -41,6 +41,11 @@ public static partial class QuickIntents
             return type;
         }
 
+        if (ClipboardPasteOrdinal(text) is { } paste)
+        {
+            return paste;
+        }
+
         if (CustomCommand(text) is { } custom)
         {
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
@@ -68,6 +73,12 @@ public static partial class QuickIntents
             ?? CalendarQuestion(sentence)
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
+            ?? Todo(sentence)
+            ?? RecurringReminder(sentence)
+            ?? Ambient(sentence)
+            ?? ClipboardHistory(sentence)
+            ?? Repeat(sentence)
+            ?? CurrencyConversion(sentence)
             ?? WakeUp(sentence)
             ?? Video(sentence)
             ?? Clock(sentence)
@@ -83,6 +94,8 @@ public static partial class QuickIntents
             ?? Countdown(text)
             ?? Rhythm(sentence)
             ?? Routine(sentence, routines ?? [])
+            ?? TodoDone(sentence)
+            ?? CloseApp(sentence)
             ?? App(sentence);
     }
 

@@ -119,6 +119,13 @@ internal static class Snapshot
             ],
             [new MemoryItem("m1", $"Kullanıcının arabasının muayenesi {now.AddDays(3).ToString("d MMMM", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))}'da.", DateTimeOffset.Now)]);
         home.ShowNotes([new Note(now.AddHours(-3), "Süt ve ekmek al"), new Note(now.AddHours(-1), "Sunumun ilk slaytını sadeleştir")]);
+        home.ShowTodos(
+        [
+            new TodoItem("t1", "Faturayı öde", now.AddDays(-1)),
+            new TodoItem("t2", "Annemi ara", now.AddHours(-5)),
+            new TodoItem("t3", "Sunumu bitir", now.AddHours(-2)),
+            new TodoItem("t4", "Spor salonu", now.AddHours(-8), now.AddHours(-1)),
+        ]);
         home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 }, working);
         RenderPanel(home, folder, "panel-today");
 

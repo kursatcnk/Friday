@@ -291,6 +291,10 @@ public sealed partial class AssistantTools
                     var remind = step.Value.Split('|', 2, StringSplitOptions.TrimEntries);
                     said.Add(ReminderCommand("kur", remind[0], remind[1]));
                     break;
+                case RoutineAction.Ambient:
+                    var ambient = step.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    _ = AmbientCommand(ambient[0] == "kapat" ? "kapat" : "ac", ambient[0], ambient.Length > 1 ? ambient[1] : "");
+                    break;
             }
         }
 

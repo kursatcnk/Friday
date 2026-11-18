@@ -51,14 +51,16 @@ public sealed partial class AssistantTools
                     ? $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}."
                     : $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."),
                 "hava_durumu" => new QuickReply(await WeatherSpeechAsync(Arg("sehir"), Arg("odak"), Arg("soru") == "yagmur", cancellationToken).ConfigureAwait(false)),
-                "doviz" => new QuickReply(await CurrencySpeechAsync(Arg("birim"), cancellationToken).ConfigureAwait(false)),
+                "doviz" => Arg("miktar").Length > 0
+                    ? await ConvertCurrencyAsync(Arg("miktar"), Arg("kaynak"), Arg("hedef")).ConfigureAwait(false)
+                    : new QuickReply(await CurrencySpeechAsync(Arg("birim"), cancellationToken).ConfigureAwait(false)),
                 "medya" => await MediaReplyAsync(Arg("komut"), Arg("deger")).ConfigureAwait(false),
                 "zamanlayici" => new QuickReply(TimerSpeech(Arg("dakika"), Arg("not"))),
-                "uygulama_ac" => FindApp(Arg("ad")) is { } app ? new QuickReply(Open(app)) : null,
+                "uygulama_ac" => FindApp(Arg("ad")) is { } app ? OpenAndRecord(app) : null,
                 "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
                 "ritim" => RhythmCommand(Arg("islem"), Arg("dakika")),
-                "hatirlatici" => new QuickReply(ReminderCommand(Arg("islem"), Arg("zaman"), Arg("metin"))),
+                "hatirlatici" => new QuickReply(ReminderCommand(Arg("islem"), Arg("zaman"), Arg("metin"), Arg("tekrar"))),
                 "not" => new QuickReply(NoteCommand(Arg("islem"), Arg("metin"))),
                 "hesap" => SpokenMath.Answer(Arg("soru")) is { } answer ? new QuickReply(answer) : null,
                 "gun_sayaci" => DayCountdown.Answer(Arg("hedef"), memory.Items, DateOnly.FromDateTime(DateTime.Now)) is { } left ? new QuickReply(left) : null,
@@ -77,7 +79,11 @@ public sealed partial class AssistantTools
                 "takvim" => await CalendarCommandAsync(Arg("gun"), cancellationToken).ConfigureAwait(false),
                 "indirilenler" => DownloadsCommand(Arg("islem")),
                 "gun_sonu" => await DayEndAsync(cancellationToken).ConfigureAwait(false),
-                "onay" => Confirm(Arg("cevap") == "evet"),
+                "onay" => await ConfirmAsync(Arg("cevap") == "evet", cancellationToken).ConfigureAwait(false),
+                "yapilacak" => TodoCommand(Arg("islem"), Arg("metin")),
+                "ortam" => AmbientCommand(Arg("islem"), Arg("tur"), Arg("dakika")),
+                "pano_gecmisi" => ClipboardHistoryCommand(Arg("islem"), Arg("sira")),
+                "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 _ => null
             };
             return reply is not null && TakeCard() is { } card ? reply with { Card = card } : reply;
@@ -359,7 +365,15 @@ public sealed partial class AssistantTools
         }
 
         ledger.Record(DataFlow.Local, "Rutin", $"{match.Key} çalıştı");
+        RecordHabit($"rutin:{match.Key}", match.Key);
         return reply.Text.Length > 0 || reply.Script is not null ? reply : reply with { Text = $"{TurkishGrammar.Capitalize(match.Key)} hazır." };
+    }
+
+    private QuickReply OpenAndRecord((string Target, string Name) app)
+    {
+        var text = Open(app);
+        RecordHabit($"uygulama:{app.Name}", app.Name);
+        return new QuickReply(text);
     }
 
     /// <summary>Ritim koçu (mola, odak, nefes egzersizi); kapalıysa null.</summary>

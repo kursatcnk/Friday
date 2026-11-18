@@ -135,6 +135,13 @@ public sealed class PanelActions
 
     public Func<IReadOnlyList<ReclaimItem>, Task<long>> Reclaim { get; init; } = _ => Task.FromResult(0L);
 
+    public Action<string> AddTodo { get; init; } = _ => { };
+
+    /// <summary>İşi tamamlar ya da yeniden açar.</summary>
+    public Action<string, bool> ToggleTodo { get; init; } = (_, _) => { };
+
+    public Action<string> RemoveTodo { get; init; } = _ => { };
+
     /// <summary>Takvim adresini dener; sonucu anlatan cümle.</summary>
     public Func<string, Task<string>> TestCalendar { get; init; } = _ => Task.FromResult("");
 }
@@ -183,15 +190,15 @@ public sealed partial class PanelViewModel : ObservableObject
     public IReadOnlyList<string> TodayIdeas { get; } =
     [
         "Durum raporu",
+        "Bugün neler var?",
         "Yarın hava nasıl?",
-        "Dolar kaç lira?",
+        "100 dolar kaç lira?",
+        "Yağmur sesi aç",
+        "Yapılacaklarım neler?",
         "İndirme bitince haber ver",
-        "Yılbaşına kaç gün kaldı?",
-        "Ekran görüntüsü al",
+        "Gündem ne?",
+        "Günü kapat",
         "Yazı tura at",
-        "Kronometreyi başlat",
-        "Hatırlatmalarım neler?",
-        "Bu hafta ne kadar çalıştım?",
     ];
 
     // ---------- Gezinme ----------
@@ -539,7 +546,8 @@ public sealed partial class PanelViewModel : ObservableObject
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
         Upcoming.Clear();
-        var items = reminders.Select(item => (Sort: item.Due, View: new UpcomingView(item.Id, TurkishTime.Describe(item.Due, now),
+        var items = reminders.Select(item => (Sort: item.Due, View: new UpcomingView(item.Id,
+                item.Repeat is { } rule ? RepeatRule.Describe(item.Due, rule) : TurkishTime.Describe(item.Due, now),
                 item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")))
             .Concat((events ?? []).Select(item => (Sort: item.Start, View: new UpcomingView(null, Friday.Core.Calendar.Describe(item, now), item.Title))))
             .Concat(memories

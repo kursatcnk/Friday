@@ -14,6 +14,15 @@ public sealed class FridaySettings
     /// <summary>Asistanın sana nasıl hitap edeceği; boşsa isimsiz konuşur.</summary>
     public string UserName { get; set; } = "";
 
+    /// <summary>Pano geçmişi: kopyalanan son 20 metin yalnızca bellekte tutulur ("2. kopyaladığımı yapıştır"). Varsayılan kapalı.</summary>
+    public bool ClipboardHistory { get; set; }
+
+    /// <summary>Alışkanlık önerileri: hep aynı saatlerde açtığın rutini ya da uygulamayı o saat gelince önerir.</summary>
+    public bool HabitSuggestions { get; set; } = true;
+
+    /// <summary>Ortam seslerinin (yağmur, beyaz gürültü…) ses düzeyi, 0–1.</summary>
+    public double AmbientVolume { get; set; } = 0.25;
+
     /// <summary>Hitap sözü ("patron", "Kürşat Bey"); boşsa adınla ya da hitapsız konuşur. Her cümlede değil, ara sıra.</summary>
     public string AddressAs { get; set; } = "";
 

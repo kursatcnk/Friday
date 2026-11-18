@@ -4,7 +4,110 @@ using System.Text.Json;
 
 namespace Friday.Core;
 
-public sealed record Reminder(string Id, DateTime Due, string Text, DateTime Created);
+public sealed record Reminder(string Id, DateTime Due, string Text, DateTime Created)
+{
+    /// <summary>Tekrar kuralı ("gunluk", "haftaici", "haftasonu", "haftalik", "aylik"); tek seferlikse null.</summary>
+    public string? Repeat { get; init; }
+
+    public bool Repeats => Repeat is not null;
+}
+
+/// <summary>Tekrarlayan hatırlatmaların kuralları: her gün, hafta içi, hafta sonu, her hafta, her ay.</summary>
+public static class RepeatRule
+{
+    public static readonly IReadOnlyList<string> Known = ["gunluk", "haftaici", "haftasonu", "haftalik", "aylik"];
+
+    /// <summary>"gün" → "gunluk", "hafta içi" → "haftaici", "pazartesi" → "haftalik"; tanınmazsa null.</summary>
+    public static string? FromWords(string words) => words.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR")) switch
+    {
+        "gün" or "sabah" or "akşam" or "gece" or "öğlen" => "gunluk",
+        "hafta içi" => "haftaici",
+        "hafta sonu" => "haftasonu",
+        "hafta" or "pazartesi" or "salı" or "çarşamba" or "perşembe" or "cuma" or "cumartesi" or "pazar" => "haftalik",
+        "ay" => "aylik",
+        _ => null
+    };
+
+    /// <summary>
+    /// Tekrarlayan hatırlatmanın ilk zamanı. "Her gün 9'da" sabah dokuzdur: sabah/akşam denmediyse 7–11 arası saatler
+    /// öğleden öncedir (tek seferlik "9'da" ise sıradaki dokuz olabilir). Bugünün saati geçtiyse ilk tekrar sonraki gündür.
+    /// </summary>
+    public static DateTime Start(DateTime parsed, string phrase, string rule, DateTime now)
+    {
+        var lowered = phrase.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        var qualified = lowered.Contains("sabah", StringComparison.Ordinal) || lowered.Contains("öğle", StringComparison.Ordinal)
+                        || lowered.Contains("akşam", StringComparison.Ordinal) || lowered.Contains("gece", StringComparison.Ordinal);
+        var time = parsed.TimeOfDay;
+        if (!qualified && parsed.Hour is >= 19 and <= 23)
+        {
+            time -= TimeSpan.FromHours(12);
+        }
+
+        var start = (rule == "haftalik" || rule == "aylik" ? parsed.Date : now.Date) + time;
+        while (start <= now)
+        {
+            start = rule switch
+            {
+                "haftalik" => start.AddDays(7),
+                "aylik" => start.AddMonths(1),
+                _ => start.AddDays(1)
+            };
+        }
+
+        return First(start, rule);
+    }
+
+    /// <summary>İlk tarih kurala uymuyorsa (ör. hafta içi ama cumartesi) uyan ilk güne kaydırılır.</summary>
+    public static DateTime First(DateTime due, string rule)
+    {
+        var date = due;
+        while (!Fits(date, rule))
+        {
+            date = date.AddDays(1);
+        }
+
+        return date;
+    }
+
+    /// <summary>Bir sonraki tekrar; "now"dan sonraki ilk uygun zaman.</summary>
+    public static DateTime Next(DateTime due, string rule, DateTime now)
+    {
+        var next = due;
+        do
+        {
+            next = rule switch
+            {
+                "haftalik" => next.AddDays(7),
+                "aylik" => next.AddMonths(1),
+                _ => next.AddDays(1)
+            };
+        }
+        while (next <= now || !Fits(next, rule));
+
+        return next;
+    }
+
+    private static bool Fits(DateTime date, string rule) => rule switch
+    {
+        "haftaici" => date.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday),
+        "haftasonu" => date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday,
+        _ => true
+    };
+
+    /// <summary>"her gün 09:00", "hafta içi her gün 08:30", "her pazartesi 10:00", "her ay 5'inde 09:00".</summary>
+    public static string Describe(DateTime due, string rule)
+    {
+        var time = due.ToString("HH:mm", CultureInfo.InvariantCulture);
+        return rule switch
+        {
+            "haftaici" => $"hafta içi her gün {time}",
+            "haftasonu" => $"hafta sonları {time}",
+            "haftalik" => $"her {due.ToString("dddd", CultureInfo.GetCultureInfo("tr-TR")).ToLower(CultureInfo.GetCultureInfo("tr-TR"))} {time}",
+            "aylik" => $"her ayın {due.Day}. günü {time}",
+            _ => $"her gün {time}"
+        };
+    }
+}
 
 /// <summary>
 /// Kalıcı hatırlatmalar (D:\Friday\data\reminders.json). "10 dakika sonra" da "yarın 9'da" da buraya yazılır; Friday
@@ -45,9 +148,12 @@ public sealed class ReminderStore
         }
     }
 
-    public Reminder Add(DateTime due, string text, DateTime now)
+    public Reminder Add(DateTime due, string text, DateTime now, string? repeat = null)
     {
-        var reminder = new Reminder(Guid.NewGuid().ToString("N")[..8], due, text.Trim(), now);
+        var reminder = new Reminder(Guid.NewGuid().ToString("N")[..8], repeat is null ? due : RepeatRule.First(due, repeat), text.Trim(), now)
+        {
+            Repeat = repeat
+        };
         lock (_gate)
         {
             _items.Add(reminder);
@@ -58,7 +164,10 @@ public sealed class ReminderStore
         return reminder;
     }
 
-    /// <summary>Zamanı gelenleri listeden çıkarıp döndürür (her biri bir kez söylenir).</summary>
+    /// <summary>
+    /// Zamanı gelenleri döndürür (her biri bir kez söylenir). Tek seferlikler listeden çıkar, tekrarlayanlar bir sonraki
+    /// zamanlarına kurulur.
+    /// </summary>
     public IReadOnlyList<Reminder> TakeDue(DateTime now)
     {
         List<Reminder> due;
@@ -70,7 +179,8 @@ public sealed class ReminderStore
                 return [];
             }
 
-            _items = _items.Except(due).ToList();
+            _items = [.. _items.Except(due), .. due.Where(item => item.Repeat is not null)
+                .Select(item => item with { Due = RepeatRule.Next(item.Due, item.Repeat!, now) })];
             Save();
         }
 

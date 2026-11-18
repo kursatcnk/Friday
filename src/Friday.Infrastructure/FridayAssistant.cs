@@ -69,6 +69,12 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>"Dikte modu": bu turdan sonra söylenenler etkin pencereye yazılır.</summary>
     private bool _dictation;
 
+    /// <summary>Son söylenen cevap ("tekrar et" için).</summary>
+    private string _lastReply = "";
+
+    /// <summary>Alışkanlık önerilerini 5 dk'da bir yoklar.</summary>
+    private Timer? _habitTimer;
+
     /// <summary>
     /// Dil modelinin hazırlığı (sunucu, model, GPU'ya yükleme). Modeller yavaş bir diskteyse ilk açılışta bir dakikayı
     /// bulabilir; Friday bunu beklemeden hazır olur, hızlı komutlar hemen çalışır, modele giden soru hazırlığın bitmesini bekler.
@@ -126,6 +132,7 @@ public sealed class FridayAssistant : IDisposable
     {
         _memory.Expiry = TimeSpan.FromMinutes(Math.Max(1, _settings.ConversationMemoryMinutes));
         _tools.Calendar.Configure(_settings.CalendarUrl);
+        _tools.Clipboard.Enable(_settings.ClipboardHistory);
         _chat.KeepAlive = $"{Math.Max(1, _settings.GpuIdleMinutes)}m";
         ReconfigureVoice();
         StartWakeWord();
@@ -257,6 +264,8 @@ public sealed class FridayAssistant : IDisposable
         FridayLog.Info($"Konuşma tanıma ve ses hazır ({clock.Elapsed.TotalSeconds:0.0} sn)");
 
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
+        _habitTimer = new Timer(_ => SuggestHabit(), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        _tools.Clipboard.Enable(settings.ClipboardHistory);
         StartWakeWord();
         _rhythm.Apply(settings);
         _tools.StartReminders();
@@ -662,6 +671,18 @@ public sealed class FridayAssistant : IDisposable
             return;
         }
 
+        if (command is { Tool: "tekrar" })
+        {
+            // "Tekrar et", "ne dedin": son cevap yeniden okunur; sohbete yazılmaz.
+            var again = _lastReply.Length > 0 ? _lastReply : "Henüz bir şey söylemedim.";
+            Report(AssistantState.Speaking, "Tekrar");
+            Show(again);
+            Say(again);
+            await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
+            Report(AssistantState.Idle, ReadyText);
+            return;
+        }
+
         if (command is { Tool: "dikte" })
         {
             _dictation = true;
@@ -723,6 +744,11 @@ public sealed class FridayAssistant : IDisposable
         if (_settings.KeepHistory)
         {
             _chats.Append(text, reply);
+        }
+
+        if (reply.Length > 0)
+        {
+            _lastReply = reply;
         }
 
         await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
@@ -972,7 +998,31 @@ public sealed class FridayAssistant : IDisposable
     /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
     /// basılır ya da "Hey Friday" denirse hemen susar.
     /// </summary>
-    private void Announce(IReadOnlyList<CoachStep> script)
+    /// <summary>Hep aynı saatlerde yapılan bir şey önerilir; soru okunduktan sonra cevap için mikrofon açılır.</summary>
+    private void SuggestHabit()
+    {
+        try
+        {
+            lock (_gate)
+            {
+                if (State is not AssistantState.Idle)
+                {
+                    return;
+                }
+            }
+
+            if (_tools.HabitSuggestion() is { } question)
+            {
+                Announce([new CoachStep(question)], listenAfter: true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            FridayLog.Warn($"Alışkanlık önerisi: {exception.Message}");
+        }
+    }
+
+    private void Announce(IReadOnlyList<CoachStep> script, bool listenAfter = false)
     {
         CancellationToken token;
         lock (_gate)
@@ -1009,10 +1059,20 @@ public sealed class FridayAssistant : IDisposable
                 return;
             }
 
-            if (!token.IsCancellationRequested)
+            if (token.IsCancellationRequested)
             {
-                Report(AssistantState.Idle, ReadyText);
+                return;
             }
+
+            if (listenAfter)
+            {
+                // Soru soruldu ("Açayım mı?"); cevap için kısayola basmak gerekmez.
+                Report(AssistantState.Idle, ReadyText);
+                StartTurn(text: null);
+                return;
+            }
+
+            Report(AssistantState.Idle, ReadyText);
         }, CancellationToken.None);
     }
 
@@ -1054,6 +1114,9 @@ public sealed class FridayAssistant : IDisposable
 
         // Friday kendisi dinlerken kelime aranmaz; kullanıcının sorusu onu yeniden tetiklemez ve işlemci boşta kalır.
         _wakeWord.Suspended = state == AssistantState.Listening;
+
+        // Ortam sesi (yağmur, gürültü) Friday dinlerken ve konuşurken kısılır.
+        _tools.DuckAmbient(state is AssistantState.Listening or AssistantState.Speaking);
 
         // Her boşa düşüşte uyku sayacı yeniden başlar.
         if (state is AssistantState.Idle or AssistantState.Error)
@@ -1097,6 +1160,7 @@ public sealed class FridayAssistant : IDisposable
     public void Dispose()
     {
         _idleTimer?.Dispose();
+        _habitTimer?.Dispose();
         _announcement?.Cancel();
         _announcement?.Dispose();
         _rhythm.Dispose();

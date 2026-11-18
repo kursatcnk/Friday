@@ -58,7 +58,7 @@ public sealed partial class AssistantTools
         }
     }
 
-    private string ReminderCommand(string action, string when, string text)
+    private string ReminderCommand(string action, string when, string text, string repeat = "")
     {
         var now = DateTime.Now;
         switch (Simplify(action))
@@ -66,11 +66,12 @@ public sealed partial class AssistantTools
             case "listele":
                 var upcoming = reminders.Upcoming;
                 ShowListCard("Hatırlatmalar", "\uE823", upcoming.Select(item =>
-                    new CardRow(TurkishTime.Describe(item.Due, now), item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")));
+                    new CardRow(item.Repeat is { } repeating ? RepeatRule.Describe(item.Due, repeating) : TurkishTime.Describe(item.Due, now),
+                        item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")));
                 return upcoming.Count == 0
                     ? "Kurulu bir hatırlatma yok."
                     : $"{upcoming.Count} hatırlatma var: " + string.Join("; ", upcoming.Take(6).Select(item =>
-                        $"{TurkishTime.Describe(item.Due, now)} {(item.Text.Length > 0 ? item.Text : "zamanlayıcı")}")) + ".";
+                        $"{(item.Repeat is { } rule ? RepeatRule.Describe(item.Due, rule) : TurkishTime.Describe(item.Due, now))} {(item.Text.Length > 0 ? item.Text : "zamanlayıcı")}")) + ".";
             case "sil":
                 var removed = reminders.Cancel(text);
                 return removed == 0 ? $"'{text}' diye bir hatırlatma bulamadım." : "Tamam, hatırlatmayı sildim.";
@@ -80,10 +81,16 @@ public sealed partial class AssistantTools
                     return "Ne zaman hatırlatacağımı anlayamadım; ör. 'yarın 9'da' ya da 'akşam 8'de' de.";
                 }
 
-                reminders.Add(due, text, now);
+                var rule = RepeatRule.Known.Contains(repeat) ? repeat : null;
+                var added = reminders.Add(rule is null ? due : RepeatRule.Start(due, when, rule, now), text, now, rule);
                 EnsureReminderClock();
-                ledger.Record(DataFlow.Local, "Hatırlatma", $"{TurkishTime.Describe(due, now)} için kuruldu");
+                ledger.Record(DataFlow.Local, "Hatırlatma", rule is null ? $"{TurkishTime.Describe(due, now)} için kuruldu" : $"{RepeatRule.Describe(added.Due, rule)} için kuruldu");
                 var subject = text.Trim();
+                if (rule is not null)
+                {
+                    return $"Tamam, {RepeatRule.Describe(added.Due, rule)} {(subject.Length == 0 ? "haber veririm" : $"{subject} hatırlatırım")}.";
+                }
+
                 return subject.Length == 0
                     ? $"Tamam, {TurkishTime.Describe(due, now)} haber veririm."
                     : $"Tamam, {TurkishTime.Describe(due, now)} {subject} hatırlatırım.";
@@ -131,6 +138,8 @@ public sealed partial class AssistantTools
         }
 
         _watches?.Dispose();
+        _ambient?.Dispose();
+        _clipboard?.Dispose();
         _calendar?.Dispose();
         _background.Cancel();
         _background.Dispose();

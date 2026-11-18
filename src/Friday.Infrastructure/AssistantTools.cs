@@ -69,6 +69,11 @@ public sealed partial class AssistantTools(
         ["indirilenler"] = "İndirilenlere bakıyorum",
         ["gun_sonu"] = "Günü özetliyorum",
         ["onay"] = "Uyguluyorum",
+        ["yapilacak"] = "Yapılacaklara bakıyorum",
+        ["yapilacaklar"] = "Yapılacaklara bakıyorum",
+        ["ortam"] = "Ortam sesini ayarlıyorum",
+        ["pano_gecmisi"] = "Pano geçmişine bakıyorum",
+        ["uygulama_kapat"] = "Uygulamayı kapatıyorum",
         ["hatirlatici"] = "Hatırlatıcıya bakıyorum",
         ["not"] = "Not defterine bakıyorum",
         ["hesap"] = "Hesaplıyorum",
@@ -162,6 +167,8 @@ public sealed partial class AssistantTools(
             [("konu", "string", "Araştırılacak konu", true)]),
         Tool("takvim", "Kullanıcının takvimindeki etkinlikleri söyler (Google/Outlook takvimi bağlıysa).",
             [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
+        Tool("yapilacaklar", "Kullanıcının yapılacaklar listesi: iş ekler, listeler, tamamlar.",
+            [("islem", "string", "ekle, listele ya da tamamla", true), ("metin", "string", "İşin metni (ekle ve tamamla için)", false)]),
     ];
 
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
@@ -194,6 +201,7 @@ public sealed partial class AssistantTools(
                 "haberler" => (await NewsAsync(Argument(call, "kategori"), cancellationToken).ConfigureAwait(false)).Text,
                 "arastirma_raporu" => ResearchCommand("hazirla", Argument(call, "konu")).Text,
                 "takvim" => (await CalendarCommandAsync(Argument(call, "gun"), cancellationToken).ConfigureAwait(false)).Text,
+                "yapilacaklar" => TodoCommand(Argument(call, "islem"), Argument(call, "metin"))?.Text ?? "Listede böyle bir iş yok.",
                 "pencere" => WindowCommand(Argument(call, "islem")).Text,
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),

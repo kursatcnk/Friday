@@ -22,7 +22,10 @@ public enum RoutineAction
     Wait,
 
     /// <summary>Hatırlatma kurar: "hatirlat:10 dakika sonra|çayı demle".</summary>
-    Remind
+    Remind,
+
+    /// <summary>Ortam sesi: "ortam:yagmur", "ortam:kahverengi 50", "ortam:kapat".</summary>
+    Ambient
 }
 
 /// <summary>Rutin düzenleyicisindeki bir adım türü: dosyadaki adı, paneldeki etiketi, değer ipucu ve simgesi.</summary>
@@ -50,6 +53,7 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         new(RoutineAction.Rhythm, "ritim", "Ritim", "mola, odak 25, nefes, esneme, durum ya da ertele 60", ""),
         new(RoutineAction.Remind, "hatirlat", "Hatırlatma kur", "45 dakika sonra|ara ver", ""),
         new(RoutineAction.Wait, "bekle", "Bekle", "saniye, ör. 3", ""),
+        new(RoutineAction.Ambient, "ortam", "Ortam sesi", "yagmur, beyaz, kahverengi, dalga, somine ya da ruzgar (+ dakika)", "\uE93C"),
         new(RoutineAction.LinguaFlow, "linguaflow", "LinguaFlow çevirisi", "", ""),
     ];
 
@@ -59,7 +63,7 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         new("sabah", "Günün özeti, sesi ayarla, müziği başlat",
             ["ozet", "ses:25", "medya:oynat_duraklat"]),
         new("odak modu", "Müziği durdur, 50 dakika odak, kısa bir söz",
-            ["medya:oynat_duraklat", "ritim:odak 50", "soyle:Odak başladı. Telefonu ters çevirmeye ne dersin?"]),
+            ["medya:oynat_duraklat", "ritim:odak 50", "ortam:yagmur 50", "soyle:Odak başladı. Telefonu ters çevirmeye ne dersin?"]),
         new("kod zamanı", "Editörü ve GitHub'ı aç, 25 dakikalık odak başlat",
             ["uygulama:Visual Studio Code", "site:github.com", "ritim:odak 25"]),
         new("oyun modu", "Steam ve Discord'u aç, sesi aç, mola önerisini 2 saat ertele",
@@ -95,6 +99,7 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             "ses" => RoutineAction.Volume,
             "bekle" => RoutineAction.Wait,
             "hatirlat" or "hatırlat" => RoutineAction.Remind,
+            "ortam" => RoutineAction.Ambient,
             _ => throw new FormatException($"Bilinmeyen rutin adımı: {text}")
         };
 
@@ -116,6 +121,19 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
 
         return new RoutineStep(action, value);
     }
+
+    /// <summary>"yagmur" → "Yağmur sesi".</summary>
+    public static string AmbientName(string kind) => kind switch
+    {
+        "yagmur" => "Yağmur sesi",
+        "beyaz" => "Beyaz gürültü",
+        "pembe" => "Pembe gürültü",
+        "kahverengi" => "Kahverengi gürültü",
+        "dalga" => "Dalga sesi",
+        "somine" => "Şömine sesi",
+        "ruzgar" => "Rüzgâr sesi",
+        _ => "Ortam sesi"
+    };
 
     /// <summary>settings.json'daki yazımı: "uygulama:Spotify", "ozet".</summary>
     public string Format() => Kind.NeedsValue ? $"{Kind.Key}:{Value}" : Kind.Key;
@@ -150,6 +168,13 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         },
         RoutineAction.Remind => Value.Split('|', 2) is [var when, var what] ? $"{when.Trim()} \"{what.Trim()}\" hatırlat" : $"Hatırlat: {Value}",
         RoutineAction.Wait => $"{Number} sn bekle",
+        RoutineAction.Ambient => Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) switch
+        {
+            ["kapat", ..] => "Ortam sesini kapat",
+            [var kind, var minutes, ..] => $"{AmbientName(kind)} çal ({minutes} dk)",
+            [var kind] => $"{AmbientName(kind)} çal",
+            _ => "Ortam sesi"
+        },
         RoutineAction.LinguaFlow => "LinguaFlow çevirisini başlat",
         _ => Value
     };

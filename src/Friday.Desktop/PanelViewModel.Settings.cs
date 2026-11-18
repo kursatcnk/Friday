@@ -29,6 +29,21 @@ public sealed partial class PanelViewModel
     private string _calendarUrl = "";
 
     [ObservableProperty]
+    private bool _clipboardHistoryEnabled;
+
+    [ObservableProperty]
+    private bool _habitSuggestionsEnabled = true;
+
+    [ObservableProperty]
+    private bool _ambientLow;
+
+    [ObservableProperty]
+    private bool _ambientMedium = true;
+
+    [ObservableProperty]
+    private bool _ambientHigh;
+
+    [ObservableProperty]
     private string _calendarMessage = "";
 
     [ObservableProperty]
@@ -319,6 +334,9 @@ public sealed partial class PanelViewModel
         _settings.KeepHistory = KeepHistory;
         _settings.AddressAs = AddressAs.Trim();
         _settings.CalendarUrl = CalendarUrl.Trim();
+        _settings.ClipboardHistory = ClipboardHistoryEnabled;
+        _settings.HabitSuggestions = HabitSuggestionsEnabled;
+        _settings.AmbientVolume = AmbientLow ? 0.12 : AmbientHigh ? 0.45 : 0.25;
 
         var notes = new List<string>();
         if (StartWithWindows != _settings.StartWithWindows)
@@ -406,6 +424,11 @@ public sealed partial class PanelViewModel
         KeepHistory = _settings.KeepHistory;
         AddressAs = _settings.AddressAs;
         CalendarUrl = _settings.CalendarUrl;
+        ClipboardHistoryEnabled = _settings.ClipboardHistory;
+        HabitSuggestionsEnabled = _settings.HabitSuggestions;
+        AmbientLow = _settings.AmbientVolume < 0.18;
+        AmbientHigh = _settings.AmbientVolume > 0.35;
+        AmbientMedium = !AmbientLow && !AmbientHigh;
         StartWithWindows = _settings.StartWithWindows;
         SelectedHotkey = HotkeyOptions.FirstOrDefault(option => string.Equals(option, _settings.Hotkey, StringComparison.OrdinalIgnoreCase)) ?? _settings.Hotkey;
         SelectedQuickAsk = _settings.QuickAskHotkey.Length == 0 ? "Kapalı" : _settings.QuickAskHotkey;

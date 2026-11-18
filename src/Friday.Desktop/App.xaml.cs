@@ -119,13 +119,15 @@ public sealed partial class App : Application, IDisposable
 
         var reminders = new ReminderStore(Path.Combine(paths.Data, "reminders.json"));
         var notes = new NoteStore(Path.Combine(paths.Data, "notes.md"));
+        var todos = new TodoStore(Path.Combine(paths.Data, "todos.json"));
+        var habits = new HabitTracker(Path.Combine(paths.Data, "habits.json"));
 
         // Yerel model yanıtları uzun sürebilir; zaman aşımını istekler kendi belirler.
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save };
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits };
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -198,6 +200,19 @@ public sealed partial class App : Application, IDisposable
             PiperVoices = PiperVoices(paths),
             BackupData = () => BackupData(paths, ledger),
             TestCalendar = url => tools.Calendar.TestAsync(url, CancellationToken.None),
+            AddTodo = text => todos.Add(text, DateTime.Now),
+            ToggleTodo = (id, done) =>
+            {
+                if (done)
+                {
+                    todos.Complete(id, DateTime.Now);
+                }
+                else
+                {
+                    todos.Reopen(id);
+                }
+            },
+            RemoveTodo = id => todos.Remove(id),
             RestoreData = () => RestoreData(paths),
             Restart = RestartFriday,
             ScanReclaimable = () => Task.Run(() => DataMaintenance.Reclaimable(paths, settings)),
@@ -250,6 +265,8 @@ public sealed partial class App : Application, IDisposable
         reminders.Changed += (_, _) => Ui(ShowToday);
         memory.Changed += (_, _) => Ui(ShowToday);
         notes.Changed += (_, _) => Ui(() => panel.ShowNotes(notes.All));
+        todos.Changed += (_, _) => Ui(() => panel.ShowTodos(todos.Visible(DateTime.Now)));
+        panel.ShowTodos(todos.Visible(DateTime.Now));
         ShowToday();
         panel.ShowNotes(notes.All);
         async Task RefreshWeatherAsync()

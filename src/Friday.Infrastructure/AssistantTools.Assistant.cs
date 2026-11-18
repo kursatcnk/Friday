@@ -18,7 +18,7 @@ public sealed partial class AssistantTools
     private string _researchTopic = "";
     private string? _lastReport;
     private CalendarService? _calendar;
-    private IReadOnlyList<FileMove>? _pendingSort;
+    private Func<CancellationToken, Task<QuickReply>>? _pendingAction;
     private DateTime _pendingAt;
 
     /// <summary>Raporların yazılacağı klasör (D:\Friday\data\reports).</summary>
@@ -45,7 +45,15 @@ public sealed partial class AssistantTools
     }
 
     /// <summary>"Evet" ya da "hayır" bekleyen bir soru var mı (ör. İndirilenler'i düzenleyeyim mi?).</summary>
-    public bool HasPendingConfirmation => _pendingSort is not null && DateTime.Now - _pendingAt < ConfirmationLife;
+    public bool HasPendingConfirmation => _pendingAction is not null && DateTime.Now - _pendingAt < ConfirmationLife;
+
+    /// <summary>Bir soru sorulur; "evet" denince bu iş yapılır (3 dk içinde).</summary>
+    private void Ask(string kind, Func<CancellationToken, Task<QuickReply>> run)
+    {
+        _pendingAction = run;
+        _pendingAt = DateTime.Now;
+        ledger.Record(DataFlow.Local, kind, "Onay bekleniyor");
+    }
 
     // ---------- Araştırma raporu ----------
 
@@ -261,8 +269,7 @@ public sealed partial class AssistantTools
             return new QuickReply("İndirilenler zaten düzenli; ayıracak dosya yok.");
         }
 
-        _pendingSort = plan;
-        _pendingAt = DateTime.Now;
+        Ask("İndirilenler", _ => Task.FromResult(ApplySort(plan)));
         ShowListCard("İndirilenler", "\uE896", plan
             .GroupBy(move => Path.GetFileName(Path.GetDirectoryName(move.To)) ?? "")
             .OrderByDescending(group => group.Count())
@@ -271,15 +278,20 @@ public sealed partial class AssistantTools
     }
 
     /// <summary>Bekleyen soruya verilen "evet" ya da "hayır".</summary>
-    private QuickReply Confirm(bool yes)
+    private async Task<QuickReply> ConfirmAsync(bool yes, CancellationToken cancellationToken)
     {
-        var plan = _pendingSort;
-        _pendingSort = null;
-        if (plan is null || !yes)
+        var pending = HasPendingConfirmation ? _pendingAction : null;
+        _pendingAction = null;
+        if (pending is null || !yes)
         {
             return new QuickReply("Tamam, dokunmadım.");
         }
 
+        return await pending(cancellationToken).ConfigureAwait(false);
+    }
+
+    private QuickReply ApplySort(IReadOnlyList<FileMove> plan)
+    {
         var done = new List<FileMove>();
         foreach (var move in plan)
         {
