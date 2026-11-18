@@ -151,6 +151,9 @@ public sealed class PanelActions
 
 public sealed record VoiceOption(string Name, string Label);
 
+/// <summary>Ekran süresi satırı: uygulama, süre ve çubuğun genişliği.</summary>
+public sealed record ScreenTimeRow(string App, string Time, double Width);
+
 public sealed partial class PanelViewModel : ObservableObject
 {
     private const int MaxLines = 240;
@@ -566,6 +569,30 @@ public sealed partial class PanelViewModel : ObservableObject
         }
 
         HasUpcoming = Upcoming.Count > 0;
+    }
+
+    public ObservableCollection<ScreenTimeRow> ScreenTimeRows { get; } = [];
+
+    [ObservableProperty]
+    private string _screenTimeSummary = "Bugün henüz sayılmadı.";
+
+    /// <summary>Bugün ekranındaki ekran süresi: en çok kullanılan 5 uygulama, en uzunu tam çubuk.</summary>
+    public void ShowScreenTime(IReadOnlyList<(string App, int Seconds)> today)
+    {
+        ScreenTimeRows.Clear();
+        if (today.Count == 0)
+        {
+            ScreenTimeSummary = "Bugün henüz sayılmadı. Friday, öndeki uygulamanın adını 15 sn'de bir sayar.";
+            return;
+        }
+
+        var longest = Math.Max(1, today[0].Seconds);
+        foreach (var (app, seconds) in today.Take(5))
+        {
+            ScreenTimeRows.Add(new ScreenTimeRow(app, ScreenTimeLog.Compact(seconds), 240.0 * seconds / longest));
+        }
+
+        ScreenTimeSummary = $"Bugün toplam {ScreenTimeLog.Compact(today.Sum(item => item.Seconds))}";
     }
 
     public void ShowNotes(IReadOnlyList<Note> notes)

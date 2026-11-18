@@ -386,7 +386,7 @@ public sealed partial class RhythmCoach : IDisposable
     }
 
     /// <summary>Son klavye ya da fare kullanımından bu yana geçen süre (Windows'un tuttuğu tek bir sayı).</summary>
-    private static TimeSpan IdleTime()
+    internal static TimeSpan IdleTime()
     {
         var info = new LastInputInfo { Size = (uint)Marshal.SizeOf<LastInputInfo>() };
         return NativeMethods.GetLastInputInfo(ref info)

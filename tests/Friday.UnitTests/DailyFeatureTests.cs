@@ -326,3 +326,43 @@ public class WorkspaceAndStepTests
         Assert.Equal(text, step.Format());
     }
 }
+
+public class ScreenTimeTests
+{
+    [Theory]
+    [InlineData("chrome", "Google Chrome", "lofi hip hop - YouTube - Google Chrome", "YouTube")]
+    [InlineData("msedge", null, "Yeni sekme - Microsoft Edge", "Edge")]
+    [InlineData("Code", "Visual Studio Code", "Program.cs - Friday", "Visual Studio Code")]
+    [InlineData("spotify", null, "Spotify Premium", "Spotify")]
+    public void LabelsAppsAndKnownSites(string process, string? description, string title, string label) =>
+        Assert.Equal(label, ScreenTimeLog.Label(process, description, title));
+
+    [Fact]
+    public void SumsAndDescribesTheDay()
+    {
+        var log = new ScreenTimeLog();
+        var now = new DateTime(2026, 11, 18, 15, 0, 0);
+        log.Add(now, "Visual Studio Code", 7800);
+        log.Add(now, "YouTube", 2700);
+        log.Add(now.AddDays(-1), "Steam", 600);
+        Assert.Equal("Visual Studio Code", log.Day(now)[0].App);
+        Assert.Equal("Bugün 2 saat 55 dakika bilgisayar başındaydın. En çok: Visual Studio Code (2 saat 10 dakika), YouTube (45 dakika).", log.Describe(now, "bugün"));
+        Assert.Equal("Bugün YouTube için 45 dakika harcadın.", log.Describe(now, "bugün", "youtube"));
+        Assert.Equal("Steam", ScreenTimeLog.FromJson(log.ToJson()).Day(now.AddDays(-1))[0].App);
+        Assert.True(ScreenTimeLog.IsDistraction("YouTube"));
+        Assert.False(ScreenTimeLog.IsDistraction("Visual Studio Code"));
+    }
+
+    [Theory]
+    [InlineData("bugün ne kadar bilgisayardaydım", "bugun", null)]
+    [InlineData("ekran sürem", "bugun", null)]
+    [InlineData("dün en çok ne kullandım", "dun", null)]
+    [InlineData("bugün ne kadar youtube izledim", "bugun", "youtube")]
+    public void RecognisesScreenTimeQuestions(string sentence, string day, string? app)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("ekran_suresi", command?.Tool);
+        Assert.Equal(day, command!.Arguments["gun"]);
+        Assert.Equal(app ?? "", command.Arguments.TryGetValue("uygulama", out var value) ? value : "");
+    }
+}

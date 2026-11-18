@@ -53,6 +53,21 @@ public sealed partial class AssistantTools
         }
     }
 
+    /// <summary>Ekran süresi sayacı; ayarlarda kapalıysa null.</summary>
+    public ActivityTracker? Activity { get; set; }
+
+    private QuickReply ScreenTimeCommand(string day, string app)
+    {
+        if (Activity is not { } activity)
+        {
+            return new QuickReply("Ekran süresi sayacı kapalı; Ayarlar › Akıllı yardımcılar'dan açabilirsin.");
+        }
+
+        var yesterday = Simplify(day) is "dun" or "dunku";
+        var when = yesterday ? DateTime.Now.AddDays(-1) : DateTime.Now;
+        return new QuickReply(activity.Describe(when, yesterday ? "dün" : "bugün", string.IsNullOrWhiteSpace(app) ? null : app));
+    }
+
     /// <summary>"rutin_zamanla": rutini her gün / hafta içi / hafta sonu belirli saatte ya da Friday açılınca çalıştırır.</summary>
     private string ScheduleRoutine(string name, string when)
     {

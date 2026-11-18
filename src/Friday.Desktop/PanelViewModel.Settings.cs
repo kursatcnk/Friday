@@ -39,6 +39,12 @@ public sealed partial class PanelViewModel
     private bool _gpuRendering;
 
     [ObservableProperty]
+    private bool _screenTimeEnabled = true;
+
+    [ObservableProperty]
+    private bool _focusGuard = true;
+
+    [ObservableProperty]
     private bool _brainFast = true;
 
     [ObservableProperty]
@@ -351,6 +357,8 @@ public sealed partial class PanelViewModel
         _settings.GpuIdleMinutes = Gpu1 ? 1 : Gpu5 ? 5 : Gpu15 ? 15 : 2;
         _settings.YieldToFullScreen = YieldToFullScreen;
         _settings.GpuRendering = GpuRendering;
+        _settings.ScreenTime = ScreenTimeEnabled;
+        _settings.FocusGuard = FocusGuard;
         _settings.VoiceRoom = RoomDry ? 0 : RoomWarm ? 0.14 : 0.07;
         _settings.VoiceModelPath = SelectedPiperVoice?.Name ?? "";
         _settings.KeepHistory = KeepHistory;
@@ -437,6 +445,8 @@ public sealed partial class PanelViewModel
         Gpu1 = _settings.GpuIdleMinutes <= 1;
         YieldToFullScreen = _settings.YieldToFullScreen;
         GpuRendering = _settings.GpuRendering;
+        ScreenTimeEnabled = _settings.ScreenTime;
+        FocusGuard = _settings.FocusGuard;
         Gpu5 = _settings.GpuIdleMinutes is >= 4 and < 10;
         Gpu15 = _settings.GpuIdleMinutes >= 10;
         Gpu2 = !Gpu1 && !Gpu5 && !Gpu15;

@@ -101,6 +101,12 @@ public sealed class FridaySettings
     /// </summary>
     public bool YieldToFullScreen { get; set; } = true;
 
+    /// <summary>Ekran süresi: öndeki uygulamanın adı 15 sn'de bir sayılır (başlık ve içerik saklanmaz).</summary>
+    public bool ScreenTime { get; set; } = true;
+
+    /// <summary>Odak oturumunda YouTube, Netflix, Instagram gibi bir sitede kalınca Friday nazikçe hatırlatır.</summary>
+    public bool FocusGuard { get; set; } = true;
+
     /// <summary>
     /// Arayüzü ekran kartıyla çiz. Kapalıyken (varsayılan) pencereler işlemciyle çizilir: Friday'in arayüzü ekran
     /// kartında hiç bellek tutmaz, oyunla ve dil modeliyle yarışmaz, sürücü takıldığında beyaz pencere sorunu yaşanmaz.

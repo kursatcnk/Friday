@@ -144,6 +144,7 @@ public sealed class FridayAssistant : IDisposable
     public void ApplySettings()
     {
         ScheduleRoutines();
+        UpdateActivity();
         if (_settings.OllamaModel != _loadedModel && _brainReady.IsCompleted)
         {
             // Akıl değişti (Hızlı ↔ Akıllı): eski model GPU'dan çıkar, yenisi arkada hazırlanır.
@@ -292,6 +293,7 @@ public sealed class FridayAssistant : IDisposable
         _habitTimer = new Timer(_ => SuggestHabit(), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
         ScheduleRoutines();
         _ = RunStartupRoutinesAsync();
+        UpdateActivity();
         _tools.Clipboard.Enable(settings.ClipboardHistory);
         StartWakeWord();
         _rhythm.Apply(settings);
@@ -1058,6 +1060,40 @@ public sealed class FridayAssistant : IDisposable
     /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
     /// basılır ya da "Hey Friday" denirse hemen susar.
     /// </summary>
+    /// <summary>Ekran süresi sayacını ayara göre açar ya da kapatır.</summary>
+    private void UpdateActivity()
+    {
+        if (_settings.ScreenTime && _tools.Activity is null)
+        {
+            var activity = new ActivityTracker(Path.Combine(_paths.Data, "screentime.json"));
+            activity.Distracted += (_, site) => OnDistracted(site);
+            activity.Start();
+            _tools.Activity = activity;
+            _ledger.Record(DataFlow.Local, "Ekran süresi", "Öndeki uygulamanın adı 15 sn'de bir sayılıyor; pencere başlıkları ve içerikler saklanmıyor");
+        }
+        else if (!_settings.ScreenTime && _tools.Activity is { } running)
+        {
+            _tools.Activity = null;
+            running.Dispose();
+        }
+    }
+
+    /// <summary>Odak oturumunda dikkat dağıtan bir sitede kalındı: oturum başına bir kez, nazikçe.</summary>
+    private void OnDistracted(string site)
+    {
+        if (!_settings.FocusGuard || _tools.Rhythm?.Snapshot() is not { FocusStart: { } start, FocusEnd: { } end } || end <= DateTime.Now
+            || _guardedFocus == start)
+        {
+            return;
+        }
+
+        _guardedFocus = start;
+        var left = Math.Max(1, (int)Math.Round((end - DateTime.Now).TotalMinutes));
+        Announce($"Odak oturumundaydın, {site} açık. {left} dakika kaldı; ara vermek istersen \"odağı bitir\" demen yeter.");
+    }
+
+    private DateTime? _guardedFocus;
+
     /// <summary>Saati olan bir rutin varsa saati kurar, kalmadıysa durdurur.</summary>
     private void ScheduleRoutines()
     {
@@ -1327,6 +1363,7 @@ public sealed class FridayAssistant : IDisposable
         _idleTimer?.Dispose();
         _habitTimer?.Dispose();
         _routineTimer?.Dispose();
+        _tools.Activity?.Dispose();
         _announcement?.Cancel();
         _announcement?.Dispose();
         _rhythm.Dispose();

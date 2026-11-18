@@ -336,6 +336,32 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
+                        <!-- Ekran süresi: en çok kullanılan uygulamalar ve siteler. -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="Ekran süresi" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="{Binding ScreenTimeSummary}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding ScreenTimeRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="170"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="70"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding App}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1" Height="6" CornerRadius="3" Width="{Binding Width}" HorizontalAlignment="Left"
+                                                        Background="{StaticResource AccentBrush}" Opacity="0.85" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Time}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
                         <Grid>
                             <!-- Söyleyebileceklerin. -->
                             <Border Style="{StaticResource Card}">

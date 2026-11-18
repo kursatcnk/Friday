@@ -15,6 +15,11 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Tekrarlayan hatırlatmalar** | "Her gün 9'da ilacımı hatırlat", "hafta içi her gün 18'de spora gitmeyi hatırlat", "her pazartesi 10'da toplantıyı hatırlat". Sabah/akşam denmezse "9'da" sabah dokuzdur. |
 | **Ortam sesleri** | "Yağmur sesi aç", "30 dakika beyaz gürültü aç", "dalga / şömine / rüzgâr sesi aç". Sesler dosya değil, o an bilgisayarda üretilir; Friday dinlerken ve konuşurken kısılır, süre dolunca yavaşça kapanır. "Odak modu" şablonu yağmurla başlar. |
 | **Alışkanlıklar** | Birkaç gündür aynı saatlerde açtığın bir rutini ya da uygulamayı o saat gelince önerir ("Genelde bu saatlerde çalışma modu rutinini çalıştırıyorsun. Çalıştırayım mı?") ve cevabını dinler. Ayarlardan kapatılır. |
+| **Zamanlanmış rutinler** | Bir rutin her gün, hafta içi ya da hafta sonu belirli saatte, ya da "Friday açılınca" kendiliğinden çalışır; Ctrl+Alt+1…9 kısayoluyla Friday arkadayken bile tek tuşla başlar. Sesle de olur: "çalışma modunu hafta içi her gün 9'da çalıştır". Yeni adımlar: uygulama kapat, dosya/klasör aç, pencereyi yerleştir, masa düzenini kur. |
+| **Masa düzenleri** | Pencereleri yerleştir, "kodlama masasını kaydet" de. Sonra "kodlama masasını kur" deyince kapalı programlar açılır ve her pencere kaydedildiği ekrana, yere ve boyuta geri konur. "Masalarım", "oyun masasını sil". Yalnızca program yolu ve pencere yeri saklanır. |
+| **Ekran süresi** | "Bugün ne kadar bilgisayardaydım", "dün en çok ne kullandım", "bugün ne kadar YouTube izledim". Bugün ekranında en çok kullanılan 5 uygulama çubuklarla görünür. Öndeki uygulamanın adı 15 sn'de bir sayılır; başlıklar saklanmaz, 2 dakika dokunulmazsa sayılmaz. |
+| **Odak bekçisi** | Odak oturumundayken YouTube, Netflix, Instagram gibi bir sitede kalırsan bir kez, nazikçe hatırlatır ve kaç dakika kaldığını söyler. |
+| **Vikipedi'den doğrulama** | Kişi, yer, uzunluk, nüfus, tarih gibi ansiklopedik sorularda model emin değilse Vikipedi özetine bakar; sayı uydurmak yerine kaynağa gider. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
 | **Küçük ama işe yarar** | "100 dolar kaç lira", "250 euro kaç dolar" (güncel kurla), "Discord'u kapat", "bu pencereyi kapat", "tekrar et" / "ne dedin". |
 | **Araştırma raporu** | "Yerel sesli asistanlar hakkında rapor hazırla" ya da "elektrikli arabaları araştır": Friday arka planda arar, en iyi dört sayfayı okur, yerel modelle kaynaklı bir rapor yazar (`D:\Friday\data\reports`, Markdown). Sen işine devam edersin; hazır olunca özetini söyler, "raporu aç" deyince açar. |
@@ -70,7 +75,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 37 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 41 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -140,6 +145,9 @@ Friday boşta **toplam ~60 MB RAM ve 0 GB VRAM**, konuşurken ~3,5 GB RAM ve ~4 
 - **Neden konuşurken 3 GB RAM?** Gemma 4 E4B'nin katman başına gömme tabloları tasarım gereği işlemci belleğinde durur. Diskten eşleyerek yüklemek RAM'i 0,5 GB'a indiriyor ama yüklemeyi 3 sn'den 46 sn'ye çıkarıyor; bu yüzden onun yerine model boşta erken kapatılır.
 - **Halka animasyonu** panel öndeyken saniyede 15 kare nefes alır, arka plandayken hiç çizilmez.
 
+- **Oyunda kenara çekilir.** Oyun, tam ekran video ya da sunum açıkken Friday yine tam güçle cevap verir ama modelleri ~20 sn sonra ekran kartından çıkarır (Windows'un "rahatsız etme" durumundan anlar; pencere taranmaz).
+- **Arayüz ekran kartını kullanmaz.** Pencereler varsayılan olarak işlemciyle çizilir: arayüz VRAM tutmaz, oyunla ve dil modeliyle yarışmaz, ekran kartı sürücüsü takıldığında beyaz pencere sorunu yaşanmaz. İstenirse Ayarlar'dan ekran kartıyla çizim açılır. Küre boştayken yalnızca pencere öndeyken saniyede 15 kare nefes alır, arkadayken hiç çizilmez.
+- **Uyandırma kelimesi odanın gürültüsüne uyar.** Fan sesi gibi sabit gürültüyü öğrenir, o seviyedeki parçalarda modelleri hiç çalıştırmaz; müziğin ya da konuşmanın üstünden söylenen "Hey Friday" yine tam işlenir.
 - **Hızlı ya da Akıllı.** Ayarlar › Akıl ve performans'tan beyin seçilir. Hızlı (varsayılan) Gemma 4 E4B'dir. Akıllı, Gemma 4 12B'nin görmesiz varyantıdır (`friday-smart`): niyeti, bağlamı ve genel bilgiyi çok daha iyi tutturur, ~8 GB VRAM ister ve kısa cevaplarda birkaç yüz milisaniye daha yavaştır. Geçiş anında olur: eski model ekran kartından çıkar, yenisi arkada yüklenir. 12B'yi indirmek için `.\setup.ps1 -Smart` (7,5 GB). Ekrana bakmak için küçük model kullanılmaya devam eder.
 - **Görme modülü ayrı.** Sohbet, Gemma 4'ün görme modülü olmayan varyantıyla (`friday-text`) yapılır: 4,7 GB yerine 3,5 GB. Aynı model dosyasını paylaşır, diskte ek yer kaplamaz ve ilk açılışta otomatik oluşturulur. Görme modülü yalnızca "ekrana bak" denince yüklenir ve iş bitince boşaltılır.
 - **Ön ısıtma.** "Hey Friday" duyulunca ya da kısayola basınca modeller hemen yüklenmeye başlar. Yükleme (~3 sn) sen konuşurken biter, bu yüzden uyandırma neredeyse hissedilmez.
@@ -255,6 +263,9 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `CalendarUrl` | boş | Takvimin gizli iCal (.ics) adresi; boşsa takvim kapalı |
 | `HabitSuggestions` / `ClipboardHistory` | `true` / `false` | Alışkanlık önerileri; pano geçmişi (yalnızca bellekte) |
 | `AmbientVolume` | `0.25` | Ortam seslerinin düzeyi (0–1) |
+| `RoutineSchedules` / `RoutineHotkeys` | boş | Rutin adı → `"09:00 haftaici"`, `"18:30 hergun"`, `"acilis"`; rutin adı → `"Ctrl+Alt+1"` |
+| `ScreenTime` / `FocusGuard` | `true` / `true` | Ekran süresi sayacı; odak oturumunda dikkat dağıtan site hatırlatması |
+| `YieldToFullScreen` / `GpuRendering` | `true` / `false` | Oyunda modelleri erken bırak; arayüzü ekran kartıyla çiz |
 | `KeepHistory` | `true` | Sohbetleri `D:\Friday\data\chats` altında sakla |
 | `LinguaFlowPath` | LinguaFlow yayını | "Bu videoyu çevir" komutu |
 | `Routines` | çalışma modu, günaydın, mola, toplantı modu, iyi geceler | Panelden düzenlenir. Adımlar: `uygulama:`, `site:`, `ara:`, `medya:`, `ses:30`, `soyle:`, `ozet`, `ritim:odak 25`, `hatirlat:5 dakika sonra\|çay`, `bekle:3`, `linguaflow` |
@@ -269,6 +280,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
 - "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur. "Gündem ne" haber akışını (TRT Haber) indirir; bu da deftere yazılır.
 - Araştırma raporu arama motoruna yalnızca konuyu gönderir, sayfaları okur ve raporu yerel modelle yazar; her sayfa deftere yazılır. Takvim adresi yalnızca `settings.json`'da durur, takvim 15 dk'da bir okunur.
+- Ekran süresi (`screentime.json`) yalnızca uygulama ya da bilinen site adını ve saniyeyi tutar; pencere başlıkları, adresler ve içerikler saklanmaz, 14 günden eskisi silinir. Masa düzenleri (`workspaces.json`) yalnızca program yolunu ve pencere yerini tutar. Vikipedi'ye yalnızca konu adı gider.
 - Pano geçmişi varsayılan kapalıdır; açılırsa metinler yalnızca bellekte tutulur ve Friday kapanınca silinir. Alışkanlık kaydı (`habits.json`) yalnızca hangi rutinin ya da uygulamanın ne zaman açıldığını tutar, 30 günden eskisini siler.
 - Seçili metin komutları seçimi Ctrl+C ile alır, yerel modelde işler ve panonun eski içeriğini geri koyar. Dikte sesi kaydetmez; yazılan metin sohbete de yazılmaz.
 

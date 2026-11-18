@@ -261,7 +261,19 @@
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Kısık" IsChecked="{Binding AmbientLow}"/>
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Orta" IsChecked="{Binding AmbientMedium}"/>
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Yüksek" IsChecked="{Binding AmbientHigh}"/>
-                                </StackPanel>
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ScreenTimeEnabled}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Ekran süresi" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Öndeki uygulamanın adı 15 sn'de bir sayılır; tarayıcıda yalnızca bilinen sitenin adı (YouTube, GitHub…) çıkarılır. Başlıklar ve içerikler saklanmaz, son 14 gün tutulur."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding FocusGuard}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Odak bekçisi" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Odak oturumundayken YouTube, Netflix, Instagram gibi bir sitede kalırsan Friday bir kez, nazikçe hatırlatır."/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
                             </Border>
                         </StackPanel>
                         <TextBlock Style="{StaticResource Hint}" Margin="150,4,0,0"

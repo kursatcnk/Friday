@@ -75,6 +75,7 @@ public sealed partial class AssistantTools
                 "yaz" => TypeText(Arg("metin")),
                 "pencere" => WindowCommand(Arg("islem")),
                 "masa_duzeni" => await WorkspaceCommandAsync(Arg("islem"), Arg("ad"), cancellationToken).ConfigureAwait(false),
+                "ekran_suresi" => ScreenTimeCommand(Arg("gun"), Arg("uygulama")),
                 "haber" => await NewsAsync(Arg("kategori"), cancellationToken).ConfigureAwait(false),
                 "rapor" => ResearchCommand(Arg("islem"), Arg("konu")),
                 "takvim" => await CalendarCommandAsync(Arg("gun"), cancellationToken).ConfigureAwait(false),

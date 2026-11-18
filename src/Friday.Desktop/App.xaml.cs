@@ -23,6 +23,8 @@ public sealed partial class App : Application, IDisposable
 
     private FridaySettings? _settings;
 
+    private int _screenTimeTicks;
+
     /// <summary>Her rutinin kısayolu: basınca rutin, adı söylenmiş gibi çalışır; Friday arka plandayken de.</summary>
     private void RegisterRoutineKeys()
     {
@@ -317,6 +319,11 @@ public sealed partial class App : Application, IDisposable
             if (_window is { IsVisible: true, WindowState: not WindowState.Minimized } && (panel.IsRhythm || panel.IsToday))
             {
                 panel.TickRhythm(rhythm.Snapshot());
+                // Ekran süresi kartı yarım dakikada bir tazelenir (sayaç 15 sn'de bir sayar).
+                if (panel.IsToday && ++_screenTimeTicks % 30 == 1 && tools.Activity is { } activity)
+                {
+                    panel.ShowScreenTime(activity.Day(DateTime.Now));
+                }
             }
         };
         _rhythmClock.Start();
