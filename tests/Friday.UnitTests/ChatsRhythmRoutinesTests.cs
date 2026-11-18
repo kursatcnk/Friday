@@ -367,6 +367,18 @@ public class SettingsMigrationTests
         Assert.DoesNotContain("toplantı modu", settings.Routines.Keys);
         Assert.Equal(20, settings.ConversationMemoryMinutes);
     }
+
+    [Fact]
+    public void TheBrainSwitchPicksTheRightSourceModel()
+    {
+        var settings = new FridaySettings();
+        Assert.Equal(FridaySettings.FastTextModel, settings.OllamaModel);
+        Assert.Equal("gemma4:e4b", settings.TextModelSource());
+
+        settings.OllamaModel = FridaySettings.SmartTextModel;
+        Assert.Equal("gemma4:12b", settings.TextModelSource());
+        Assert.Equal("gemma4:e4b", settings.VisionModel);
+    }
 }
 
 public class UpdateCheckTests

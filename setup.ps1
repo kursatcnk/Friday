@@ -10,13 +10,16 @@
   D:\Friday\models\whisper   Whisper (yalnızca D:\LinguaFlowModels'te yoksa iner)
   D:\Friday\models\wakeword  "Hey Friday" uyandırma kelimesi (openWakeWord özellikleri ~2,4 MB + Friday'in modeli)
 
+  -Smart              "Akıllı" mod için Gemma 4 12B'yi de indirir (7,5 GB). Ayarlar › Akıl ve performans › Akıllı ile
+                      açılır; görme için küçük model yine kalır.
   -Restore yedek.zip  Panelden ("Ayarlar › Verilerin › Yedekle") ya da uninstall.ps1 ile alınan yedeği geri koyar; Friday ilk
                       açılışta ayarları, hafızayı, sohbetleri ve hatırlatmaları yerine yerleştirir.
 #>
 param(
     [string]$FridayHome = $(if ($env:FRIDAY_HOME) { $env:FRIDAY_HOME } else { 'D:\Friday' }),
     [string]$Model = 'gemma4:e4b',
-    [string]$Restore = ''
+    [string]$Restore = '',
+    [switch]$Smart
 )
 
 $ErrorActionPreference = 'Stop'
@@ -127,6 +130,10 @@ try {
 
     & $ollamaExe pull $Model
     if ($LASTEXITCODE -ne 0) { throw "Model indirilemedi: $Model" }
+    if ($Smart) {
+        & $ollamaExe pull 'gemma4:12b'
+        if ($LASTEXITCODE -ne 0) { throw "Model indirilemedi: gemma4:12b" }
+    }
 } finally {
     Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
 }

@@ -198,6 +198,7 @@ public sealed partial class App : Application, IDisposable
             OpenLogs = () => Open(paths.Logs),
             CheckForUpdate = () => UpdateCheck.CheckAsync(_http!, typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0), ledger, CancellationToken.None),
             PiperVoices = PiperVoices(paths),
+            SmartModelInstalled = SmartModelInstalled(paths, settings),
             BackupData = () => BackupData(paths, ledger),
             TestCalendar = url => tools.Calendar.TestAsync(url, CancellationToken.None),
             AddTodo = text => todos.Add(text, DateTime.Now),
@@ -507,6 +508,14 @@ public sealed partial class App : Application, IDisposable
         ];
         items.AddRange(ideas.Select(text => new QuickAskItem("\uE945", text, "Komut")));
         return items;
+    }
+
+    /// <summary>Akıllı mod modelinin (ör. gemma4:12b) Ollama model klasöründe kurulu olup olmadığı.</summary>
+    private static bool SmartModelInstalled(FridayPaths paths, FridaySettings settings)
+    {
+        var parts = settings.SmartModel.Split(':', 2);
+        var name = parts[0].Contains('/', StringComparison.Ordinal) ? parts[0] : $"library/{parts[0]}";
+        return File.Exists(Path.Combine(paths.OllamaModels, "manifests", "registry.ollama.ai", name.Replace('/', '\\'), parts.Length > 1 ? parts[1] : "latest"));
     }
 
     private static IReadOnlyList<VoiceOption> PiperVoices(FridayPaths paths)

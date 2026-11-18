@@ -122,6 +122,9 @@ public sealed class PanelActions
 
     public IReadOnlyList<VoiceOption> PiperVoices { get; init; } = [];
 
+    /// <summary>Akıllı mod için büyük model bu bilgisayarda var mı?</summary>
+    public bool SmartModelInstalled { get; init; }
+
     /// <summary>Kişisel verileri zip olarak yedekler (dosya seçtirir); sonucu anlatan cümle, vazgeçilirse null.</summary>
     public Func<string?> BackupData { get; init; } = () => null;
 
@@ -478,7 +481,7 @@ public sealed partial class PanelViewModel : ObservableObject
     private bool _morningEnabled = true;
 
     public string ModelSummary =>
-        $"Sohbet: {_settings.OllamaModel} · Görme: {_settings.VisionModel} (yalnızca ekrana bakarken). " +
+        $"Sohbet: {(_settings.OllamaModel == FridaySettings.SmartTextModel ? _settings.SmartModel : _settings.VisionModel)} · Görme: {_settings.VisionModel} (yalnızca ekrana bakarken). " +
         $"{_settings.GpuIdleMinutes} dk boşta kalınca dil modeli, Whisper ve Piper kapanır; GPU ve RAM boşalır, Friday boşta ~60 MB kullanır. " +
         "Kalıbı belli komutlar (saat, hava, döviz, müzik, zamanlayıcı, uygulama) dil modeline gitmeden yarım saniyede cevaplanır.";
 

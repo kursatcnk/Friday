@@ -373,10 +373,20 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ================= Performans ================= -->
+                <!-- ================= Akıl ve performans ================= -->
                 <Border Style="{StaticResource SettingsCard}">
                     <StackPanel>
-                        <TextBlock Text="Performans" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+                        <TextBlock Text="Akıl ve performans" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Akıl" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Hızlı · E4B" IsChecked="{Binding BrainFast}"/>
+                                    <RadioButton Style="{StaticResource SegmentOption}" Content="Akıllı · 12B" IsChecked="{Binding BrainSmart}" IsEnabled="{Binding CanUseSmartBrain}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding BrainHint}" Margin="150,2,0,16"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="Ekran kartını boşalt" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Width="150"/>
                             <Border Style="{StaticResource SegmentTrack}">

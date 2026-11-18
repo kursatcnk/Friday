@@ -75,6 +75,21 @@ public sealed class FridaySettings
     public string VisionModel { get; set; } = "gemma4:e4b";
 
     /// <summary>
+    /// "Akıllı" mod için büyük model (Gemma 4 12B, 7,5 GB). Ayarlarda "Akıl: Akıllı" seçilince sohbet modeli bundan
+    /// üretilen görmesiz "friday-smart" olur; "Hızlı" seçilince küçük "friday-text"e dönülür.
+    /// </summary>
+    public string SmartModel { get; set; } = "gemma4:12b";
+
+    /// <summary>Akıllı modun sohbet modeli adı.</summary>
+    public const string SmartTextModel = "friday-smart";
+
+    /// <summary>Hızlı modun sohbet modeli adı.</summary>
+    public const string FastTextModel = "friday-text";
+
+    /// <summary>Sohbet modelinin üretildiği asıl model: akıllı modda büyük model, hızlıda görme modeli.</summary>
+    public string TextModelSource() => OllamaModel == SmartTextModel ? SmartModel : VisionModel;
+
+    /// <summary>
     /// Bu kadar dakika kullanılmazsa dil modeli, Whisper ve Piper kapanır: VRAM 0'a iner, dil modelinin ~3 GB'lık RAM
     /// payı da boşalır. Yeniden yükleme ~3 sn sürer ve kullanıcı konuşurken biter.
     /// </summary>

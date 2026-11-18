@@ -81,6 +81,9 @@ public sealed class FridayAssistant : IDisposable
     /// </summary>
     private Task _brainReady = Task.CompletedTask;
 
+    /// <summary>GPU'ya yüklenmiş sohbet modeli (Hızlı ↔ Akıllı geçişinde eskisi boşaltılır).</summary>
+    private string _loadedModel = "";
+
     public FridayAssistant(
         FridayPaths paths,
         MicrophoneRecorder microphone,
@@ -130,6 +133,14 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Panelden ayarlar kaydedilince ses motorunu ve uyandırma kelimesini yeni ayarlarla kurar.</summary>
     public void ApplySettings()
     {
+        if (_settings.OllamaModel != _loadedModel && _brainReady.IsCompleted)
+        {
+            // Akıl değişti (Hızlı ↔ Akıllı): eski model GPU'dan çıkar, yenisi arkada hazırlanır.
+            var previous = _loadedModel;
+            _brainReady = SwitchBrainAsync(previous, _settings.OllamaModel);
+            _tools.BrainReady = _brainReady;
+        }
+
         _memory.Expiry = TimeSpan.FromMinutes(Math.Max(1, _settings.ConversationMemoryMinutes));
         _tools.Calendar.Configure(_settings.CalendarUrl);
         _tools.Clipboard.Enable(_settings.ClipboardHistory);
@@ -280,7 +291,7 @@ public sealed class FridayAssistant : IDisposable
         try
         {
             await _ollama.EnsureRunningAsync(settings.OllamaPort, cancellationToken).ConfigureAwait(false);
-            await _ollama.EnsureTextModelAsync(settings.OllamaModel, settings.VisionModel, cancellationToken).ConfigureAwait(false);
+            await _ollama.EnsureTextModelAsync(settings.OllamaModel, settings.TextModelSource(), cancellationToken).ConfigureAwait(false);
             try
             {
                 await voiceReady.ConfigureAwait(false);
@@ -291,6 +302,7 @@ public sealed class FridayAssistant : IDisposable
             }
 
             await _chat.WarmUpAsync(settings.OllamaModel, cancellationToken).ConfigureAwait(false);
+            _loadedModel = settings.OllamaModel;
             FridayLog.Info($"Dil modeli hazır ({clock.Elapsed.TotalSeconds:0.0} sn)");
             lock (_gate)
             {
@@ -306,6 +318,38 @@ public sealed class FridayAssistant : IDisposable
         {
             // Soru geldiğinde EnsureRunningAsync yeniden dener ve hatayı kullanıcıya söyler.
             FridayLog.Error("Dil modeli hazırlanamadı", exception);
+        }
+    }
+
+    /// <summary>Sohbet modeli Hızlı ↔ Akıllı arasında değişti.</summary>
+    private async Task SwitchBrainAsync(string previous, string next)
+    {
+        var clock = Stopwatch.StartNew();
+        try
+        {
+            if (previous.Length > 0)
+            {
+                await _chat.UnloadAsync(previous, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            await _ollama.EnsureRunningAsync(_settings.OllamaPort, CancellationToken.None).ConfigureAwait(false);
+            await _ollama.EnsureTextModelAsync(next, _settings.TextModelSource(), CancellationToken.None).ConfigureAwait(false);
+            await _chat.WarmUpAsync(next, CancellationToken.None).ConfigureAwait(false);
+            _loadedModel = next;
+            FridayLog.Info($"Sohbet modeli {next} oldu ({clock.Elapsed.TotalSeconds:0.0} sn)");
+            lock (_gate)
+            {
+                if (State != AssistantState.Idle)
+                {
+                    return;
+                }
+            }
+
+            Report(AssistantState.Idle, $"{ReadyText} · {(next == FridaySettings.SmartTextModel ? "akıllı mod" : "hızlı mod")}");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or IOException or TimeoutException)
+        {
+            FridayLog.Error($"Sohbet modeli {next} hazırlanamadı", exception);
         }
     }
 

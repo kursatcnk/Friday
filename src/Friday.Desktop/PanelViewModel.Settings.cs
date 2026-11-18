@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Friday.Core;
 using Friday.Infrastructure;
 
 namespace Friday.Desktop;
@@ -30,6 +31,19 @@ public sealed partial class PanelViewModel
 
     [ObservableProperty]
     private bool _clipboardHistoryEnabled;
+
+    [ObservableProperty]
+    private bool _brainFast = true;
+
+    [ObservableProperty]
+    private bool _brainSmart;
+
+    /// <summary>Büyük model kurulu değilse "Akıllı" seçeneği kapalıdır.</summary>
+    public bool CanUseSmartBrain => _actions.SmartModelInstalled;
+
+    public string BrainHint => _actions.SmartModelInstalled
+        ? "Hızlı: Gemma 4 E4B, kısa cevaplar ~0,3 sn. Akıllı: Gemma 4 12B, niyeti ve bağlamı çok daha iyi anlar; kısa cevaplar ~0,5–1 sn, ekran kartında ~3 GB fazla yer kaplar."
+        : "Akıllı mod için Gemma 4 12B gerekir (7,5 GB, D:\\Friday\\models). Kurmak için: setup.ps1 -Smart";
 
     [ObservableProperty]
     private bool _habitSuggestionsEnabled = true;
@@ -335,6 +349,7 @@ public sealed partial class PanelViewModel
         _settings.AddressAs = AddressAs.Trim();
         _settings.CalendarUrl = CalendarUrl.Trim();
         _settings.ClipboardHistory = ClipboardHistoryEnabled;
+        _settings.OllamaModel = BrainSmart && _actions.SmartModelInstalled ? FridaySettings.SmartTextModel : FridaySettings.FastTextModel;
         _settings.HabitSuggestions = HabitSuggestionsEnabled;
         _settings.AmbientVolume = AmbientLow ? 0.12 : AmbientHigh ? 0.45 : 0.25;
 
@@ -425,6 +440,8 @@ public sealed partial class PanelViewModel
         AddressAs = _settings.AddressAs;
         CalendarUrl = _settings.CalendarUrl;
         ClipboardHistoryEnabled = _settings.ClipboardHistory;
+        BrainSmart = _settings.OllamaModel == FridaySettings.SmartTextModel;
+        BrainFast = !BrainSmart;
         HabitSuggestionsEnabled = _settings.HabitSuggestions;
         AmbientLow = _settings.AmbientVolume < 0.18;
         AmbientHigh = _settings.AmbientVolume > 0.35;
