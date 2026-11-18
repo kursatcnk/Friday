@@ -11,6 +11,12 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
 | **Sohbetler** | Her konuşma ayrı bir sohbet olarak saklanır; başlığı ilk sorudan kendiliğinden çıkar. Sol listede Bugün, Dün, Bu hafta diye gruplanır; sabitle, yeniden adlandır, Markdown olarak kaydet ya da sil. Bütün sohbetlerde arama yapılır ("istanbul" yazınca "İstanbul" geçenler de bulunur). Eski bir sohbeti açıp kaldığı yerden sürdürebilirsin; Friday o sohbetin bağlamıyla devam eder. "Yeni sohbet", "konuyu değiştirelim" ya da "sohbeti temizle" demen de yeter. Bir süre konuşmazsan (varsayılan 30 dk) sonraki soru kendiliğinden yeni bir sohbet olur. |
 | **Hızlı komut kutusu** | **Ctrl+Alt+Space** ile her yerden küçük bir kutu açılır (Raycast ya da Spotlight gibi): yaz, Enter'a bas, kutu kapanır, cevap köşede görünür ve okunur. Yazdıkça rutinlerin, son sorduğun şeyler ve hazır komutlar süzülür; ok tuşlarıyla seç, Tab ile tamamla. |
+| **Yapılacaklar** | "Yapılacaklara ekle: faturayı öde", "yapılacaklarım neler", "faturayı ödedim" (listede eşleşeni bulup tamamlar). Bugün ekranında işaretlenebilir bir liste ve yeni iş kutusu var. |
+| **Tekrarlayan hatırlatmalar** | "Her gün 9'da ilacımı hatırlat", "hafta içi her gün 18'de spora gitmeyi hatırlat", "her pazartesi 10'da toplantıyı hatırlat". Sabah/akşam denmezse "9'da" sabah dokuzdur. |
+| **Ortam sesleri** | "Yağmur sesi aç", "30 dakika beyaz gürültü aç", "dalga / şömine / rüzgâr sesi aç". Sesler dosya değil, o an bilgisayarda üretilir; Friday dinlerken ve konuşurken kısılır, süre dolunca yavaşça kapanır. "Odak modu" şablonu yağmurla başlar. |
+| **Alışkanlıklar** | Birkaç gündür aynı saatlerde açtığın bir rutini ya da uygulamayı o saat gelince önerir ("Genelde bu saatlerde çalışma modu rutinini çalıştırıyorsun. Çalıştırayım mı?") ve cevabını dinler. Ayarlardan kapatılır. |
+| **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
+| **Küçük ama işe yarar** | "100 dolar kaç lira", "250 euro kaç dolar" (güncel kurla), "Discord'u kapat", "bu pencereyi kapat", "tekrar et" / "ne dedin". |
 | **Araştırma raporu** | "Yerel sesli asistanlar hakkında rapor hazırla" ya da "elektrikli arabaları araştır": Friday arka planda arar, en iyi dört sayfayı okur, yerel modelle kaynaklı bir rapor yazar (`D:\Friday\data\reports`, Markdown). Sen işine devam edersin; hazır olunca özetini söyler, "raporu aç" deyince açar. |
 | **Takvim** | Google ya da Outlook takviminin gizli iCal adresini Ayarlar › Takvim'e yapıştır: "bugün neler var", "yarın programım ne", "bu hafta neler var", "sıradaki toplantım ne". Etkinlikten 10 dk önce haber verir; sabah karşılaması ve Bugün ekranı etkinlikleri de gösterir. Tekrarlayan etkinlikler desteklenir. |
 | **İndirilenler'i düzenle** | "İndirilenleri düzenle" önce ne yapacağını söyler ("52 belge, 40 resim ve 12 video var, klasörlere ayırayım mı?"); "evet" deyince Belgeler, Resimler, Videolar, Müzik, Arşivler, Kurulumlar klasörlerine taşır. Yarım indirmelere ve yeni dosyalara dokunmaz. "Düzenlemeyi geri al" her şeyi eski yerine koyar. |
@@ -64,7 +70,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 36 araç, nöbetçiler, takvim, araştırma raporu, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 37 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -244,6 +250,8 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `GpuIdleMinutes` | `2` | Bu kadar boşta kalınca dil modeli, Whisper ve Piper kapanır (GPU ve RAM boşalır) |
 | `City` | `İstanbul` | Hava durumunda şehir söylenmezse |
 | `CalendarUrl` | boş | Takvimin gizli iCal (.ics) adresi; boşsa takvim kapalı |
+| `HabitSuggestions` / `ClipboardHistory` | `true` / `false` | Alışkanlık önerileri; pano geçmişi (yalnızca bellekte) |
+| `AmbientVolume` | `0.25` | Ortam seslerinin düzeyi (0–1) |
 | `KeepHistory` | `true` | Sohbetleri `D:\Friday\data\chats` altında sakla |
 | `LinguaFlowPath` | LinguaFlow yayını | "Bu videoyu çevir" komutu |
 | `Routines` | çalışma modu, günaydın, mola, toplantı modu, iyi geceler | Panelden düzenlenir. Adımlar: `uygulama:`, `site:`, `ara:`, `medya:`, `ses:30`, `soyle:`, `ozet`, `ritim:odak 25`, `hatirlat:5 dakika sonra\|çay`, `bekle:3`, `linguaflow` |
@@ -258,6 +266,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
 - "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur. "Gündem ne" haber akışını (TRT Haber) indirir; bu da deftere yazılır.
 - Araştırma raporu arama motoruna yalnızca konuyu gönderir, sayfaları okur ve raporu yerel modelle yazar; her sayfa deftere yazılır. Takvim adresi yalnızca `settings.json`'da durur, takvim 15 dk'da bir okunur.
+- Pano geçmişi varsayılan kapalıdır; açılırsa metinler yalnızca bellekte tutulur ve Friday kapanınca silinir. Alışkanlık kaydı (`habits.json`) yalnızca hangi rutinin ya da uygulamanın ne zaman açıldığını tutar, 30 günden eskisini siler.
 - Seçili metin komutları seçimi Ctrl+C ile alır, yerel modelde işler ve panonun eski içeriğini geri koyar. Dikte sesi kaydetmez; yazılan metin sohbete de yazılmaz.
 
 ## Geliştirme
