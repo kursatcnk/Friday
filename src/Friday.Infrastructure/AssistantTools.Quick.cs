@@ -8,7 +8,11 @@ namespace Friday.Infrastructure;
 /// Hızlı yolun cevabı. Sessiz cevaplar (müziği durdurmak gibi) okunmaz, yalnızca ekranda görünür; Script varsa (nefes
 /// egzersizi) cümleler aralarında beklenerek tek tek okunur.
 /// </summary>
-public sealed record QuickReply(string Text, bool Silent = false, IReadOnlyList<CoachStep>? Script = null);
+public sealed record QuickReply(string Text, bool Silent = false, IReadOnlyList<CoachStep>? Script = null)
+{
+    /// <summary>Kapsülün üstünde gösterilecek kart (hava, döviz, durum raporu…); yoksa null.</summary>
+    public AnswerCard? Card { get; init; }
+}
 
 /// <summary>"Bugün" ekranındaki hava özeti.</summary>
 public sealed record WeatherCard(string Place, int Temperature, string Description, int Max, int Min, int RainChance);
@@ -38,9 +42,10 @@ public sealed partial class AssistantTools
     public async Task<QuickReply?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
     {
         string Arg(string key) => quick.Arguments.TryGetValue(key, out var value) ? value : "";
+        _ = TakeCard();
         try
         {
-            return quick.Tool switch
+            var reply = quick.Tool switch
             {
                 "saat_ve_tarih" => new QuickReply(Arg("odak") == "tarih"
                     ? $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}."
@@ -64,8 +69,13 @@ public sealed partial class AssistantTools
                 "kronometre" => StopwatchCommand(Arg("islem")),
                 "ozel_komut" => AddCustomCommand(Arg("ifade"), Arg("adim")),
                 "tetik" => await TriggerReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
+                "secili" => await SelectionAsync(Arg("islem"), Arg("dil"), cancellationToken).ConfigureAwait(false),
+                "yaz" => TypeText(Arg("metin")),
+                "pencere" => WindowCommand(Arg("islem")),
+                "haber" => await NewsAsync(Arg("kategori"), cancellationToken).ConfigureAwait(false),
                 _ => null
             };
+            return reply is not null && TakeCard() is { } card ? reply with { Card = card } : reply;
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
         {
@@ -80,6 +90,8 @@ public sealed partial class AssistantTools
         {
             return $"{(string.IsNullOrWhiteSpace(city) ? Settings.City : city)} diye bir yer bulamadım.";
         }
+
+        ShowWeatherCard(forecast, focus);
 
         var where = TurkishGrammar.Locative(forecast.Place);
         static string Degrees(double value) => Math.Round(value).ToString(CultureInfo.InvariantCulture);
@@ -192,7 +204,8 @@ public sealed partial class AssistantTools
 
     private async Task<string> CurrencySpeechAsync(string currency, CancellationToken cancellationToken)
     {
-        var (rates, _) = await GetRatesAsync().ConfigureAwait(false);
+        var (rates, source) = await GetRatesAsync().ConfigureAwait(false);
+        ShowRatesCard(rates, CurrencyCodes(currency), source);
         var parts = CurrencyCodes(currency)
             .Where(rates.ContainsKey)
             .Select(code => $"{CurrencyLabel(code)} {rates[code].ToString(rates[code] >= 10 ? "0.00" : "0.000", Turkish)} lira")

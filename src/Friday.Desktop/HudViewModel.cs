@@ -37,6 +37,12 @@ public sealed partial class HudViewModel : ObservableObject
         ["doviz"] = "\uE825",
         ["video_ac"] = "\uE714",
         ["ritim"] = "\uE9D9",
+        ["durum_raporu"] = "\uE950",
+        ["nobet"] = "\uE7B3",
+        ["sistem"] = "\uE7F8",
+        ["haber"] = "\uE789",
+        ["secili"] = "\uE8AC",
+        ["pencere"] = "\uE737",
     };
 
     [ObservableProperty]
@@ -60,6 +66,13 @@ public sealed partial class HudViewModel : ObservableObject
 
     [ObservableProperty]
     private string _toolGlyph = "";
+
+    /// <summary>Cevabın görsel kartı (hava, durum raporu, döviz…); yoksa null.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCard))]
+    private AnswerCard? _card;
+
+    public bool HasCard => Card is not null;
 
     public bool HasUserText => UserText.Length > 0;
 
@@ -101,6 +114,7 @@ public sealed partial class HudViewModel : ObservableObject
         UserText = "";
         Caption = "";
         ToolLabel = "";
+        Card = null;
     }
 
     public void SetReply(string text) =>

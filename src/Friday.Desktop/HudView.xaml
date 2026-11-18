@@ -9,7 +9,76 @@
     </UserControl.Resources>
 
     <!-- Gölge için kenar boşluğu bırakılır. -->
-    <Grid Margin="28,18,28,30">
+    <StackPanel Margin="28,18,28,30">
+        <!-- Cevabın görsel kartı: hava, durum raporu, döviz, hatırlatmalar… -->
+        <Border CornerRadius="22" BorderThickness="1" Margin="0,0,0,10" Visibility="{Binding HasCard, Converter={StaticResource Visible}}">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#F01C1C1F" Offset="0"/>
+                    <GradientStop Color="#F2111113" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#30FFFFFF" Offset="0"/>
+                    <GradientStop Color="#0AFFFFFF" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="34" ShadowDepth="8" Direction="270" Opacity="0.45" Color="#000000"/>
+            </Border.Effect>
+            <StackPanel DataContext="{Binding Card}" Margin="22,16,22,18">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding HasBig, Converter={StaticResource Visible}}">
+                    <TextBlock Text="{Binding Big}" FontFamily="{StaticResource DisplayFont}" FontSize="44" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}" Typography.NumeralAlignment="Tabular"/>
+                    <TextBlock Text="{Binding BigCaption}" FontSize="14" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Bottom" Margin="14,0,0,11"/>
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Gauges}" Margin="0,10,0,0" Visibility="{Binding HasGauges, Converter={StaticResource Visible}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="104"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" FontSize="12.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                                <Grid Grid.Column="1" Height="6" VerticalAlignment="Center">
+                                    <Border CornerRadius="3" Background="#24FFFFFF"/>
+                                    <Border CornerRadius="3" RenderTransformOrigin="0,0.5" Background="{StaticResource SpeakingBrush}">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="{Binding Value}"/>
+                                        </Border.RenderTransform>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Column="2" Text="{Binding Text}" FontSize="12.5" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"
+                                           VerticalAlignment="Center" Typography.NumeralAlignment="Tabular"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding Rows}" Margin="0,8,0,0" Visibility="{Binding HasRows, Converter={StaticResource Visible}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" FontSize="13.5" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" LineHeight="19"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="16,0,0,0"
+                                           VerticalAlignment="Top" Typography.NumeralAlignment="Tabular"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
         <Border CornerRadius="26" BorderThickness="1">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -68,5 +137,5 @@
                 </StackPanel>
             </Grid>
         </Border>
-    </Grid>
+    </StackPanel>
 </UserControl>

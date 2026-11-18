@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Friday.Infrastructure;
 
 namespace Friday.Desktop;
 
@@ -112,6 +113,24 @@ public sealed partial class PanelViewModel
     private string _updateMessage = "";
 
     [ObservableProperty]
+    private string _maintenanceMessage = "";
+
+    [ObservableProperty]
+    private bool _needsRestart;
+
+    [ObservableProperty]
+    private bool _isConfirmingReclaim;
+
+    [ObservableProperty]
+    private string _reclaimQuestion = "";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ScanReclaimCommand), nameof(ConfirmReclaimCommand))]
+    private bool _isWorking;
+
+    private IReadOnlyList<ReclaimItem> _reclaimItems = [];
+
+    [ObservableProperty]
     private bool _hasUpdate;
 
     [ObservableProperty]
@@ -168,6 +187,84 @@ public sealed partial class PanelViewModel
 
     [RelayCommand]
     private void OpenLogs() => _actions.OpenLogs();
+
+    [RelayCommand]
+    private void Backup()
+    {
+        if (_actions.BackupData() is { } message)
+        {
+            MaintenanceMessage = message;
+        }
+    }
+
+    [RelayCommand]
+    private void Restore()
+    {
+        if (_actions.RestoreData() is { } message)
+        {
+            MaintenanceMessage = message;
+            NeedsRestart = message.StartsWith("Yedek hazır", StringComparison.Ordinal);
+        }
+    }
+
+    [RelayCommand]
+    private void RestartNow() => _actions.Restart();
+
+    private bool CanMaintain() => !IsWorking;
+
+    /// <summary>Silinebilecek klasörleri bulur ve onay ister.</summary>
+    [RelayCommand(CanExecute = nameof(CanMaintain))]
+    private async Task ScanReclaimAsync()
+    {
+        IsWorking = true;
+        MaintenanceMessage = "Bakıyorum…";
+        try
+        {
+            _reclaimItems = await _actions.ScanReclaimable().ConfigureAwait(true);
+        }
+        finally
+        {
+            IsWorking = false;
+        }
+
+        if (_reclaimItems.Count == 0)
+        {
+            MaintenanceMessage = "Silinebilecek fazlalık yok; her şey kullanılıyor.";
+            return;
+        }
+
+        var total = _reclaimItems.Sum(item => item.Bytes);
+        ReclaimQuestion = $"{DataMaintenance.Describe(total)} açılabilir: " +
+                          string.Join(", ", _reclaimItems.Select(item => $"{item.Label} {DataMaintenance.Describe(item.Bytes)}")) +
+                          ". Kişisel verilerine dokunulmaz. Silinsin mi?";
+        MaintenanceMessage = "";
+        IsConfirmingReclaim = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMaintain))]
+    private async Task ConfirmReclaimAsync()
+    {
+        IsConfirmingReclaim = false;
+        IsWorking = true;
+        MaintenanceMessage = "Siliniyor…";
+        try
+        {
+            var freed = await _actions.Reclaim(_reclaimItems).ConfigureAwait(true);
+            MaintenanceMessage = $"{DataMaintenance.Describe(freed)} yer açıldı.";
+        }
+        finally
+        {
+            IsWorking = false;
+            _reclaimItems = [];
+        }
+    }
+
+    [RelayCommand]
+    private void CancelReclaim()
+    {
+        IsConfirmingReclaim = false;
+        _reclaimItems = [];
+    }
 
     [RelayCommand]
     private async Task CheckUpdateAsync()

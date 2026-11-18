@@ -58,6 +58,11 @@ public sealed partial class AssistantTools(
         ["kronometre"] = "Kronometreye bakıyorum",
         ["ozel_komut"] = "Komutu öğreniyorum",
         ["tetik"] = "Komutunu çalıştırıyorum",
+        ["secili"] = "Seçili metinle çalışıyorum",
+        ["yaz"] = "Yazıyorum",
+        ["pencere"] = "Pencereyi yerleştiriyorum",
+        ["haber"] = "Haberlere bakıyorum",
+        ["haberler"] = "Haberlere bakıyorum",
         ["hatirlatici"] = "Hatırlatıcıya bakıyorum",
         ["not"] = "Not defterine bakıyorum",
         ["hesap"] = "Hesaplıyorum",
@@ -143,6 +148,10 @@ public sealed partial class AssistantTools(
              ("dakika", "number", "kapat için kaç dakika sonra (en az 1)", false)]),
         Tool("nobet", "Bir şey olunca haber vermek için bekler: indirme bitince, bilgisayar boşa çıkınca (render, derleme, kurulum bitti), internet gelince ya da ekran kartı sıcaklığı sınırı geçince. Bekleyenleri listeler ya da iptal eder.",
             [("islem", "string", "indirme, bosta, internet, gpu, liste ya da iptal", true), ("derece", "number", "gpu için sıcaklık sınırı", false)]),
+        Tool("haberler", "Güncel haber başlıklarını getirir (gündem, spor, ekonomi, teknoloji, dünya). 'Bugün neler oldu', 'gündemde ne var' için.",
+            [("kategori", "string", "gundem, spor, ekonomi, teknoloji ya da dunya", false)]),
+        Tool("pencere", "Kullanıcının etkin penceresini yerleştirir: sola ya da sağa yaslar, tam ekran yapar, küçültür ya da son iki pencereyi yan yana koyar.",
+            [("islem", "string", "sol, sag, buyut, kucult ya da bol", true)]),
     ];
 
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
@@ -172,6 +181,8 @@ public sealed partial class AssistantTools(
                 "durum_raporu" => (await StatusReportAsync(cancellationToken).ConfigureAwait(false)).Text,
                 "bilgisayar" => SystemCommand(Argument(call, "islem"), Argument(call, "dakika")).Text,
                 "nobet" => (await WatchCommandAsync(Argument(call, "islem"), Argument(call, "derece"), cancellationToken).ConfigureAwait(false)).Text,
+                "haberler" => (await NewsAsync(Argument(call, "kategori"), cancellationToken).ConfigureAwait(false)).Text,
+                "pencere" => WindowCommand(Argument(call, "islem")).Text,
                 "linguaflow" => await LinguaFlowAsync(Argument(call, "islem"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => await OpenVideoAsync(Argument(call, "arama"), cancellationToken).ConfigureAwait(false),
                 "doviz" => await ExchangeRatesAsync(Argument(call, "birim"), cancellationToken).ConfigureAwait(false),

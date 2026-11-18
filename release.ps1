@@ -27,7 +27,7 @@ dotnet publish (Join-Path $PSScriptRoot 'src\Friday.Desktop\Friday.Desktop.cspro
     -p:Version=$Version -p:DebugType=none -o (Join-Path $stage 'app') --nologo
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Copy-Item (Join-Path $PSScriptRoot 'setup.ps1'), (Join-Path $PSScriptRoot 'setup-xtts.ps1'), (Join-Path $PSScriptRoot 'LICENSE'), (Join-Path $PSScriptRoot 'README.md') $stage
+Copy-Item (Join-Path $PSScriptRoot 'setup.ps1'), (Join-Path $PSScriptRoot 'setup-xtts.ps1'), (Join-Path $PSScriptRoot 'uninstall.ps1'), (Join-Path $PSScriptRoot 'LICENSE'), (Join-Path $PSScriptRoot 'README.md') $stage
 New-Item -ItemType Directory -Force (Join-Path $stage 'models\wakeword') | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'models\wakeword\*.onnx') (Join-Path $stage 'models\wakeword')
 Set-Content -Path (Join-Path $stage 'BAŞLA.txt') -Encoding utf8 -Value @"

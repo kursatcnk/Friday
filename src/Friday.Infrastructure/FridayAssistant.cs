@@ -66,6 +66,9 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>"Teşekkürler", "bu kadar": devam sorusu beklenmez, konuşma biter.</summary>
     private bool _endConversation;
 
+    /// <summary>"Dikte modu": bu turdan sonra söylenenler etkin pencereye yazılır.</summary>
+    private bool _dictation;
+
     /// <summary>
     /// Dil modelinin hazırlığı (sunucu, model, GPU'ya yükleme). Modeller yavaş bir diskteyse ilk açılışta bir dakikayı
     /// bulabilir; Friday bunu beklemeden hazır olur, hızlı komutlar hemen çalışır, modele giden soru hazırlığın bitmesini bekler.
@@ -206,6 +209,9 @@ public sealed class FridayAssistant : IDisposable
 
     /// <summary>Bir araç çalışmaya başladı (araç adı).</summary>
     public event EventHandler<string>? ToolStarted;
+
+    /// <summary>Cevabın görsel kartı (hava, döviz, durum raporu…); kapsülün üstünde gösterilir.</summary>
+    public event EventHandler<AnswerCard>? CardShown;
 
     /// <summary>Mikrofona gelen sesin seviyesi (0–1).</summary>
     public event EventHandler<float>? MicrophoneLevel
@@ -441,6 +447,11 @@ public sealed class FridayAssistant : IDisposable
             if (typed is not null)
             {
                 await AskAsync(typed, cancellationToken).ConfigureAwait(false);
+                if (_dictation)
+                {
+                    await DictationAsync(stopListening, cancellationToken).ConfigureAwait(false);
+                }
+
                 return;
             }
 
@@ -455,6 +466,12 @@ public sealed class FridayAssistant : IDisposable
                 }
 
                 await AskAsync(text, cancellationToken).ConfigureAwait(false);
+                if (_dictation)
+                {
+                    await DictationAsync(stopListening, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
                 if (_settings.FollowUpSeconds <= 0 || stopListening.IsCancellationRequested || _endConversation)
                 {
                     _endConversation = false;
@@ -476,13 +493,14 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <returns>Yazıya dökülmüş konuşma; konuşulmadıysa null.</returns>
-    private async Task<string?> ListenAsync(bool followUp, CancellationToken stopListening, CancellationToken cancellationToken)
+    private async Task<string?> ListenAsync(bool followUp, CancellationToken stopListening, CancellationToken cancellationToken,
+        TimeSpan? wait = null, string? prompt = null)
     {
         var device = _microphone.LastDeviceName.Length > 0 ? $" · {_microphone.LastDeviceName}" : "";
-        Report(AssistantState.Listening, (followUp ? "Devam edebilirsin…" : "Dinliyorum…") + device);
+        Report(AssistantState.Listening, (prompt ?? (followUp ? "Devam edebilirsin…" : "Dinliyorum…")) + device);
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
-        var timeout = followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout;
+        var timeout = wait ?? (followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout);
         var recording = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice, SpeculateAsync)
             .ConfigureAwait(false);
         var audio = recording.Audio;
@@ -537,6 +555,12 @@ public sealed class FridayAssistant : IDisposable
     {
         var call = new ToolCall(quick.Tool, quick.Arguments);
         var clock = Stopwatch.StartNew();
+        if (quick.Tool == "secili")
+        {
+            // Seçili metni yerel dil modeli işler; ilk açılışta model daha yükleniyorsa beklenir.
+            await WaitForBrainAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         var work = _tools.RunQuickAsync(quick, cancellationToken);
         if (!quick.Tentative)
         {
@@ -553,6 +577,11 @@ public sealed class FridayAssistant : IDisposable
         if (await work.ConfigureAwait(false) is not { } reply)
         {
             return null;
+        }
+
+        if (reply.Card is { } card)
+        {
+            CardShown?.Invoke(this, card);
         }
 
         Diagnostics?.Invoke(this, string.Create(CultureInfo.InvariantCulture, $"hızlı yol: {call.Name} {clock.ElapsedMilliseconds} ms"));
@@ -625,6 +654,15 @@ public sealed class FridayAssistant : IDisposable
             return;
         }
 
+        if (command is { Tool: "dikte" })
+        {
+            _dictation = true;
+            Report(AssistantState.Speaking, "Dikte modu");
+            Say("Dikte modu açık. Söylediklerini yazıyorum; bitirince dikte bitti de.");
+            await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         if (command is { Tool: "kapanis" })
         {
             // Teşekküre kısa bir karşılık; devam sorusu beklenmez.
@@ -647,6 +685,7 @@ public sealed class FridayAssistant : IDisposable
         UserSaid?.Invoke(this, text);
         Report(AssistantState.Thinking, "Düşünüyor…");
         _tools.LastUserText = text;
+        _tools.ActiveWindow = _activeWindow;
         _shown = "";
         var chatAtStart = _chats.CurrentId;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
@@ -680,6 +719,41 @@ public sealed class FridayAssistant : IDisposable
 
         await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
         RecordOnlineSpeech();
+        Report(AssistantState.Idle, ReadyText);
+    }
+
+    /// <summary>
+    /// Dikte: her konuşma parçası yazıya dökülüp etkin pencereye yazılır ("yeni satır" Enter, "geri al" Ctrl+Z).
+    /// "Dikte bitti" denince, kısayola basılınca ya da 30 sn konuşulmayınca biter. Söylenenler sohbete yazılmaz.
+    /// </summary>
+    private async Task DictationAsync(CancellationToken stopListening, CancellationToken cancellationToken)
+    {
+        var target = _activeWindow;
+        var written = 0;
+        try
+        {
+            while (!stopListening.IsCancellationRequested)
+            {
+                var text = await ListenAsync(followUp: true, stopListening, cancellationToken, TimeSpan.FromSeconds(30),
+                    written == 0 ? "Dikte · konuş, yazıyorum…" : $"Dikte · {written} parça yazıldı, devam et…").ConfigureAwait(false);
+                if (text is null || QuickIntents.IsDictationEnd(text))
+                {
+                    break;
+                }
+
+                AssistantTools.Dictate(text, target);
+                written++;
+                Show($"Yazıldı: {text}");
+            }
+        }
+        finally
+        {
+            _dictation = false;
+            _ledger.Record(DataFlow.Local, "Dikte", $"{written} parça {target?.Process ?? "etkin pencere"} penceresine yazıldı · ses kaydedilmedi");
+        }
+
+        Say(written == 0 ? "Dikte kapandı." : "Dikte bitti.");
+        await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
         Report(AssistantState.Idle, ReadyText);
     }
 
@@ -812,6 +886,10 @@ public sealed class FridayAssistant : IDisposable
                 }
 
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+                if (_tools.TakeCard() is { } toolCard)
+                {
+                    CardShown?.Invoke(this, toolCard);
+                }
                 _memory.Add(new ChatMessage(ChatRole.Tool, result) { ToolName = call.Name });
 
                 // Nefes egzersizi gibi rehberli metinler aralarında beklenerek okunur; tur burada biter.

@@ -50,6 +50,45 @@ internal static class Snapshot
             Save(desktop, Path.Combine(folder, $"hud-{state.ToString().ToLowerInvariant()}.png"));
         }
 
+        // Görsel kartlı cevaplar.
+        foreach (var (name, question, reply, card) in new (string, string, string, AnswerCard)[]
+                 {
+                     ("hud-card-weather", "Hava nasıl?", "İstanbul'da şu an 15 derece, hava parçalı bulutlu. Gün içinde en yüksek 17 derece; yağmur beklenmiyor.",
+                         new AnswerCard("İstanbul", "")
+                         {
+                             Big = "15°",
+                             BigCaption = "parçalı bulutlu",
+                             Rows = [new CardRow("En yüksek / en düşük", "17° / 9°"), new CardRow("Yağış ihtimali", "%20"), new CardRow("Hissedilen", "13°")]
+                         }),
+                     ("hud-card-status", "Durum raporu", "Durum raporu, patron. İşlemci yüzde 13, bellek yüzde 49, ekran kartı 54 derece. Her şey yolunda.",
+                         new AnswerCard("Durum raporu", "")
+                         {
+                             Gauges =
+                             [
+                                 new CardGauge("İşlemci", 0.13, "%13"), new CardGauge("Bellek", 0.49, "%49"), new CardGauge("Ekran kartı", 0.54, "54°"),
+                                 new CardGauge("C: diski", 0.26, "693 GB boş"), new CardGauge("D: diski", 0.54, "853 GB boş")
+                             ]
+                         }),
+                 })
+        {
+            hud.BeginTurn();
+            hud.State = AssistantState.Speaking;
+            hud.Level = 0.4;
+            hud.UserText = question;
+            hud.SetReply(reply);
+            hud.Card = card;
+            var view = new HudView { DataContext = hud };
+            view.FreezeAnimation(1.1);
+            var desktop = new Grid
+            {
+                Width = 900,
+                Height = 560,
+                Background = new LinearGradientBrush(Color.FromRgb(0x2B, 0x3A, 0x55), Color.FromRgb(0x7A, 0x5C, 0x86), 20)
+            };
+            desktop.Children.Add(new Border { Child = view, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom });
+            Save(desktop, Path.Combine(folder, $"{name}.png"));
+        }
+
         var settings = new FridaySettings { UserName = "Kürşat", AddressAs = "patron" };
         settings.Triggers["baha"] = ["soyle:Baha abi geldiyse çayı tazeleyelim."];
         var now = DateTime.Now;

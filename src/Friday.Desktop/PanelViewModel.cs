@@ -121,6 +121,19 @@ public sealed class PanelActions
     public Func<Task<UpdateInfo>> CheckForUpdate { get; init; } = () => Task.FromResult(new UpdateInfo(false, "", null));
 
     public IReadOnlyList<VoiceOption> PiperVoices { get; init; } = [];
+
+    /// <summary>Kişisel verileri zip olarak yedekler (dosya seçtirir); sonucu anlatan cümle, vazgeçilirse null.</summary>
+    public Func<string?> BackupData { get; init; } = () => null;
+
+    /// <summary>Bir yedeği seçtirir ve sonraki açılışa bekletir; sonucu anlatan cümle, vazgeçilirse null.</summary>
+    public Func<string?> RestoreData { get; init; } = () => null;
+
+    /// <summary>Friday'i kapatıp yeniden açar (geri yükleme için).</summary>
+    public Action Restart { get; init; } = () => { };
+
+    public Func<Task<IReadOnlyList<ReclaimItem>>> ScanReclaimable { get; init; } = () => Task.FromResult<IReadOnlyList<ReclaimItem>>([]);
+
+    public Func<IReadOnlyList<ReclaimItem>, Task<long>> Reclaim { get; init; } = _ => Task.FromResult(0L);
 }
 
 public sealed record VoiceOption(string Name, string Label);
@@ -404,6 +417,10 @@ public sealed partial class PanelViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _followUpLong;
+
+    /// <summary>Sohbet modu: cevaptan sonra 15 sn dinler; "teşekkürler" ya da "bu kadar" deyince biter.</summary>
+    [ObservableProperty]
+    private bool _followUpChat;
 
     [ObservableProperty]
     private string _city = "";
@@ -760,7 +777,7 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings.AzureSpeechRegion = string.IsNullOrWhiteSpace(AzureRegion) ? "westeurope" : AzureRegion.Trim();
         _settings.AzureVoice = VoiceAhmet ? "tr-TR-AhmetNeural" : "tr-TR-EmelNeural";
         _settings.Personality = PersonalityPlain ? "sade" : PersonalityFormal ? "resmi" : "esprili";
-        _settings.FollowUpSeconds = FollowUpOff ? 0 : FollowUpLong ? 7 : 4;
+        _settings.FollowUpSeconds = FollowUpOff ? 0 : FollowUpChat ? 15 : FollowUpLong ? 7 : 4;
         _settings.City = City.Trim();
         _settings.MicrophoneDevice = SelectedMicrophone == "Otomatik" ? "" : SelectedMicrophone;
         _settings.UserName = UserName.Trim();
@@ -794,8 +811,9 @@ public sealed partial class PanelViewModel : ObservableObject
         PersonalityFormal = _settings.Personality == "resmi";
         PersonalityWitty = !PersonalityPlain && !PersonalityFormal;
         FollowUpOff = _settings.FollowUpSeconds <= 0;
-        FollowUpLong = _settings.FollowUpSeconds > 5;
-        FollowUpShort = !FollowUpOff && !FollowUpLong;
+        FollowUpChat = _settings.FollowUpSeconds >= 12;
+        FollowUpLong = _settings.FollowUpSeconds is > 5 and < 12;
+        FollowUpShort = !FollowUpOff && !FollowUpLong && !FollowUpChat;
         City = _settings.City;
         SelectedMicrophone = Microphones.FirstOrDefault(name => _settings.MicrophoneDevice.Length > 0
             && name.Contains(_settings.MicrophoneDevice, StringComparison.OrdinalIgnoreCase)) ?? "Otomatik";

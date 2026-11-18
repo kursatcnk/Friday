@@ -57,17 +57,7 @@ public sealed partial class AssistantTools
             return $"Panodaki metin: {text}";
         }
 
-        var target = string.IsNullOrWhiteSpace(language) ? "İngilizce" : language.Trim();
-        var instruction = operation switch
-        {
-            "ozetle" => "Aşağıdaki metni metnin kendi dilinde kısa ve öz özetle. Yalnızca özeti yaz.",
-            "cevir" => $"Aşağıdaki metni {target} diline çevir. Biçimi koru, yalnızca çeviriyi yaz.",
-            "duzelt" => "Aşağıdaki metindeki yazım, noktalama ve dil bilgisi hatalarını düzelt. Anlamı, dili ve biçimi koru. Yalnızca düzeltilmiş metni yaz.",
-            "resmilestir" => "Aşağıdaki metni aynı dilde, kibar ve profesyonel bir üslupla yeniden yaz (ör. iş e-postası). Yalnızca yeni metni yaz.",
-            "maddele" => "Aşağıdaki metni aynı dilde, kısa madde işaretli bir listeye dönüştür. Yalnızca listeyi yaz.",
-            "acikla" => "Aşağıdaki metni (kod, hata mesajı ya da yazı olabilir) Türkçe, sade ve kısa bir şekilde açıkla.",
-            _ => null
-        };
+        var instruction = ClipboardInstruction(operation, language);
         if (instruction is null)
         {
             return $"Bilinmeyen pano işlemi: {action}";

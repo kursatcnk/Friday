@@ -65,6 +65,8 @@ public sealed partial class AssistantTools
         {
             case "listele":
                 var upcoming = reminders.Upcoming;
+                ShowListCard("Hatırlatmalar", "\uE823", upcoming.Select(item =>
+                    new CardRow(TurkishTime.Describe(item.Due, now), item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı")));
                 return upcoming.Count == 0
                     ? "Kurulu bir hatırlatma yok."
                     : $"{upcoming.Count} hatırlatma var: " + string.Join("; ", upcoming.Take(6).Select(item =>
@@ -109,6 +111,8 @@ public sealed partial class AssistantTools
         }
 
         var recent = all.TakeLast(5).Reverse().ToList();
+        ShowListCard("Notlar", "\uE70B", recent.Select(note =>
+            new CardRow(note.Text, note.Time.Date == DateTime.Today ? note.Time.ToString("HH:mm", Turkish) : note.Time.ToString("d MMM", Turkish))));
         return recent.Count == 1
             ? $"Son notun: {recent[0].Text}."
             : $"Son {recent.Count} notun: " + string.Join("; ", recent.Select(note => note.Text)) + ".";

@@ -20,6 +20,7 @@ public sealed partial class HudWindow : Window
     private const uint ExcludeFromCapture = 0x11;
 
     private readonly TranslateTransform _slide = new();
+    private readonly HudViewModel _viewModel;
     private readonly System.Windows.Threading.DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(3.5) };
     private bool _shown;
 
@@ -35,6 +36,15 @@ public sealed partial class HudWindow : Window
         SizeToContent = SizeToContent.WidthAndHeight;
         Title = "Friday HUD";
         DataContext = viewModel;
+        _viewModel = viewModel;
+        // Kart eklenince kapsül büyür; alt kenar ekranın altında sabit kalsın.
+        SizeChanged += (_, _) =>
+        {
+            if (_shown)
+            {
+                Place();
+            }
+        };
         Content = new HudView { RenderTransform = _slide };
         Opacity = 0;
         _hideTimer.Tick += (_, _) => Disappear();
@@ -65,8 +75,9 @@ public sealed partial class HudWindow : Window
         }
         else if (_shown)
         {
-            // Son cevap bir süre ekranda kalır, sonra kapsül kaybolur.
+            // Son cevap bir süre ekranda kalır, sonra kapsül kaybolur; kart varsa okunacak kadar uzun kalır.
             _hideTimer.Stop();
+            _hideTimer.Interval = TimeSpan.FromSeconds(_viewModel.HasCard ? 10 : 3.5);
             _hideTimer.Start();
         }
     }
@@ -81,13 +92,18 @@ public sealed partial class HudWindow : Window
         _shown = true;
         Show();
         UpdateLayout();
-        var area = SystemParameters.WorkArea;
-        Left = area.Left + ((area.Width - ActualWidth) / 2);
-        Top = area.Bottom - ActualHeight - 12;
+        Place();
 
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(220)) { EasingFunction = ease });
         _slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(26, 0, TimeSpan.FromMilliseconds(260)) { EasingFunction = ease });
+    }
+
+    private void Place()
+    {
+        var area = SystemParameters.WorkArea;
+        Left = area.Left + ((area.Width - ActualWidth) / 2);
+        Top = area.Bottom - ActualHeight - 12;
     }
 
     private void Disappear()

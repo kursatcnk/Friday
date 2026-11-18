@@ -9,10 +9,14 @@
   D:\Friday\models\piper     Türkçe ses modeli
   D:\Friday\models\whisper   Whisper (yalnızca D:\LinguaFlowModels'te yoksa iner)
   D:\Friday\models\wakeword  "Hey Friday" uyandırma kelimesi (openWakeWord özellikleri ~2,4 MB + Friday'in modeli)
+
+  -Restore yedek.zip  Panelden ("Ayarlar › Verilerin › Yedekle") ya da uninstall.ps1 ile alınan yedeği geri koyar; Friday ilk
+                      açılışta ayarları, hafızayı, sohbetleri ve hatırlatmaları yerine yerleştirir.
 #>
 param(
     [string]$FridayHome = $(if ($env:FRIDAY_HOME) { $env:FRIDAY_HOME } else { 'D:\Friday' }),
-    [string]$Model = 'gemma4:e4b'
+    [string]$Model = 'gemma4:e4b',
+    [string]$Restore = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -125,6 +129,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Model indirilemedi: $Model" }
 } finally {
     Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+}
+
+if ($Restore) {
+    # Yedek, Friday ilk açılışta veriler okunmadan önce yerine koysun diye bekletilir (mevcut veriler silinmez, kenara alınır).
+    $pending = Join-Path $data 'restore-pending'
+    Remove-Item $pending -Recurse -Force -ErrorAction SilentlyContinue
+    Expand-Archive -Path $Restore -DestinationPath $pending -Force
+    Write-Host "Yedek hazır: Friday ilk açılışta geri yükleyecek."
 }
 
 Write-Host ""

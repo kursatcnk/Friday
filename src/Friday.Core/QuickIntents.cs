@@ -36,6 +36,11 @@ public static partial class QuickIntents
     /// <param name="triggers">Özel komutların ifadeleri ("baha"); cümlenin herhangi bir yerinde geçince çalışır.</param>
     public static QuickCommand? Match(string text, IEnumerable<string>? routines = null, IEnumerable<string>? triggers = null)
     {
+        if (TypeText(text) is { } type)
+        {
+            return type;
+        }
+
         if (CustomCommand(text) is { } custom)
         {
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
@@ -55,6 +60,10 @@ public static partial class QuickIntents
             ?? Watch(sentence)
             ?? Luck(sentence)
             ?? Stopwatch(sentence)
+            ?? Selection(sentence)
+            ?? Dictation(sentence)
+            ?? WindowLayout(sentence)
+            ?? News(sentence)
             ?? WakeUp(sentence)
             ?? Video(sentence)
             ?? Clock(sentence)

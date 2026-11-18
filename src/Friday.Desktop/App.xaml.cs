@@ -40,6 +40,14 @@ public sealed partial class App : Application, IDisposable
         // Tek Friday: ikinci kopya Ollama portu, mikrofon ve kısayol için ilkiyle yarışırdı. İkinci açılış yalnızca
         // çalışan Friday'in panelini öne getirir.
         _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Friday.Assistant.Show", out var first);
+        // Yeniden başlatmada eski kopya kapanana kadar beklenir (en fazla 15 sn).
+        for (var attempt = 0; !first && e.Args.Contains("--restart", StringComparer.OrdinalIgnoreCase) && attempt < 50; attempt++)
+        {
+            _showSignal.Dispose();
+            Thread.Sleep(300);
+            _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Friday.Assistant.Show", out first);
+        }
+
         if (!first)
         {
             _showSignal.Set();
@@ -91,6 +99,12 @@ public sealed partial class App : Application, IDisposable
         if (ChildProcessJob.KillStrays(paths.Tools) is > 0 and var strays)
         {
             FridayLog.Warn($"Önceki oturumdan kalan {strays} yardımcı süreç kapatıldı");
+        }
+
+        // Ayarlardan "Yedekten geri yükle" seçildiyse yedek, veriler okunmadan önce yerine konur.
+        if (DataMaintenance.ApplyPendingRestore(paths.Data))
+        {
+            FridayLog.Info("Yedek geri yüklendi");
         }
 
         var store = new JsonSettingsStore(paths);
@@ -181,7 +195,17 @@ public sealed partial class App : Application, IDisposable
             ClearData = kind => ClearData(kind, chats, memory, reminders, ledger),
             OpenLogs = () => Open(paths.Logs),
             CheckForUpdate = () => UpdateCheck.CheckAsync(_http!, typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0), ledger, CancellationToken.None),
-            PiperVoices = PiperVoices(paths)
+            PiperVoices = PiperVoices(paths),
+            BackupData = () => BackupData(paths, ledger),
+            RestoreData = () => RestoreData(paths),
+            Restart = RestartFriday,
+            ScanReclaimable = () => Task.Run(() => DataMaintenance.Reclaimable(paths, settings)),
+            Reclaim = items => Task.Run(() =>
+            {
+                var freed = DataMaintenance.Reclaim(items);
+                ledger.Record(DataFlow.Local, "Yer açma", $"{DataMaintenance.Describe(freed)} silindi: {string.Join(", ", items.Select(item => item.Label))}");
+                return freed;
+            })
         });
         var hud = new HudViewModel();
         // Son sohbet az önce konuşulduysa oradan devam edilir; değilse yeni, boş bir sohbetle açılır.
@@ -253,8 +277,10 @@ public sealed partial class App : Application, IDisposable
                 hud.SetReply(status.Message);
             }
         });
+        assistant.CardShown += (_, card) => Ui(() => hud.Card = card);
         assistant.UserSaid += (_, text) => Ui(() =>
         {
+            hud.Card = null;
             hud.UserText = text;
             hud.Caption = "";
             hud.ToolLabel = "";
@@ -345,6 +371,69 @@ public sealed partial class App : Application, IDisposable
     }
 
     private void ExitFriday() => Shutdown();
+
+    /// <summary>Kendini "--restart" ile yeniden açar; yeni kopya bu kopya kapanana kadar bekler.</summary>
+    private void RestartFriday()
+    {
+        if (Environment.ProcessPath is { } exe)
+        {
+            Process.Start(new ProcessStartInfo(exe, "--restart") { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) })?.Dispose();
+        }
+
+        Shutdown();
+    }
+
+    /// <summary>Kişisel verileri seçilen zip dosyasına yedekler (varsayılan klasör D:\Friday-yedekler, Friday klasörünün dışında).</summary>
+    private string? BackupData(FridayPaths paths, PrivacyLedger ledger)
+    {
+        var folder = Path.Combine(Path.GetPathRoot(paths.Home) ?? "D:\\", "Friday-yedekler");
+        Directory.CreateDirectory(folder);
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Friday yedeği",
+            Filter = "Zip dosyası|*.zip",
+            FileName = $"friday-yedek-{DateTime.Now:yyyy-MM-dd}.zip",
+            InitialDirectory = folder
+        };
+        if (dialog.ShowDialog(_window) != true)
+        {
+            return null;
+        }
+
+        try
+        {
+            var count = DataMaintenance.CreateBackup(paths.Data, dialog.FileName);
+            ledger.Record(DataFlow.Local, "Yedek", $"{count} dosya {dialog.FileName} dosyasına yedeklendi");
+            return $"{count} dosya yedeklendi: {dialog.FileName} ({DataMaintenance.Describe(new FileInfo(dialog.FileName).Length)}).";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            FridayLog.Error("Yedeklenemedi", exception);
+            return $"Yedeklenemedi: {exception.Message}";
+        }
+    }
+
+    /// <summary>Seçilen yedeği doğrular ve Friday yeniden açılınca uygulanmak üzere bekletir.</summary>
+    private string? RestoreData(FridayPaths paths)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Friday yedeğini seç", Filter = "Zip dosyası|*.zip" };
+        if (dialog.ShowDialog(_window) != true)
+        {
+            return null;
+        }
+
+        try
+        {
+            return DataMaintenance.StageRestore(dialog.FileName, paths.Data)
+                ? "Yedek hazır; Friday yeniden başlayınca geri yüklenecek. Şu anki verilerin data\\before-restore-… klasörüne taşınır."
+                : "Bu dosya bir Friday yedeği değil.";
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            FridayLog.Error("Yedek okunamadı", exception);
+            return $"Yedek okunamadı: {exception.Message}";
+        }
+    }
 
     /// <summary>Ayarlardan seçilen kısayolu canlı uygular; sorun yoksa null.</summary>
     private string? ApplyHotkey(string text, bool quickAsk)

@@ -45,6 +45,7 @@ public sealed partial class AssistantTools
         var gpu = await gpuTask.ConfigureAwait(false);
         var memory = SystemProbe.MemoryLoad();
         var now = DateTime.Now;
+        ShowStatusCard(cpu, memory, gpu);
         var warnings = new List<string>();
         var parts = new List<string>
         {
@@ -140,11 +141,17 @@ public sealed partial class AssistantTools
             "gpu" => await Watches.StartAsync(new WatchRequest(WatchKind.GpuTemperature,
                 double.TryParse(degrees, NumberStyles.Float, CultureInfo.InvariantCulture, out var limit) ? Math.Clamp(limit, 50, 100) : 85),
                 cancellationToken).ConfigureAwait(false),
-            "liste" => Watches.List(),
+            "liste" => WatchList(),
             "iptal" => Watches.CancelAll(),
             _ => $"Bilinmeyen nöbet: {action}"
         };
         return new QuickReply(text);
+    }
+
+    private string WatchList()
+    {
+        ShowListCard("Nöbette", "\uE7B3", Watches.Active.Select(watch => new CardRow(TurkishGrammar.Capitalize(watch.Describe()), "bekliyor")));
+        return Watches.List();
     }
 
     private QuickReply LuckCommand(string action, string count, string from, string to)
@@ -170,8 +177,10 @@ public sealed partial class AssistantTools
                 return new QuickReply("Kronometre başladı.");
             case "durdur" when _stopwatch is { } started:
                 _stopwatch = null;
+                ShowCard(new AnswerCard("Kronometre", "\uE916") { Big = RhythmText.Clock(now - started), BigCaption = "durdu" });
                 return new QuickReply($"Kronometreyi durdurdum: {SpokenDuration.Of(now - started)}.");
             case "durum" when _stopwatch is { } started:
+                ShowCard(new AnswerCard("Kronometre", "\uE916") { Big = RhythmText.Clock(now - started), BigCaption = "çalışıyor" });
                 return new QuickReply($"Kronometre {SpokenDuration.Of(now - started)} gösteriyor.");
             default:
                 return new QuickReply("Çalışan bir kronometre yok. \"Kronometreyi başlat\" diyebilirsin.");
