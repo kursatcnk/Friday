@@ -25,7 +25,19 @@ public enum RoutineAction
     Remind,
 
     /// <summary>Ortam sesi: "ortam:yagmur", "ortam:kahverengi 50", "ortam:kapat".</summary>
-    Ambient
+    Ambient,
+
+    /// <summary>Uygulamayı kapatır: "kapat:Discord".</summary>
+    Close,
+
+    /// <summary>Dosya ya da klasör açar: "dosya:D:\Projeler", "dosya:indirilenler".</summary>
+    Open,
+
+    /// <summary>Etkin pencereyi yerleştirir: "pencere:sol", "pencere:bol".</summary>
+    Window,
+
+    /// <summary>Kaydedilmiş masa düzenini kurar: "masa:kodlama".</summary>
+    Workspace
 }
 
 /// <summary>Rutin düzenleyicisindeki bir adım türü: dosyadaki adı, paneldeki etiketi, değer ipucu ve simgesi.</summary>
@@ -55,6 +67,10 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         new(RoutineAction.Wait, "bekle", "Bekle", "saniye, ör. 3", ""),
         new(RoutineAction.Ambient, "ortam", "Ortam sesi", "yagmur, beyaz, kahverengi, dalga, somine ya da ruzgar (+ dakika)", "\uE93C"),
         new(RoutineAction.LinguaFlow, "linguaflow", "LinguaFlow çevirisi", "", ""),
+        new(RoutineAction.Close, "kapat", "Uygulama kapat", "Discord, Steam, Spotify…", "\uE711"),
+        new(RoutineAction.Open, "dosya", "Dosya ya da klasör aç", "D:\\Projeler, belgeler, indirilenler…", "\uE8B7"),
+        new(RoutineAction.Window, "pencere", "Pencereyi yerleştir", "sol, sag, buyut, kucult ya da bol", "\uE737"),
+        new(RoutineAction.Workspace, "masa", "Masa düzenini kur", "kayıtlı masanın adı, ör. kodlama", "\uE7F4"),
     ];
 
     /// <summary>"Şablondan başla" listesi.</summary>
@@ -100,6 +116,10 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             "bekle" => RoutineAction.Wait,
             "hatirlat" or "hatırlat" => RoutineAction.Remind,
             "ortam" => RoutineAction.Ambient,
+            "kapat" => RoutineAction.Close,
+            "dosya" or "klasor" or "klasör" => RoutineAction.Open,
+            "pencere" => RoutineAction.Window,
+            "masa" => RoutineAction.Workspace,
             _ => throw new FormatException($"Bilinmeyen rutin adımı: {text}")
         };
 
@@ -168,6 +188,18 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         },
         RoutineAction.Remind => Value.Split('|', 2) is [var when, var what] ? $"{when.Trim()} \"{what.Trim()}\" hatırlat" : $"Hatırlat: {Value}",
         RoutineAction.Wait => $"{Number} sn bekle",
+        RoutineAction.Close => $"{Value} uygulamasını kapat",
+        RoutineAction.Open => $"{Value} aç",
+        RoutineAction.Window => Value switch
+        {
+            "sol" => "Pencereyi sola yasla",
+            "sag" => "Pencereyi sağa yasla",
+            "buyut" => "Pencereyi tam ekran yap",
+            "kucult" => "Pencereyi küçült",
+            "bol" => "Son iki pencereyi yan yana koy",
+            _ => $"Pencere: {Value}"
+        },
+        RoutineAction.Workspace => $"\"{Value}\" masa düzenini kur",
         RoutineAction.Ambient => Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) switch
         {
             ["kapat", ..] => "Ortam sesini kapat",

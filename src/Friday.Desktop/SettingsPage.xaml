@@ -32,15 +32,33 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
-            <StackPanel Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
+        <!-- Uzun sayfada bölümler arasında tek tıkla geçiş. -->
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="36,0,24,8">
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource ChipButton}" Content="Kısayollar" Tag="Section1" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Uyandırma" Tag="Section2" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Ritim" Tag="Section3" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Karakter" Tag="Section4" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Yardımcılar" Tag="Section5" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Takvim" Tag="Section6" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Ses" Tag="Section7" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Mikrofon" Tag="Section8" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Akıl" Tag="Section9" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Verilerin" Tag="Section10" Click="OnJump" Margin="0,0,6,6"/>
+                <Button Style="{StaticResource ChipButton}" Content="Hakkında" Tag="Section11" Click="OnJump" Margin="0,0,6,6"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
+            <StackPanel x:Name="Sections" Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
 
                 <!-- ================= Kısayollar ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section1" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Kısayollar ve başlangıç" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <StackPanel Style="{StaticResource Row}">
@@ -75,7 +93,7 @@
                 </Border>
 
                 <!-- ================= Uyandırma ve dinleme ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section2" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Uyandırma ve dinleme" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WakeEnabled}">
@@ -120,7 +138,7 @@
                 </Border>
 
                 <!-- ================= Ritim ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section3" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Ritim ve sabah" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RhythmEnabled}">
@@ -161,7 +179,7 @@
                 </Border>
 
                 <!-- ================= Karakter ve sohbet ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section4" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Karakter ve sohbet" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <Grid Margin="0,0,0,6">
@@ -219,7 +237,7 @@
                 </Border>
 
                 <!-- ================= Akıllı yardımcılar ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section5" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Akıllı yardımcılar" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HabitSuggestionsEnabled}" Margin="0,0,0,14">
@@ -252,7 +270,7 @@
                 </Border>
 
                 <!-- ================= Takvim ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section6" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Takvim" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
@@ -270,7 +288,7 @@
                 </Border>
 
                 <!-- ================= Ses ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section7" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Ses" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <TextBlock Text="Motor" Style="{StaticResource Label}"/>
@@ -364,7 +382,7 @@
                 </Border>
 
                 <!-- ================= Mikrofon ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section8" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Mikrofon" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
@@ -374,7 +392,7 @@
                 </Border>
 
                 <!-- ================= Akıl ve performans ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section9" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Akıl ve performans" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -399,12 +417,24 @@
                             </Border>
                         </StackPanel>
                         <TextBlock Style="{StaticResource Hint}" Text="Kısa süre, oyun ve video düzenleme gibi işlere ekran kartını hemen geri verir; uzun süre, art arda sorularda yeniden yüklemeyi (~3 sn) önler."/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding YieldToFullScreen}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Oyunda ve tam ekranda kenara çekil" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Oyun, tam ekran video ya da sunum açıkken Friday yine tam güçle cevap verir ama modelleri ~20 sn sonra ekran kartından çıkarır; oyunun belleğine ve FPS'ine dokunmaz."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Arayüzü ekran kartıyla çiz" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Kapalıyken pencereler işlemciyle çizilir: arayüz ekran kartında yer tutmaz ve sürücü takıldığında beyaz pencere görünmez. Yeniden başlatınca geçerli olur."/>
+                            </StackPanel>
+                        </CheckBox>
                         <TextBlock Text="{Binding ModelSummary}" Style="{StaticResource Hint}" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <!-- ================= Veriler ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section10" Style="{StaticResource SettingsCard}">
                     <StackPanel>
                         <TextBlock Text="Verilerin" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
@@ -477,7 +507,7 @@
                 </Border>
 
                 <!-- ================= Hakkında ================= -->
-                <Border Style="{StaticResource SettingsCard}">
+                <Border x:Name="Section11" Style="{StaticResource SettingsCard}">
                     <Grid>
                         <StackPanel>
                             <TextBlock Text="{Binding VersionText}" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
@@ -495,7 +525,7 @@
         </ScrollViewer>
 
         <!-- Her zaman görünen kaydet çubuğu. -->
-        <Border Grid.Row="1" Background="{StaticResource AppBackgroundBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="36,12,36,16">
+        <Border Grid.Row="2" Background="{StaticResource AppBackgroundBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="36,12,36,16">
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource AccentButton}" Content="Kaydet ve uygula" Command="{Binding SaveSettingsCommand}" Padding="18,9"/>
                 <TextBlock Text="{Binding SavedMessage}" Foreground="{StaticResource CalmBrush}" VerticalAlignment="Center" Margin="14,0,0,0"/>

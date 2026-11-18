@@ -75,11 +75,19 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Alışkanlık önerilerini 5 dk'da bir yoklar.</summary>
     private Timer? _habitTimer;
 
+    /// <summary>Zamanlanmış rutin varken 20 sn'de bir bakar; yoksa hiç çalışmaz.</summary>
+    private Timer? _routineTimer;
+
+    /// <summary>Rutinlerin bugün en son ne zaman kendiliğinden çalıştığı (aynı saatte iki kez çalışmasın).</summary>
+    private readonly Dictionary<string, DateTime> _routineRuns = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// Dil modelinin hazırlığı (sunucu, model, GPU'ya yükleme). Modeller yavaş bir diskteyse ilk açılışta bir dakikayı
     /// bulabilir; Friday bunu beklemeden hazır olur, hızlı komutlar hemen çalışır, modele giden soru hazırlığın bitmesini bekler.
     /// </summary>
     private Task _brainReady = Task.CompletedTask;
+
+    private bool _yielding;
 
     /// <summary>GPU'ya yüklenmiş sohbet modeli (Hızlı ↔ Akıllı geçişinde eskisi boşaltılır).</summary>
     private string _loadedModel = "";
@@ -121,6 +129,8 @@ public sealed class FridayAssistant : IDisposable
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
+        _tools.Workspaces = new WorkspaceStore(Path.Combine(paths.Data, "workspaces.json"));
+        _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
         _speaker.FellBack += (_, reason) =>
@@ -133,6 +143,7 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Panelden ayarlar kaydedilince ses motorunu ve uyandırma kelimesini yeni ayarlarla kurar.</summary>
     public void ApplySettings()
     {
+        ScheduleRoutines();
         if (_settings.OllamaModel != _loadedModel && _brainReady.IsCompleted)
         {
             // Akıl değişti (Hızlı ↔ Akıllı): eski model GPU'dan çıkar, yenisi arkada hazırlanır.
@@ -151,6 +162,9 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>Uyandırma kelimesi açıksa bekleme metni bunu hatırlatır.</summary>
+    /// <summary>Durum satırında görünen akıl modu (teknik ayrıntılar günlükte ve Ayarlar'da).</summary>
+    private string BrainLabel => _settings.OllamaModel == FridaySettings.SmartTextModel ? "akıllı mod" : "hızlı mod";
+
     private string ReadyText => _wakeWord.IsRunning ? $"Hazır · \"{WakeWordLabel}\" de ya da {_settings.Hotkey}" : "Hazır";
 
     private string WakeWordLabel =>
@@ -272,16 +286,18 @@ public sealed class FridayAssistant : IDisposable
         _tools.BrainReady = _brainReady;
         _tools.Calendar.Configure(settings.CalendarUrl);
         await voiceReady.ConfigureAwait(false);
-        FridayLog.Info($"Konuşma tanıma ve ses hazır ({clock.Elapsed.TotalSeconds:0.0} sn)");
+        FridayLog.Info($"Konuşma tanıma ve ses hazır ({clock.Elapsed.TotalSeconds:0.0} sn) · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
 
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
         _habitTimer = new Timer(_ => SuggestHabit(), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        ScheduleRoutines();
+        _ = RunStartupRoutinesAsync();
         _tools.Clipboard.Enable(settings.ClipboardHistory);
         StartWakeWord();
         _rhythm.Apply(settings);
         _tools.StartReminders();
         Report(AssistantState.Idle, _brainReady.IsCompleted
-            ? $"{ReadyText} · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}"
+            ? $"{ReadyText} · {BrainLabel}"
             : $"{ReadyText} · dil modeli yükleniyor, hızlı komutlar hazır");
     }
 
@@ -312,7 +328,7 @@ public sealed class FridayAssistant : IDisposable
                 }
             }
 
-            Report(AssistantState.Idle, $"{ReadyText} · Whisper {_whisper.RuntimeLabel} · {_speaker.EngineLabel}");
+            Report(AssistantState.Idle, $"{ReadyText} · {BrainLabel}");
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or IOException or TimeoutException)
         {
@@ -345,7 +361,7 @@ public sealed class FridayAssistant : IDisposable
                 }
             }
 
-            Report(AssistantState.Idle, $"{ReadyText} · {(next == FridaySettings.SmartTextModel ? "akıllı mod" : "hızlı mod")}");
+            Report(AssistantState.Idle, $"{ReadyText} · {BrainLabel}");
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or IOException or TimeoutException)
         {
@@ -1042,6 +1058,89 @@ public sealed class FridayAssistant : IDisposable
     /// Kendiliğinden gelen konuşma (ritim önerisi, hoş geldin, zamanlayıcı). Friday boşta değilse söylenmez. Kısayola
     /// basılır ya da "Hey Friday" denirse hemen susar.
     /// </summary>
+    /// <summary>Saati olan bir rutin varsa saati kurar, kalmadıysa durdurur.</summary>
+    private void ScheduleRoutines()
+    {
+        var timed = _settings.RoutineSchedules.Values.Any(text => RoutineSchedule.Parse(text) is { OnStart: false });
+        lock (_routineRuns)
+        {
+            if (timed && _routineTimer is null)
+            {
+                _routineTimer = new Timer(_ => RunDueRoutines(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
+            }
+            else if (!timed && _routineTimer is not null)
+            {
+                _routineTimer.Dispose();
+                _routineTimer = null;
+            }
+        }
+    }
+
+    /// <summary>Saati gelen rutini, rutinin adı söylenmiş gibi çalıştırır. Friday o an konuşuyorsa sonraki yoklamada.</summary>
+    private void RunDueRoutines()
+    {
+        var now = DateTime.Now;
+        foreach (var (name, text) in _settings.RoutineSchedules.ToArray())
+        {
+            if (!_settings.Routines.ContainsKey(name) || RoutineSchedule.Parse(text) is not { } schedule)
+            {
+                continue;
+            }
+
+            DateTime? last;
+            lock (_routineRuns)
+            {
+                last = _routineRuns.TryGetValue(name, out var run) ? run : null;
+            }
+
+            if (!schedule.IsDue(now, last))
+            {
+                continue;
+            }
+
+            lock (_gate)
+            {
+                if (State is not AssistantState.Idle)
+                {
+                    return;
+                }
+            }
+
+            lock (_routineRuns)
+            {
+                _routineRuns[name] = now;
+            }
+
+            FridayLog.Info($"Zamanlanmış rutin çalışıyor: {name} ({schedule.Describe()})");
+            SubmitText(name);
+            return;
+        }
+    }
+
+    /// <summary>"Friday açılınca" rutinleri: açılış selamı ve duyurular bitip Friday boşa düşünce, sırayla bir kez.</summary>
+    private async Task RunStartupRoutinesAsync()
+    {
+        var names = _settings.RoutineSchedules
+            .Where(pair => _settings.Routines.ContainsKey(pair.Key) && RoutineSchedule.Parse(pair.Value) is { OnStart: true })
+            .Select(pair => pair.Key)
+            .ToList();
+        foreach (var name in names)
+        {
+            var quiet = 0;
+            for (var wait = 0; wait < 180 && quiet < 4; wait++)
+            {
+                await Task.Delay(500).ConfigureAwait(false);
+                lock (_gate)
+                {
+                    quiet = State == AssistantState.Idle ? quiet + 1 : 0;
+                }
+            }
+
+            FridayLog.Info($"Açılış rutini çalışıyor: {name}");
+            SubmitText(name);
+        }
+    }
+
     /// <summary>Hep aynı saatlerde yapılan bir şey önerilir; soru okunduktan sonra cevap için mikrofon açılır.</summary>
     private void SuggestHabit()
     {
@@ -1149,6 +1248,21 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
+    /// <summary>Oyun, tam ekran video ya da sunum açık mı (ve ayar açık mı)?</summary>
+    private bool YieldsResources()
+    {
+        var busy = _settings.YieldToFullScreen && FullScreenDetector.IsBusy();
+        if (busy != _yielding)
+        {
+            _yielding = busy;
+            FridayLog.Info(busy
+                ? "Tam ekran uygulama açık: modeller cevaptan kısa süre sonra ekran kartından çıkarılacak"
+                : "Tam ekran kapandı: modeller normal süreyle hazır tutuluyor");
+        }
+
+        return busy;
+    }
+
     private void Report(AssistantState state, string message)
     {
         lock (_gate)
@@ -1158,6 +1272,13 @@ public sealed class FridayAssistant : IDisposable
 
         // Friday kendisi dinlerken kelime aranmaz; kullanıcının sorusu onu yeniden tetiklemez ve işlemci boşta kalır.
         _wakeWord.Suspended = state == AssistantState.Listening;
+        var yielding = YieldsResources();
+        if (state == AssistantState.Listening)
+        {
+            // Oyun açıkken model yine yüklenir ve tam güçle cevap verir, ama cevaptan kısa süre sonra boşaltılır.
+            _chat.KeepAlive = yielding ? "20s" : $"{Math.Max(1, _settings.GpuIdleMinutes)}m";
+        }
+
 
         // Ortam sesi (yağmur, gürültü) Friday dinlerken ve konuşurken kısılır.
         _tools.DuckAmbient(state is AssistantState.Listening or AssistantState.Speaking);
@@ -1165,7 +1286,7 @@ public sealed class FridayAssistant : IDisposable
         // Her boşa düşüşte uyku sayacı yeniden başlar.
         if (state is AssistantState.Idle or AssistantState.Error)
         {
-            _idleTimer?.Change(TimeSpan.FromMinutes(Math.Max(1, _settings.GpuIdleMinutes)), Timeout.InfiniteTimeSpan);
+            _idleTimer?.Change(yielding ? TimeSpan.FromSeconds(20) : TimeSpan.FromMinutes(Math.Max(1, _settings.GpuIdleMinutes)), Timeout.InfiniteTimeSpan);
             FlushQueuedSoon();
         }
 
@@ -1205,6 +1326,7 @@ public sealed class FridayAssistant : IDisposable
     {
         _idleTimer?.Dispose();
         _habitTimer?.Dispose();
+        _routineTimer?.Dispose();
         _announcement?.Cancel();
         _announcement?.Dispose();
         _rhythm.Dispose();

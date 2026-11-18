@@ -196,6 +196,12 @@ public sealed class WakeWordListener : IDisposable
             slot.Input?.Dispose();
         }
 
+        if (_slots.Count > 0)
+        {
+            FridayLog.Info("Sessiz parça payı (modeller çalışmadı): " +
+                string.Join(", ", _slots.Select(slot => $"{slot.Name} %{slot.Stream.QuietShare * 100:0}")));
+        }
+
         _slots.Clear();
     }
 

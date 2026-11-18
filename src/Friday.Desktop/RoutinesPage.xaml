@@ -3,6 +3,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Friday.Desktop"
              xmlns:core="clr-namespace:Friday.Core;assembly=Friday.Core">
+    <UserControl.Resources>
+        <Style x:Key="RoutinePills" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="-3,0,0,0"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource PillItem}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <Grid Margin="36,4,24,24">
         <!-- ================= Liste ================= -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding IsEditingRoutine, Converter={StaticResource Hidden}}">
@@ -81,7 +97,9 @@
                                                 <TextBlock Text="Özel komut" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
                                             </Border>
                                         </Grid>
-                                        <TextBlock Text="{Binding Phrase}" Style="{StaticResource Caption}" Margin="0,3,0,12"/>
+                                        <TextBlock Text="{Binding Phrase}" Style="{StaticResource Caption}" Margin="0,3,0,4"/>
+                                        <TextBlock Text="{Binding When}" Style="{StaticResource Caption}" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,10"
+                                                   Visibility="{Binding When, Converter={StaticResource TextVisible}}"/>
                                         <ItemsControl ItemsSource="{Binding Steps}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type local:RoutineStepView}">
@@ -155,6 +173,19 @@
                                        Text="Açıksa adı tek başına söylemen gerekmez; &quot;Baha geldi&quot; gibi bir cümlede geçmesi yeter."/>
                         </StackPanel>
                     </CheckBox>
+
+                    <StackPanel Visibility="{Binding IsTriggerRoutine, Converter={StaticResource Hidden}}" Margin="0,0,0,18">
+                        <TextBlock Text="Kendiliğinden ne zaman çalışsın" Style="{StaticResource Label}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <ListBox Style="{StaticResource RoutinePills}" ItemsSource="{Binding ScheduleOptions}" SelectedItem="{Binding SelectedSchedule}"/>
+                            <TextBox Text="{Binding RoutineTime, UpdateSourceTrigger=PropertyChanged}" Width="74" Margin="6,0,0,0" VerticalAlignment="Center"
+                                     ToolTip="Saat, ör. 09:00" Visibility="{Binding ScheduleNeedsTime, Converter={StaticResource Visible}}"/>
+                        </StackPanel>
+                        <TextBlock Text="Kısayol" Style="{StaticResource Label}" Margin="0,12,0,0"/>
+                        <ListBox Style="{StaticResource RoutinePills}" ItemsSource="{Binding RoutineHotkeyOptions}" SelectedItem="{Binding SelectedRoutineHotkey}"/>
+                        <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="Kısayol Friday arka plandayken de çalışır. Zamanlanan rutin o saatte Friday açıksa çalışır; &quot;Friday açılınca&quot; Windows'la başlarken işe yarar."/>
+                    </StackPanel>
 
                     <TextBlock Text="Adımlar (sırayla çalışır)" Style="{StaticResource Label}"/>
                     <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,0,0,8" Text="Henüz adım yok; aşağıdan ekle."

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Friday.Desktop"
         Title="Friday"
-        Width="1020" Height="680" MinWidth="780" MinHeight="520"
+        Width="1140" Height="760" MinWidth="780" MinHeight="520"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBackgroundBrush}">
     <local:PanelView x:Name="Panel"/>

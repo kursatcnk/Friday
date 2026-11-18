@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Friday.Core;
 using Friday.Infrastructure;
@@ -15,6 +17,55 @@ public sealed partial class App : Application, IDisposable
     private HttpClient? _http;
     private FridayAssistant? _assistant;
     private TrayIcon? _tray;
+
+    /// <summary>Rutinlerin genel kısayolları (Ayarlar'da değişince yeniden kaydedilir).</summary>
+    private readonly List<GlobalHotkey> _routineKeys = [];
+
+    private FridaySettings? _settings;
+
+    /// <summary>Her rutinin kısayolu: basınca rutin, adı söylenmiş gibi çalışır; Friday arka plandayken de.</summary>
+    private void RegisterRoutineKeys()
+    {
+        foreach (var key in _routineKeys)
+        {
+            key.Dispose();
+        }
+
+        _routineKeys.Clear();
+        if (_window is null || _settings is null || _assistant is null)
+        {
+            return;
+        }
+
+        var id = 0x4700;
+        foreach (var (name, text) in _settings.RoutineHotkeys)
+        {
+            if (!_settings.Routines.ContainsKey(name))
+            {
+                continue;
+            }
+
+            var routine = name;
+            var assistant = _assistant;
+            var hotkey = new GlobalHotkey(_window, () => assistant.SubmitText(routine), id++);
+            try
+            {
+                if (hotkey.Register(HotkeyGesture.Parse(text)))
+                {
+                    _routineKeys.Add(hotkey);
+                    continue;
+                }
+
+                FridayLog.Warn($"Rutin kısayolu alınamadı (başka bir uygulamada olabilir): {text} → {name}");
+            }
+            catch (FormatException)
+            {
+                FridayLog.Warn($"Rutin kısayolu anlaşılamadı: {text}");
+            }
+
+            hotkey.Dispose();
+        }
+    }
     private HudWindow? _hud;
     private MainWindow? _window;
     private CancellationTokenSource? _startup;
@@ -109,6 +160,11 @@ public sealed partial class App : Application, IDisposable
 
         var store = new JsonSettingsStore(paths);
         var settings = store.Load();
+        if (!settings.GpuRendering)
+        {
+            // Pencereler oluşturulmadan önce: bütün arayüz işlemciyle çizilir (bkz. FridaySettings.GpuRendering).
+            RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+        }
         var memory = new MemoryStore(Path.Combine(paths.Data, "memory.json"));
         var ledger = new PrivacyLedger(Path.Combine(paths.Data, "ledger"));
         var chats = new ChatStore(Path.Combine(paths.Data, "chats"));
@@ -158,6 +214,7 @@ public sealed partial class App : Application, IDisposable
             {
                 store.Save(changed);
                 assistant.ApplySettings();
+                RegisterRoutineKeys();
             },
             PickImportFile = PickMemoryFile,
             KnownMemories = () => memory.Items,
@@ -246,7 +303,11 @@ public sealed partial class App : Application, IDisposable
         rhythm.Changed += (_, _) => Ui(ShowRhythm);
         ShowRhythm();
         chats.Changed += (_, _) => Ui(panel.RefreshChats);
-        tools.SettingsChanged += (_, _) => Ui(panel.ReloadRoutines);
+        tools.SettingsChanged += (_, _) => Ui(() =>
+        {
+            panel.ReloadRoutines();
+            RegisterRoutineKeys();
+        });
         chats.CurrentChanged += (_, _) => Ui(() => panel.ShowChat(chats.CurrentTurns));
 
         // Ritim halkasının saniyelik sayacı yalnızca panel açık ve Ritim ya da Bugün sayfası görünürken çalışır.
@@ -341,7 +402,11 @@ public sealed partial class App : Application, IDisposable
             }
         }
 
-        _window = new MainWindow(panel, candidates, assistant.OnHotkey, quickGesture, () => _quickAsk.Toggle());
+        _settings = settings;
+        _window = new MainWindow(panel, candidates, assistant.OnHotkey, quickGesture, () => _quickAsk.Toggle())
+        {
+            BoundsFile = Path.Combine(paths.Data, "window.txt")
+        };
         MainWindow = _window;
         _hud = new HudWindow(hud);
         _tray = new TrayIcon(settings.AssistantName, _window.ShowFromTray, ExitFriday);
@@ -354,6 +419,8 @@ public sealed partial class App : Application, IDisposable
         {
             _window.Show();
         }
+
+        RegisterRoutineKeys();
 
         // Show() kısayolu kaydeder. Ayardaki kısayol başka bir uygulamadaysa yedeklerden biri kullanılır.
         if (_window.ActiveHotkey is { } active)

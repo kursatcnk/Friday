@@ -264,3 +264,65 @@ public class HabitTests
         Assert.Null(habits.Suggest(saturday));
     }
 }
+
+public class RoutineScheduleTests
+{
+    [Theory]
+    [InlineData("09:00 haftaici", "Hafta içi her gün 09:00")]
+    [InlineData("18.30", "Her gün 18:30")]
+    [InlineData("10:00 haftasonu", "Hafta sonu 10:00")]
+    [InlineData("acilis", "Friday açılınca")]
+    public void ParsesAndDescribes(string text, string description) => Assert.Equal(description, RoutineSchedule.Parse(text)?.Describe());
+
+    [Fact]
+    public void RejectsNonsense() => Assert.Null(RoutineSchedule.Parse("sabah erken"));
+
+    [Fact]
+    public void RunsOncePerDayInsideItsWindow()
+    {
+        var schedule = RoutineSchedule.Parse("09:00 haftaici")!;
+        var monday = new DateTime(2026, 11, 16, 9, 1, 0);
+        Assert.True(schedule.IsDue(monday, null));
+        Assert.False(schedule.IsDue(monday, monday.AddSeconds(-20)));
+        Assert.True(schedule.IsDue(monday, monday.AddDays(-1)));
+        Assert.False(schedule.IsDue(monday.AddMinutes(10), null));
+        Assert.False(schedule.IsDue(new DateTime(2026, 11, 21, 9, 1, 0), null));
+        Assert.Equal("09:00 haftaici", schedule.Format());
+    }
+}
+
+public class WorkspaceAndStepTests
+{
+    [Theory]
+    [InlineData("kodlama masasını kaydet", "kaydet", "kodlama")]
+    [InlineData("masamı kaydet", "kaydet", "masam")]
+    [InlineData("bu düzeni oyun olarak kaydet", "kaydet", "oyun")]
+    [InlineData("kodlama masasını kur", "kur", "kodlama")]
+    [InlineData("çalışma masamı aç", "kur", "çalışma")]
+    [InlineData("oyun masasını sil", "sil", "oyun")]
+    public void RecognisesWorkspaceCommands(string sentence, string action, string name)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("masa_duzeni", command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+        Assert.Equal(name, command.Arguments["ad"]);
+    }
+
+    [Fact]
+    public void ListsWorkspaces() => Assert.Equal("listele", QuickIntents.Match("masalarım")?.Arguments["islem"]);
+
+    [Fact]
+    public void DesktopStillMeansTheDesktop() => Assert.NotEqual("masa_duzeni", QuickIntents.Match("masaüstünü göster")?.Tool);
+
+    [Theory]
+    [InlineData("kapat:Discord", "Discord uygulamasını kapat")]
+    [InlineData("dosya:indirilenler", "indirilenler aç")]
+    [InlineData("pencere:sol", "Pencereyi sola yasla")]
+    [InlineData("masa:kodlama", "\"kodlama\" masa düzenini kur")]
+    public void NewStepsRoundTrip(string text, string description)
+    {
+        var step = RoutineStep.Parse(text);
+        Assert.Equal(description, step.Describe());
+        Assert.Equal(text, step.Format());
+    }
+}

@@ -59,3 +59,36 @@ public class WakeWordTests
         Assert.Throws<ArgumentException>(() => engine.CreateStream().Process(new short[100]));
     }
 }
+
+public class NoiseFloorTests
+{
+    [Fact]
+    public void FanNoiseBecomesQuietButSpeechNeverDoes()
+    {
+        var floor = new WakeWordTracker.NoiseFloor();
+        var noise = new Random(3);
+        var quiet = 0;
+        for (var chunk = 0; chunk < 400; chunk++)
+        {
+            // Fanı duyan bir kulaklık: tepe 300-450, sabit eşiğin (200) hep üstünde.
+            quiet += floor.IsQuiet(noise.Next(300, 450)) ? 1 : 0;
+        }
+
+        Assert.True(quiet > 300, $"{quiet}");
+        Assert.False(floor.IsQuiet(4000));
+        Assert.True(floor.QuietShare > 0.7);
+    }
+
+    [Fact]
+    public void LoudBackgroundNeverHidesTheWakeWord()
+    {
+        var floor = new WakeWordTracker.NoiseFloor();
+        for (var chunk = 0; chunk < 5000; chunk++)
+        {
+            floor.IsQuiet(2500);
+        }
+
+        // Müzik açıkken taban yükselse de eşik ~-29 dBFS'i geçmez: üstüne söylenen kelime tam işlenir.
+        Assert.False(floor.IsQuiet(1300));
+    }
+}

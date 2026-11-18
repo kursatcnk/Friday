@@ -33,6 +33,12 @@ public sealed partial class PanelViewModel
     private bool _clipboardHistoryEnabled;
 
     [ObservableProperty]
+    private bool _yieldToFullScreen = true;
+
+    [ObservableProperty]
+    private bool _gpuRendering;
+
+    [ObservableProperty]
     private bool _brainFast = true;
 
     [ObservableProperty]
@@ -343,6 +349,8 @@ public sealed partial class PanelViewModel
         _settings.ConversationMemoryMinutes = ChatAfter10 ? 10 : ChatAfter120 ? 120 : 30;
         _settings.BreakMinutes = BreakLength10 ? 10 : BreakLength15 ? 15 : 5;
         _settings.GpuIdleMinutes = Gpu1 ? 1 : Gpu5 ? 5 : Gpu15 ? 15 : 2;
+        _settings.YieldToFullScreen = YieldToFullScreen;
+        _settings.GpuRendering = GpuRendering;
         _settings.VoiceRoom = RoomDry ? 0 : RoomWarm ? 0.14 : 0.07;
         _settings.VoiceModelPath = SelectedPiperVoice?.Name ?? "";
         _settings.KeepHistory = KeepHistory;
@@ -427,6 +435,8 @@ public sealed partial class PanelViewModel
         BreakLength15 = _settings.BreakMinutes >= 13;
         BreakLength5 = !BreakLength10 && !BreakLength15;
         Gpu1 = _settings.GpuIdleMinutes <= 1;
+        YieldToFullScreen = _settings.YieldToFullScreen;
+        GpuRendering = _settings.GpuRendering;
         Gpu5 = _settings.GpuIdleMinutes is >= 4 and < 10;
         Gpu15 = _settings.GpuIdleMinutes >= 10;
         Gpu2 = !Gpu1 && !Gpu5 && !Gpu15;

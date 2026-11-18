@@ -167,6 +167,7 @@ public sealed class WakeWordTracker
     private readonly float[] _features;
     private int _predictions;
     private int _quietChunks;
+    private NoiseFloor _floor;
 
     internal WakeWordTracker(WakeWordEngine engine)
     {
@@ -205,7 +206,7 @@ public sealed class WakeWordTracker
             peak = Math.Max(peak, Math.Abs((int)chunk[index]));
         }
 
-        _quietChunks = peak < QuietPeak ? _quietChunks + 1 : 0;
+        _quietChunks = _floor.IsQuiet(peak) ? _quietChunks + 1 : 0;
         if (_quietChunks > QuietHangover)
         {
             // Oda bir süredir sessiz: modeller çalıştırılmaz, arabellekler sessizliğin önceden hesaplanmış karşılığıyla
@@ -229,7 +230,41 @@ public sealed class WakeWordTracker
     /// <summary>Algılamadan ya da duraklamadan sonra: ilk birkaç tahmin yok sayılır, aynı kelime iki kez tetiklemez.</summary>
     public void Reset() => _predictions = 0;
 
+    /// <summary>Son parçalarda modellerin atlandığı oran (0–1); günlükte işlemci tasarrufunu göstermek için.</summary>
+    public double QuietShare => _floor.QuietShare;
+
     /// <summary>Yeni mel karelerini sona ekler, en eskileri atar.</summary>
+    /// <summary>
+    /// Odanın gürültü tabanını izler. Sabit eşik (~−44 dBFS) sessiz odada yeter, ama fanı duyan bir kulaklık mikrofonu
+    /// hep bunun üstünde kalır ve modeller her 80 ms'de boşuna çalışır. Taban sessizliğe hızlı iner, sese yavaş çıkar
+    /// (~40 sn); tabanın iki katının altındaki parçalar sessiz sayılır. Eşik en fazla ~−29 dBFS olur: müziğin ya da
+    /// konuşmanın üstünden söylenen "Hey Friday" her zaman tam işlenir.
+    /// </summary>
+    internal struct NoiseFloor
+    {
+        private const float Ceiling = 1200;
+        private float _level;
+        private int _seen;
+        private int _quiet;
+
+        public readonly double QuietShare => _seen == 0 ? 0 : (double)_quiet / _seen;
+
+        public bool IsQuiet(int peak)
+        {
+            _level = _level <= 0 ? peak : _level + ((peak - _level) * (peak < _level ? 0.3f : 0.002f));
+            var quiet = peak < Math.Clamp(_level * 2f, QuietPeak, Ceiling);
+            if (++_seen > 4500)
+            {
+                // Pay son ~6 dakikayı yansıtsın.
+                _seen /= 2;
+                _quiet /= 2;
+            }
+
+            _quiet += quiet ? 1 : 0;
+            return quiet;
+        }
+    }
+
     private static void Shift(float[] buffer, float[] frames)
     {
         if (frames.Length >= buffer.Length)

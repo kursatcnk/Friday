@@ -12,6 +12,8 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Exe, görev çubuğu, Alt+Tab ve tepsi aynı simgeyi kullanır. -->
+    <ApplicationIcon>Assets\Friday.ico</ApplicationIcon>
     <AssemblyName>Friday</AssemblyName>
     <Version>0.4.1</Version>
     <!-- Arka planda bekleyen bir asistan: eşzamanlı GC'nin ayrı yığını ve iş parçacığı gereksiz; bellek sıkı tutulur. -->
@@ -23,6 +25,10 @@
     <!-- WinForms'un örtük using'leri WPF türleriyle çakışır; tepsi kodunda tam adlar kullanılır. -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Friday.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -172,6 +172,10 @@ public sealed partial class AssistantTools
                 RoutineAction.Remind => step.Value.Split('|', 2, StringSplitOptions.TrimEntries) is [var when, var what]
                     ? ReminderCommand("kur", when, what)
                     : "",
+                RoutineAction.Close => CloseAppCommand(step.Value)?.Text ?? $"{step.Value} açık değil.",
+                RoutineAction.Open => OpenPath(step.Value),
+                RoutineAction.Window => WindowCommand(step.Value).Text,
+                RoutineAction.Workspace => (await WorkspaceCommandAsync("kur", step.Value, cancellationToken).ConfigureAwait(false)).Text,
                 _ => ""
             });
         }

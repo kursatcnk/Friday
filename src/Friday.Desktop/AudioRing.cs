@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Friday.Infrastructure;
 
 namespace Friday.Desktop;
@@ -15,7 +16,8 @@ public sealed class AudioRing : FrameworkElement
         nameof(Level), typeof(double), typeof(AudioRing), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
     public static readonly DependencyProperty StateProperty = DependencyProperty.Register(
-        nameof(State), typeof(AssistantState), typeof(AudioRing), new FrameworkPropertyMetadata(AssistantState.Idle, FrameworkPropertyMetadataOptions.AffectsRender));
+        nameof(State), typeof(AssistantState), typeof(AudioRing), new FrameworkPropertyMetadata(
+            AssistantState.Idle, FrameworkPropertyMetadataOptions.AffectsRender, (ring, _) => ((AudioRing)ring).UpdateAnimation()));
 
     /// <summary>Animasyonsuz çizim (anlık görüntü testleri için zaman sabitlenir).</summary>
     public static readonly DependencyProperty FrozenTimeProperty = DependencyProperty.Register(
@@ -28,14 +30,19 @@ public sealed class AudioRing : FrameworkElement
     private Color _color = Palette(AssistantState.Idle);
     private double _smoothedLevel;
     private double _energy;
+    private readonly DispatcherTimer _idleTimer;
     private bool _animating;
-    private TimeSpan _lastFrame;
+    private Window? _window;
 
     public AudioRing()
     {
+        // Boştaki nefes için seyrek bir zamanlayıcı: CompositionTarget.Rendering'e bağlı kalmak, kare çizilmese de WPF'in
+        // çizim döngüsünü ekranın yenileme hızında (ör. 144 Hz) uyanık tutar.
+        _idleTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = IdleFrame };
+        _idleTimer.Tick += (_, _) => InvalidateVisual();
         IsVisibleChanged += (_, _) => UpdateAnimation();
-        Loaded += (_, _) => UpdateAnimation();
-        Unloaded += (_, _) => StopAnimation();
+        Loaded += (_, _) => Attach();
+        Unloaded += (_, _) => Detach();
     }
 
     public double Level
@@ -164,50 +171,74 @@ public sealed class AudioRing : FrameworkElement
         return geometry;
     }
 
+    private void Attach()
+    {
+        _window = Window.GetWindow(this);
+        if (_window is not null)
+        {
+            _window.Activated += OnWindowChanged;
+            _window.Deactivated += OnWindowChanged;
+            _window.StateChanged += OnWindowChanged;
+        }
+
+        UpdateAnimation();
+    }
+
+    private void Detach()
+    {
+        if (_window is not null)
+        {
+            _window.Activated -= OnWindowChanged;
+            _window.Deactivated -= OnWindowChanged;
+            _window.StateChanged -= OnWindowChanged;
+            _window = null;
+        }
+
+        SetMode(animate: false, breathe: false);
+    }
+
+    private void OnWindowChanged(object? sender, EventArgs e) => UpdateAnimation();
+
+    /// <summary>
+    /// Dinlerken, düşünürken ve konuşurken her karede çizilir. Boştayken yalnızca yavaş bir nefes var: pencere öndeyse
+    /// saniyede 15 kare, arka plandaysa ya da simge durumundaysa hiç çizilmez. Friday günün çoğunu boşta geçirir; bu
+    /// sayede beklerken işlemciye ve ekran kartına neredeyse hiç dokunmaz.
+    /// </summary>
     private void UpdateAnimation()
     {
-        if (IsVisible && FrozenTime < 0 && !_animating)
-        {
-            CompositionTarget.Rendering += OnFrame;
-            _animating = true;
-        }
-        else if (!IsVisible)
-        {
-            StopAnimation();
-        }
+        var shown = IsVisible && FrozenTime < 0 && _window is not { WindowState: WindowState.Minimized };
+        var idle = State is AssistantState.Idle or AssistantState.Starting or AssistantState.Error;
+        SetMode(animate: shown && !idle, breathe: shown && idle && _window is not { IsActive: false });
     }
 
-    private void StopAnimation()
+    private void SetMode(bool animate, bool breathe)
     {
-        if (_animating)
+        if (animate != _animating)
         {
-            CompositionTarget.Rendering -= OnFrame;
-            _animating = false;
-        }
-    }
-
-    private void OnFrame(object? sender, EventArgs e)
-    {
-        var window = Window.GetWindow(this);
-        if (window is { WindowState: WindowState.Minimized })
-        {
-            return;
-        }
-
-        // Boştayken yalnızca yavaş bir nefes alma var: pencere öndeyse saniyede 15 kare, arka plandaysa hiç çizilmez.
-        // Friday günün çoğunu boşta geçirir; bu sayede beklerken işlemciye neredeyse hiç dokunmaz.
-        if (State is AssistantState.Idle or AssistantState.Starting or AssistantState.Error && e is RenderingEventArgs frame)
-        {
-            if (window is { IsActive: false } || frame.RenderingTime - _lastFrame < IdleFrame)
+            if (animate)
             {
-                return;
+                CompositionTarget.Rendering += OnFrame;
+            }
+            else
+            {
+                CompositionTarget.Rendering -= OnFrame;
             }
 
-            _lastFrame = frame.RenderingTime;
+            _animating = animate;
         }
 
-        InvalidateVisual();
+        if (breathe != _idleTimer.IsEnabled)
+        {
+            _idleTimer.IsEnabled = breathe;
+        }
+
+        if (!animate && !breathe)
+        {
+            InvalidateVisual();
+        }
     }
+
+    private void OnFrame(object? sender, EventArgs e) => InvalidateVisual();
 
     private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);
 

@@ -350,6 +350,7 @@
         <BooleanToVisibilityConverter x:Key="Visible"/>
         <local:InverseVisibilityConverter x:Key="Hidden"/>
         <local:ZeroVisibilityConverter x:Key="ZeroVisible"/>
+        <local:TextVisibilityConverter x:Key="TextVisible"/>
 
 
         <!-- Tuş görünümlü küçük kutu (Ctrl, Alt, F). -->

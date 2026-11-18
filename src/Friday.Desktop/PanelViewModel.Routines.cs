@@ -8,7 +8,7 @@ namespace Friday.Desktop;
 public sealed record RoutineStepView(string Glyph, string Text, bool IsValid = true);
 
 /// <summary>Rutinler sayfasındaki bir kart: rutin ya da özel komut (cümlenin içinde geçince çalışır).</summary>
-public sealed record RoutineView(string Key, string Name, string Phrase, IReadOnlyList<RoutineStepView> Steps, bool IsTrigger = false);
+public sealed record RoutineView(string Key, string Name, string Phrase, IReadOnlyList<RoutineStepView> Steps, bool IsTrigger = false, string When = "");
 
 /// <summary>Düzenleyicide bir adım: türü sabit, değeri yazılabilir.</summary>
 public sealed partial class RoutineStepEditor(RoutineStepKind kind, string value) : ObservableObject
@@ -42,6 +42,24 @@ public sealed partial class PanelViewModel
     public IReadOnlyList<RoutineStepKind> StepKinds { get; } = RoutineStep.Kinds;
 
     public IReadOnlyList<RoutineTemplate> RoutineTemplates { get; } = RoutineStep.Templates;
+
+    public IReadOnlyList<string> ScheduleOptions { get; } = ["Kapalı", "Her gün", "Hafta içi", "Hafta sonu", "Friday açılınca"];
+
+    public IReadOnlyList<string> RoutineHotkeyOptions { get; } =
+        ["Yok", "Ctrl+Alt+1", "Ctrl+Alt+2", "Ctrl+Alt+3", "Ctrl+Alt+4", "Ctrl+Alt+5", "Ctrl+Alt+6", "Ctrl+Alt+7", "Ctrl+Alt+8", "Ctrl+Alt+9"];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScheduleNeedsTime))]
+    private string _selectedSchedule = "Kapalı";
+
+    [ObservableProperty]
+    private string _routineTime = "09:00";
+
+    [ObservableProperty]
+    private string _selectedRoutineHotkey = "Yok";
+
+    /// <summary>Saat kutusu yalnızca gün seçilince görünür.</summary>
+    public bool ScheduleNeedsTime => SelectedSchedule is "Her gün" or "Hafta içi" or "Hafta sonu";
 
     [ObservableProperty]
     private bool _isEditingRoutine;
@@ -188,9 +206,43 @@ public sealed partial class PanelViewModel
             }
         }
 
+        string? schedule = null;
+        if (!IsTriggerRoutine && SelectedSchedule != "Kapalı")
+        {
+            var days = SelectedSchedule switch { "Hafta içi" => "haftaici", "Hafta sonu" => "haftasonu", _ => "hergun" };
+            schedule = SelectedSchedule == "Friday açılınca"
+                ? RoutineSchedule.Startup
+                : RoutineSchedule.Parse($"{RoutineTime.Trim()} {days}")?.Format();
+            if (schedule is null)
+            {
+                RoutineError = "Saati 09:00 ya da 18:30 gibi yaz.";
+                return;
+            }
+        }
+
+        var hotkey = !IsTriggerRoutine && SelectedRoutineHotkey != "Yok" ? SelectedRoutineHotkey : null;
+        if (hotkey is not null && _settings.RoutineHotkeys.FirstOrDefault(pair => pair.Value == hotkey
+                && !string.Equals(pair.Key, _editingRoutine?.Key, StringComparison.OrdinalIgnoreCase)) is { Key: { } owner })
+        {
+            RoutineError = $"{hotkey} zaten \"{owner}\" rutininde.";
+            return;
+        }
+
         if (_editingRoutine is { } original)
         {
             (original.IsTrigger ? _settings.Triggers : _settings.Routines).Remove(original.Key);
+            _settings.RoutineSchedules.Remove(original.Key);
+            _settings.RoutineHotkeys.Remove(original.Key);
+        }
+
+        if (schedule is not null)
+        {
+            _settings.RoutineSchedules[name] = schedule;
+        }
+
+        if (hotkey is not null)
+        {
+            _settings.RoutineHotkeys[name] = hotkey;
         }
 
         target[name] = steps;
@@ -216,6 +268,12 @@ public sealed partial class PanelViewModel
     {
         if (_pendingRoutineDelete is { } view && (view.IsTrigger ? _settings.Triggers : _settings.Routines).Remove(view.Key))
         {
+            if (!view.IsTrigger)
+            {
+                _settings.RoutineSchedules.Remove(view.Key);
+                _settings.RoutineHotkeys.Remove(view.Key);
+            }
+
             _actions.Save(_settings);
             RoutineMessage = $"\"{TurkishGrammar.Capitalize(view.Key)}\" silindi.";
             if (_editingRoutine == view)
@@ -260,6 +318,17 @@ public sealed partial class PanelViewModel
         EditorTitle = title;
         RoutineName = name;
         IsTriggerRoutine = isTrigger;
+        var schedule = view is { IsTrigger: false } && _settings.RoutineSchedules.TryGetValue(view.Key, out var saved) ? RoutineSchedule.Parse(saved) : null;
+        SelectedSchedule = schedule switch
+        {
+            null => "Kapalı",
+            { OnStart: true } => "Friday açılınca",
+            { Days: "haftaici" } => "Hafta içi",
+            { Days: "haftasonu" } => "Hafta sonu",
+            _ => "Her gün"
+        };
+        RoutineTime = schedule?.At?.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture) ?? "09:00";
+        SelectedRoutineHotkey = view is { IsTrigger: false } && _settings.RoutineHotkeys.TryGetValue(view.Key, out var key) ? key : "Yok";
         EditorSteps.Clear();
         foreach (var text in steps)
         {
@@ -285,7 +354,19 @@ public sealed partial class PanelViewModel
         var comparer = StringComparer.Create(Turkish, true);
         foreach (var (name, steps) in _settings.Routines.OrderBy(pair => pair.Key, comparer))
         {
-            Routines.Add(new RoutineView(name, TurkishGrammar.Capitalize(name), $"\"{TurkishGrammar.Capitalize(name)}\" de", Describe(steps)));
+            var when = new List<string>();
+            if (_settings.RoutineSchedules.TryGetValue(name, out var scheduleText) && RoutineSchedule.Parse(scheduleText) is { } schedule)
+            {
+                when.Add(schedule.Describe());
+            }
+
+            if (_settings.RoutineHotkeys.TryGetValue(name, out var hotkey))
+            {
+                when.Add(hotkey);
+            }
+
+            Routines.Add(new RoutineView(name, TurkishGrammar.Capitalize(name), $"\"{TurkishGrammar.Capitalize(name)}\" de", Describe(steps),
+                When: string.Join(" · ", when)));
         }
 
         foreach (var (phrase, steps) in _settings.Triggers.OrderBy(pair => pair.Key, comparer))

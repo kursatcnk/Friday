@@ -96,6 +96,19 @@ public sealed class FridaySettings
     public int GpuIdleMinutes { get; set; } = 2;
 
     /// <summary>
+    /// Oyun, tam ekran video ya da sunum açıkken modeller cevaptan ~20 sn sonra ekran kartından çıkar: Friday yine
+    /// tam güçle cevap verir ama oyunun belleğini ve işlemcisini tutmaz.
+    /// </summary>
+    public bool YieldToFullScreen { get; set; } = true;
+
+    /// <summary>
+    /// Arayüzü ekran kartıyla çiz. Kapalıyken (varsayılan) pencereler işlemciyle çizilir: Friday'in arayüzü ekran
+    /// kartında hiç bellek tutmaz, oyunla ve dil modeliyle yarışmaz, sürücü takıldığında beyaz pencere sorunu yaşanmaz.
+    /// Yeniden başlatınca geçerli olur.
+    /// </summary>
+    public bool GpuRendering { get; set; }
+
+    /// <summary>
     /// "auto": XTTS kuruluysa XTTS (doğal, yerel), değilse Azure anahtarı varsa Azure, o da yoksa Piper.
     /// "xtts", "azure" ya da "piper" ile sabitlenebilir. Seçilen motor hata verirse o cümle Piper ile okunur.
     /// </summary>
@@ -178,6 +191,12 @@ public sealed class FridaySettings
     /// Sesli rutinler. Her adım "tür:değer" biçimindedir: uygulama, site, ara, medya, ses, soyle, ozet, ritim, hatirlat,
     /// bekle, linguaflow. Paneldeki Rutinler sayfasından da eklenip düzenlenebilir.
     /// </summary>
+    /// <summary>Rutinlerin kendiliğinden çalışma zamanı: ad → "09:00 haftaici", "18:30 hergun" ya da "acilis".</summary>
+    public Dictionary<string, string> RoutineSchedules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Rutinlerin genel kısayolları: ad → "Ctrl+Alt+1". Friday arkadayken de çalışır.</summary>
+    public Dictionary<string, string> RoutineHotkeys { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     public Dictionary<string, List<string>> Routines { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
         ["çalışma modu"] = ["uygulama:Visual Studio", "site:github.com", "soyle:Çalışma modu hazır. Kolay gelsin."],

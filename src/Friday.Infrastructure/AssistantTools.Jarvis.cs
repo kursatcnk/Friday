@@ -295,6 +295,23 @@ public sealed partial class AssistantTools
                     var ambient = step.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     _ = AmbientCommand(ambient[0] == "kapat" ? "kapat" : "ac", ambient[0], ambient.Length > 1 ? ambient[1] : "");
                     break;
+                case RoutineAction.Close:
+                    _ = CloseAppCommand(step.Value);
+                    break;
+                case RoutineAction.Open:
+                    _ = OpenPath(step.Value);
+                    break;
+                case RoutineAction.Window:
+                    _ = WindowCommand(step.Value);
+                    break;
+                case RoutineAction.Workspace:
+                    var workspace = await WorkspaceCommandAsync("kur", step.Value, cancellationToken).ConfigureAwait(false);
+                    if (workspace.Text.Contains("yok", StringComparison.Ordinal))
+                    {
+                        said.Add(workspace.Text);
+                    }
+
+                    break;
             }
         }
 
