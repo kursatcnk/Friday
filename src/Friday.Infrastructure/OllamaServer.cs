@@ -151,6 +151,11 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
         start.Environment["HOME"] = paths.OllamaHome;
         start.Environment["TMP"] = paths.Temp;
         start.Environment["TEMP"] = paths.Temp;
+        // Ölçüldü (RTX 5070 Ti, Gemma 4 12B, 8192 bağlam): q8_0 KV önbelleği aynı hızda ~300 MB daha az VRAM kullanır.
+        // Tek paralel yuva: Friday aynı anda tek soru sorar; fazladan yuva bağlam belleğini katlar.
+        start.Environment["OLLAMA_FLASH_ATTENTION"] = "1";
+        start.Environment["OLLAMA_KV_CACHE_TYPE"] = "q8_0";
+        start.Environment["OLLAMA_NUM_PARALLEL"] = "1";
         // NVIDIA sürücüsü varsa model CUDA ile çalışır; Vulkan taraması (tümleşik GPU'larda ~8 sn) atlanır ve açılış kısalır.
         if (File.Exists(Path.Combine(Environment.SystemDirectory, "nvcuda.dll")))
         {
