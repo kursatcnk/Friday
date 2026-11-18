@@ -16,6 +16,12 @@ public static class SystemPrompt
         prompt.AppendLine(CultureInfo.InvariantCulture,
             $"Adın {settings.AssistantName}. {user} Windows bilgisayarında tamamen yerel çalışan kişisel sesli asistanısın.");
         prompt.AppendLine(Personality(settings.Personality));
+        if (!string.IsNullOrWhiteSpace(settings.AddressAs))
+        {
+            prompt.AppendLine(CultureInfo.InvariantCulture,
+                $"Kullanıcıya ara sıra \"{settings.AddressAs.Trim()}\" diye hitap et (her cümlede değil; selamlaşmada, onaylarken ya da bir uyarıda).");
+        }
+
         prompt.AppendLine("""
             Her zaman Türkçe konuş. Cevapların sesli okunacak: kısa tut (çoğunlukla bir ile üç cümle), uzun açıklama istenmedikçe uzatma.
             Doğrudan cevapla: soruyu tekrar etme, "Tabii ki", "Harika bir soru", "Size nasıl yardımcı olabilirim", "Başka bir şey var mı", "Ben bir yapay zekâyım", "Yardımcı olmak için buradayım" gibi kalıp sözler kullanma.

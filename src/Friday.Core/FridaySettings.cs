@@ -14,6 +14,9 @@ public sealed class FridaySettings
     /// <summary>Asistanın sana nasıl hitap edeceği; boşsa isimsiz konuşur.</summary>
     public string UserName { get; set; } = "";
 
+    /// <summary>Hitap sözü ("patron", "Kürşat Bey"); boşsa adınla ya da hitapsız konuşur. Her cümlede değil, ara sıra.</summary>
+    public string AddressAs { get; set; } = "";
+
     public string Hotkey { get; set; } = "Ctrl+Alt+F";
 
     /// <summary>Hızlı komut kutusu: her yerden açılan küçük bir yazı kutusu (Raycast/Spotlight gibi). Boşsa kapalıdır.</summary>
@@ -153,6 +156,12 @@ public sealed class FridaySettings
         ["toplantı modu"] = ["ritim:odak 45", "soyle:Toplantıda başarılar."],
         ["iyi geceler"] = ["ritim:durum", "soyle:İyi geceler, yarın görüşürüz."],
     };
+
+    /// <summary>
+    /// Özel komutlar: cümlenin herhangi bir yerinde bu ifade geçince adımlar çalışır. "Baha dediğimde 'x' de" diye sesle
+    /// ya da Rutinler sayfasından eklenir. Adımlar rutinlerle aynı biçimdedir.
+    /// </summary>
+    public Dictionary<string, List<string>> Triggers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Yabancı adların okunuşu (ör. "Claude": "Klod"). Yerleşik sözlüğe ek olarak kullanılır; aynı kelime

@@ -57,6 +57,13 @@ public sealed partial class AssistantTools
                 "not" => new QuickReply(NoteCommand(Arg("islem"), Arg("metin"))),
                 "hesap" => SpokenMath.Answer(Arg("soru")) is { } answer ? new QuickReply(answer) : null,
                 "gun_sayaci" => DayCountdown.Answer(Arg("hedef"), memory.Items, DateOnly.FromDateTime(DateTime.Now)) is { } left ? new QuickReply(left) : null,
+                "durum_raporu" => await StatusReportAsync(cancellationToken).ConfigureAwait(false),
+                "sistem" => SystemCommand(Arg("islem"), Arg("dakika")),
+                "nobet" => await WatchCommandAsync(Arg("islem"), Arg("derece"), cancellationToken).ConfigureAwait(false),
+                "sans" => LuckCommand(Arg("islem"), Arg("adet"), Arg("en_az"), Arg("en_cok")),
+                "kronometre" => StopwatchCommand(Arg("islem")),
+                "ozel_komut" => AddCustomCommand(Arg("ifade"), Arg("adim")),
+                "tetik" => await TriggerReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 _ => null
             };
         }
@@ -327,65 +334,14 @@ public sealed partial class AssistantTools
             return null;
         }
 
-        var steps = match.Value.Select(RoutineStep.Parse).ToList();
-        if (steps.Any(step => step.Action == RoutineAction.Briefing))
+        // Brifing birden çok bilgiyi birleştirir; cümleyi model kurar (RunStepsAsync null döner).
+        if (await RunStepsAsync(match.Value, cancellationToken).ConfigureAwait(false) is not { } reply)
         {
-            // Brifing birden çok bilgiyi birleştirir; cümleyi model kurar.
             return null;
         }
 
-        // Adımlar sırayla çalışır; söylenecekler de aynı sırayla birleşir ("Odak başladı… Toplantı modu açık.").
-        var said = new List<string>();
-        IReadOnlyList<CoachStep>? script = null;
-        foreach (var step in steps)
-        {
-            switch (step.Action)
-            {
-                case RoutineAction.App:
-                    OpenApp(step.Value);
-                    break;
-                case RoutineAction.Website:
-                    OpenWebsite(step.Value);
-                    break;
-                case RoutineAction.Search:
-                    Search(step.Value);
-                    break;
-                case RoutineAction.Media:
-                    await MediaAsync(step.Value).ConfigureAwait(false);
-                    break;
-                case RoutineAction.LinguaFlow:
-                    await LinguaFlowAsync("baslat", cancellationToken).ConfigureAwait(false);
-                    break;
-                case RoutineAction.Rhythm:
-                    var parts = step.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    var reply = RhythmCommand(parts[0], parts.Length > 1 ? parts[1] : "");
-                    script ??= reply.Script;
-                    if (reply.Script is null)
-                    {
-                        said.Add(reply.Text);
-                    }
-
-                    break;
-                case RoutineAction.Say:
-                    said.Add(step.Value);
-                    break;
-                case RoutineAction.Volume:
-                    SystemVolume.Apply(Math.Clamp(step.Number, 0, 100));
-                    break;
-                case RoutineAction.Wait:
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(step.Number, 0, 60)), cancellationToken).ConfigureAwait(false);
-                    break;
-                case RoutineAction.Remind:
-                    var remind = step.Value.Split('|', 2, StringSplitOptions.TrimEntries);
-                    said.Add(ReminderCommand("kur", remind[0], remind[1]));
-                    break;
-            }
-        }
-
-        _ = TakeScript();
         ledger.Record(DataFlow.Local, "Rutin", $"{match.Key} çalıştı");
-        var text = said.Count > 0 ? string.Join(" ", said) : $"{TurkishGrammar.Capitalize(match.Key)} hazır.";
-        return new QuickReply(text, Script: script);
+        return reply.Text.Length > 0 || reply.Script is not null ? reply : reply with { Text = $"{TurkishGrammar.Capitalize(match.Key)} hazır." };
     }
 
     /// <summary>Ritim koçu (mola, odak, nefes egzersizi); kapalıysa null.</summary>

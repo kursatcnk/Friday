@@ -111,7 +111,7 @@ public sealed partial class App : Application, IDisposable
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes);
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save };
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -205,6 +205,7 @@ public sealed partial class App : Application, IDisposable
         rhythm.Changed += (_, _) => Ui(ShowRhythm);
         ShowRhythm();
         chats.Changed += (_, _) => Ui(panel.RefreshChats);
+        tools.SettingsChanged += (_, _) => Ui(panel.ReloadRoutines);
         chats.CurrentChanged += (_, _) => Ui(() => panel.ShowChat(chats.CurrentTurns));
 
         // Ritim halkasının saniyelik sayacı yalnızca panel açık ve Ritim ya da Bugün sayfası görünürken çalışır.
@@ -391,7 +392,9 @@ public sealed partial class App : Application, IDisposable
         items.AddRange(recent.Select(text => new QuickAskItem("\uE81C", text, "Son sorulan")));
         string[] ideas =
         [
-            "Yeni sohbet", "Saat kaç?", "Yarın hava nasıl?", "Dolar kaç lira?", "Hatırlatmalarım neler?", "Not al: ", "25 dakika odaklanacağım",
+            "Durum raporu", "Yeni sohbet", "Saat kaç?", "Yarın hava nasıl?", "Dolar kaç lira?", "Hatırlatmalarım neler?", "Not al: ",
+            "İndirme bitince haber ver", "Render bitince haber ver", "Bilgisayarı kilitle", "Karanlık moda geç", "Ekran görüntüsü al",
+            "30 dakika sonra bilgisayarı kapat", "Kapatmayı iptal et", "Kronometreyi başlat", "Yazı tura at", "25 dakika odaklanacağım",
             "Mola ver", "Bugün ne kadar çalıştım?", "Panodaki metni özetle", "Ekranımda ne var?", "Şu an ne çalıyor?", "Sesi yüzde 30 yap",
         ];
         items.AddRange(ideas.Select(text => new QuickAskItem("\uE945", text, "Komut")));

@@ -153,9 +153,11 @@ public sealed partial class PanelViewModel : ObservableObject
 
     public IReadOnlyList<string> Suggestions { get; } =
     [
+        "Durum raporu",
         "Ekranımda ne var?",
         "Panodaki metni özetle",
         "Yarın hava nasıl?",
+        "İndirme bitince haber ver",
         "25 dakika odaklanacağım",
         "Şu an ne çalıyor?",
         "Bugün ne konuştuk?",
@@ -164,13 +166,15 @@ public sealed partial class PanelViewModel : ObservableObject
     /// <summary>"Bugün" ekranındaki "Dene" kartı: Friday'in dil modelsiz, anında yaptığı işler.</summary>
     public IReadOnlyList<string> TodayIdeas { get; } =
     [
+        "Durum raporu",
         "Yarın hava nasıl?",
         "Dolar kaç lira?",
-        "345 çarpı 12 kaç?",
+        "İndirme bitince haber ver",
         "Yılbaşına kaç gün kaldı?",
-        "Bugün ne kadar çalıştım?",
+        "Ekran görüntüsü al",
+        "Yazı tura at",
+        "Kronometreyi başlat",
         "Hatırlatmalarım neler?",
-        "Notlarımı oku",
         "Bu hafta ne kadar çalıştım?",
     ];
 

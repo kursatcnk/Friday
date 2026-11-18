@@ -22,6 +22,9 @@ public sealed partial class PanelViewModel
     public IReadOnlyList<VoiceOption> PiperVoices => _actions.PiperVoices;
 
     [ObservableProperty]
+    private string _addressAs = "";
+
+    [ObservableProperty]
     private string _selectedHotkey = "Ctrl+Alt+F";
 
     [ObservableProperty]
@@ -204,6 +207,7 @@ public sealed partial class PanelViewModel
         _settings.VoiceRoom = RoomDry ? 0 : RoomWarm ? 0.14 : 0.07;
         _settings.VoiceModelPath = SelectedPiperVoice?.Name ?? "";
         _settings.KeepHistory = KeepHistory;
+        _settings.AddressAs = AddressAs.Trim();
 
         var notes = new List<string>();
         if (StartWithWindows != _settings.StartWithWindows)
@@ -289,6 +293,7 @@ public sealed partial class PanelViewModel
             ?? PiperVoices.FirstOrDefault(voice => voice.Name.EndsWith("tr_TR-dfki-medium.onnx", StringComparison.OrdinalIgnoreCase))
             ?? (PiperVoices.Count > 0 ? PiperVoices[0] : null);
         KeepHistory = _settings.KeepHistory;
+        AddressAs = _settings.AddressAs;
         StartWithWindows = _settings.StartWithWindows;
         SelectedHotkey = HotkeyOptions.FirstOrDefault(option => string.Equals(option, _settings.Hotkey, StringComparison.OrdinalIgnoreCase)) ?? _settings.Hotkey;
         SelectedQuickAsk = _settings.QuickAskHotkey.Length == 0 ? "Kapalı" : _settings.QuickAskHotkey;

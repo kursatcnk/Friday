@@ -7,8 +7,8 @@ namespace Friday.Desktop;
 
 public sealed record RoutineStepView(string Glyph, string Text, bool IsValid = true);
 
-/// <summary>Rutinler sayfasındaki bir kart.</summary>
-public sealed record RoutineView(string Key, string Name, string Phrase, IReadOnlyList<RoutineStepView> Steps);
+/// <summary>Rutinler sayfasındaki bir kart: rutin ya da özel komut (cümlenin içinde geçince çalışır).</summary>
+public sealed record RoutineView(string Key, string Name, string Phrase, IReadOnlyList<RoutineStepView> Steps, bool IsTrigger = false);
 
 /// <summary>Düzenleyicide bir adım: türü sabit, değeri yazılabilir.</summary>
 public sealed partial class RoutineStepEditor(RoutineStepKind kind, string value) : ObservableObject
@@ -32,8 +32,8 @@ public sealed partial class RoutineStepEditor(RoutineStepKind kind, string value
 
 public sealed partial class PanelViewModel
 {
-    private string? _editingRoutine;
-    private string? _pendingRoutineDelete;
+    private RoutineView? _editingRoutine;
+    private RoutineView? _pendingRoutineDelete;
 
     public ObservableCollection<RoutineView> Routines { get; } = [];
 
@@ -50,7 +50,13 @@ public sealed partial class PanelViewModel
     private string _editorTitle = "Yeni rutin";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RoutinePhrase))]
     private string _routineName = "";
+
+    /// <summary>Özel komut: ad cümlenin herhangi bir yerinde geçince çalışır ("baha" → "Baha geldi").</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RoutinePhrase))]
+    private bool _isTriggerRoutine;
 
     [ObservableProperty]
     private string _routineError = "";
@@ -67,71 +73,42 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private bool _canDeleteEditedRoutine;
 
-    /// <summary>Düzenleyicide adın nasıl söyleneceği: "Sabah" ya da "sabah rutinini başlat".</summary>
-    public string RoutinePhrase => RoutineName.Trim().Length == 0
-        ? "Rutine bir ad ver; o adı söylemen yeter."
-        : $"Başlatmak için \"{TurkishGrammar.Capitalize(RoutineName.Trim())}\" ya da \"{RoutineName.Trim().ToLower(Turkish)} rutinini başlat\" de.";
-
-    partial void OnRoutineNameChanged(string value) => OnPropertyChanged(nameof(RoutinePhrase));
-
-    [RelayCommand]
-    private void NewRoutine()
+    /// <summary>Düzenleyicide adın nasıl söyleneceği.</summary>
+    public string RoutinePhrase
     {
-        _editingRoutine = null;
-        EditorTitle = "Yeni rutin";
-        RoutineName = "";
-        EditorSteps.Clear();
-        RoutineError = "";
-        CanDeleteEditedRoutine = false;
-        IsEditingRoutine = true;
-    }
-
-    [RelayCommand]
-    private void EditRoutine(string key)
-    {
-        if (!_settings.Routines.TryGetValue(key, out var steps))
+        get
         {
-            return;
-        }
-
-        _editingRoutine = key;
-        EditorTitle = "Rutini düzenle";
-        RoutineName = key;
-        EditorSteps.Clear();
-        foreach (var text in steps)
-        {
-            try
+            var name = RoutineName.Trim();
+            if (name.Length == 0)
             {
-                var step = RoutineStep.Parse(text);
-                EditorSteps.Add(new RoutineStepEditor(step.Kind, step.Value));
+                return "Rutine bir ad ver; o adı söylemen yeter.";
             }
-            catch (FormatException)
-            {
-                // Bozuk adım düzenleyiciye alınmaz; kaydedilince dosyadan da düşer.
-            }
-        }
 
-        RoutineError = "";
-        CanDeleteEditedRoutine = true;
-        IsEditingRoutine = true;
+            return IsTriggerRoutine
+                ? $"Söylediğin cümlede \"{name.ToLower(Turkish)}\" geçince çalışır (ör. \"{TurkishGrammar.Capitalize(name)} geldi\")."
+                : $"Başlatmak için \"{TurkishGrammar.Capitalize(name)}\" ya da \"{name.ToLower(Turkish)} rutinini başlat\" de.";
+        }
+    }
+
+    /// <summary>Özel komut sesle eklenince ya da ayarlar dışarıdan değişince listeyi yeniler.</summary>
+    public void ReloadRoutines() => LoadRoutines();
+
+    [RelayCommand]
+    private void NewRoutine() => OpenEditor(null, "Yeni rutin", "", [], isTrigger: false);
+
+    [RelayCommand]
+    private void EditRoutine(RoutineView view)
+    {
+        var source = view.IsTrigger ? _settings.Triggers : _settings.Routines;
+        if (source.TryGetValue(view.Key, out var steps))
+        {
+            OpenEditor(view, view.IsTrigger ? "Özel komutu düzenle" : "Rutini düzenle", view.Key, steps, view.IsTrigger);
+        }
     }
 
     [RelayCommand]
-    private void UseTemplate(RoutineTemplate template)
-    {
-        _editingRoutine = null;
-        EditorTitle = "Yeni rutin";
-        RoutineName = _settings.Routines.ContainsKey(template.Name) ? $"{template.Name} 2" : template.Name;
-        EditorSteps.Clear();
-        foreach (var step in template.Steps.Select(RoutineStep.Parse))
-        {
-            EditorSteps.Add(new RoutineStepEditor(step.Kind, step.Value));
-        }
-
-        RoutineError = "";
-        CanDeleteEditedRoutine = false;
-        IsEditingRoutine = true;
-    }
+    private void UseTemplate(RoutineTemplate template) =>
+        OpenEditor(null, "Yeni rutin", _settings.Routines.ContainsKey(template.Name) ? $"{template.Name} 2" : template.Name, template.Steps, isTrigger: false);
 
     [RelayCommand]
     private void AddStep(RoutineStepKind kind) => EditorSteps.Add(new RoutineStepEditor(kind, ""));
@@ -172,7 +149,7 @@ public sealed partial class PanelViewModel
         var name = string.Join(' ', RoutineName.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLower(Turkish);
         if (name.Length < 2)
         {
-            RoutineError = "Rutine en az iki harflik bir ad ver.";
+            RoutineError = "En az iki harflik bir ad ver.";
             return;
         }
 
@@ -182,9 +159,12 @@ public sealed partial class PanelViewModel
             return;
         }
 
-        if (_settings.Routines.ContainsKey(name) && !string.Equals(name, _editingRoutine, StringComparison.OrdinalIgnoreCase))
+        var target = IsTriggerRoutine ? _settings.Triggers : _settings.Routines;
+        var renamedOrMoved = _editingRoutine is null || _editingRoutine.IsTrigger != IsTriggerRoutine
+                             || !string.Equals(_editingRoutine.Key, name, StringComparison.OrdinalIgnoreCase);
+        if (renamedOrMoved && target.ContainsKey(name))
         {
-            RoutineError = $"\"{name}\" adında bir rutin zaten var.";
+            RoutineError = IsTriggerRoutine ? $"\"{name}\" için bir özel komut zaten var." : $"\"{name}\" adında bir rutin zaten var.";
             return;
         }
 
@@ -208,12 +188,12 @@ public sealed partial class PanelViewModel
             }
         }
 
-        if (_editingRoutine is not null)
+        if (_editingRoutine is { } original)
         {
-            _settings.Routines.Remove(_editingRoutine);
+            (original.IsTrigger ? _settings.Triggers : _settings.Routines).Remove(original.Key);
         }
 
-        _settings.Routines[name] = steps;
+        target[name] = steps;
         _actions.Save(_settings);
         IsEditingRoutine = false;
         RoutineError = "";
@@ -222,21 +202,23 @@ public sealed partial class PanelViewModel
     }
 
     [RelayCommand]
-    private void AskDeleteRoutine(string key)
+    private void AskDeleteRoutine(RoutineView view)
     {
-        _pendingRoutineDelete = key;
-        RoutineDeleteQuestion = $"\"{TurkishGrammar.Capitalize(key)}\" rutini silinsin mi?";
+        _pendingRoutineDelete = view;
+        RoutineDeleteQuestion = view.IsTrigger
+            ? $"\"{view.Key}\" özel komutu silinsin mi?"
+            : $"\"{TurkishGrammar.Capitalize(view.Key)}\" rutini silinsin mi?";
         IsConfirmingRoutineDelete = true;
     }
 
     [RelayCommand]
     private void ConfirmDeleteRoutine()
     {
-        if (_pendingRoutineDelete is { } key && _settings.Routines.Remove(key))
+        if (_pendingRoutineDelete is { } view && (view.IsTrigger ? _settings.Triggers : _settings.Routines).Remove(view.Key))
         {
             _actions.Save(_settings);
-            RoutineMessage = $"\"{TurkishGrammar.Capitalize(key)}\" silindi.";
-            if (string.Equals(key, _editingRoutine, StringComparison.OrdinalIgnoreCase))
+            RoutineMessage = $"\"{TurkishGrammar.Capitalize(view.Key)}\" silindi.";
+            if (_editingRoutine == view)
             {
                 IsEditingRoutine = false;
             }
@@ -258,39 +240,76 @@ public sealed partial class PanelViewModel
     [RelayCommand]
     private void DeleteEditedRoutine()
     {
-        if (_editingRoutine is { } key)
+        if (_editingRoutine is { } view)
         {
-            AskDeleteRoutine(key);
+            AskDeleteRoutine(view);
         }
     }
 
     [RelayCommand]
-    private void RunRoutine(string key)
+    private void RunRoutine(RoutineView view)
     {
         GoToChat();
-        _actions.Send($"{key} rutinini çalıştır");
+        // Özel komut adı söylenmiş gibi, rutin "… rutinini çalıştır" diye gider; ikisi de hızlı yoldan çalışır.
+        _actions.Send(view.IsTrigger ? TurkishGrammar.Capitalize(view.Key) : $"{view.Key} rutinini çalıştır");
+    }
+
+    private void OpenEditor(RoutineView? view, string title, string name, IEnumerable<string> steps, bool isTrigger)
+    {
+        _editingRoutine = view;
+        EditorTitle = title;
+        RoutineName = name;
+        IsTriggerRoutine = isTrigger;
+        EditorSteps.Clear();
+        foreach (var text in steps)
+        {
+            try
+            {
+                var step = RoutineStep.Parse(text);
+                EditorSteps.Add(new RoutineStepEditor(step.Kind, step.Value));
+            }
+            catch (FormatException)
+            {
+                // Bozuk adım düzenleyiciye alınmaz; kaydedilince dosyadan da düşer.
+            }
+        }
+
+        RoutineError = "";
+        CanDeleteEditedRoutine = view is not null;
+        IsEditingRoutine = true;
     }
 
     private void LoadRoutines()
     {
         Routines.Clear();
-        foreach (var (name, steps) in _settings.Routines.OrderBy(pair => pair.Key, StringComparer.Create(Turkish, true)))
+        var comparer = StringComparer.Create(Turkish, true);
+        foreach (var (name, steps) in _settings.Routines.OrderBy(pair => pair.Key, comparer))
         {
-            var views = new List<RoutineStepView>();
-            foreach (var text in steps)
-            {
-                try
-                {
-                    var step = RoutineStep.Parse(text);
-                    views.Add(new RoutineStepView(step.Kind.Glyph, step.Describe()));
-                }
-                catch (FormatException)
-                {
-                    views.Add(new RoutineStepView("", $"Geçersiz adım: {text}", IsValid: false));
-                }
-            }
-
-            Routines.Add(new RoutineView(name, TurkishGrammar.Capitalize(name), $"\"{TurkishGrammar.Capitalize(name)}\" de", views));
+            Routines.Add(new RoutineView(name, TurkishGrammar.Capitalize(name), $"\"{TurkishGrammar.Capitalize(name)}\" de", Describe(steps)));
         }
+
+        foreach (var (phrase, steps) in _settings.Triggers.OrderBy(pair => pair.Key, comparer))
+        {
+            Routines.Add(new RoutineView(phrase, TurkishGrammar.Capitalize(phrase), $"Cümlede \"{phrase}\" geçince", Describe(steps), IsTrigger: true));
+        }
+    }
+
+    private static List<RoutineStepView> Describe(IEnumerable<string> steps)
+    {
+        var views = new List<RoutineStepView>();
+        foreach (var text in steps)
+        {
+            try
+            {
+                var step = RoutineStep.Parse(text);
+                views.Add(new RoutineStepView(step.Kind.Glyph, step.Describe()));
+            }
+            catch (FormatException)
+            {
+                views.Add(new RoutineStepView("", $"Geçersiz adım: {text}", IsValid: false));
+            }
+        }
+
+        return views;
     }
 }

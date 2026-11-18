@@ -125,6 +125,8 @@ public sealed partial class AssistantTools
             _reminderClock?.Dispose();
             _reminderClock = null;
         }
+
+        _watches?.Dispose();
     }
 }
 

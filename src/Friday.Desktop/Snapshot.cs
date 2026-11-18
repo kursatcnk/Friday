@@ -50,7 +50,8 @@ internal static class Snapshot
             Save(desktop, Path.Combine(folder, $"hud-{state.ToString().ToLowerInvariant()}.png"));
         }
 
-        var settings = new FridaySettings { UserName = "Kürşat" };
+        var settings = new FridaySettings { UserName = "Kürşat", AddressAs = "patron" };
+        settings.Triggers["baha"] = ["soyle:Baha abi geldiyse çayı tazeleyelim."];
         var now = DateTime.Now;
         var chatFolder = Path.Combine(folder, ".snapshot-chats");
         if (Directory.Exists(chatFolder))

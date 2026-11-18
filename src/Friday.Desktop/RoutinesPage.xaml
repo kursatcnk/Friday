@@ -9,7 +9,7 @@
             <StackPanel Margin="0,0,12,0">
                 <Grid Margin="0,0,0,14">
                     <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0,0,170,0" TextWrapping="Wrap"
-                               Text="Bir rutin, tek cümleyle sırayla yapılan işlerdir: uygulama aç, sesi ayarla, odak başlat, bir şey söyle. Adını söylemen yeter."/>
+                               Text="Bir rutin, tek cümleyle sırayla yapılan işlerdir: uygulama aç, sesi ayarla, odak başlat, bir şey söyle. Adını söylemen yeter. Özel komutlar cümlenin içinde geçince çalışır; sesle de eklenir: &quot;Baha dediğimde 'hoş geldin' de&quot;."/>
                     <Button Style="{StaticResource AccentButton}" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding NewRoutineCommand}" Padding="14,9">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" Foreground="{StaticResource AccentInkBrush}"/>
@@ -53,7 +53,7 @@
                                     <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
                                         <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left"
                                                 Command="{Binding DataContext.RunRoutineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding Key}">
+                                                CommandParameter="{Binding}">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="10" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
                                                 <TextBlock Text="Çalıştır"/>
@@ -62,18 +62,25 @@
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                             <Button Style="{StaticResource IconButton}" ToolTip="Düzenle" Margin="0,0,4,0"
                                                     Command="{Binding DataContext.EditRoutineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding Key}">
+                                                    CommandParameter="{Binding}">
                                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="12"/>
                                             </Button>
                                             <Button Style="{StaticResource IconButton}" ToolTip="Sil"
                                                     Command="{Binding DataContext.AskDeleteRoutineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding Key}">
+                                                    CommandParameter="{Binding}">
                                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12"/>
                                             </Button>
                                         </StackPanel>
                                     </Grid>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"/>
+                                        <Grid>
+                                            <TextBlock Text="{Binding Name}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,0,90,0"/>
+                                            <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="8,2" Background="{StaticResource AccentSoftBrush}"
+                                                    Visibility="{Binding IsTrigger, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="Özel komut" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </Grid>
                                         <TextBlock Text="{Binding Phrase}" Style="{StaticResource Caption}" Margin="0,3,0,12"/>
                                         <ItemsControl ItemsSource="{Binding Steps}">
                                             <ItemsControl.ItemTemplate>
@@ -140,7 +147,14 @@
 
                     <TextBlock Text="Adı" Style="{StaticResource Label}"/>
                     <TextBox Text="{Binding RoutineName, UpdateSourceTrigger=PropertyChanged}" FontSize="14"/>
-                    <TextBlock Text="{Binding RoutinePhrase}" Style="{StaticResource Caption}" Margin="2,6,0,18"/>
+                    <TextBlock Text="{Binding RoutinePhrase}" Style="{StaticResource Caption}" Margin="2,6,0,12"/>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding IsTriggerRoutine}" Margin="0,0,0,18">
+                        <StackPanel>
+                            <TextBlock Text="Özel komut: cümlenin içinde geçince çalışsın" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,2,0,0"
+                                       Text="Açıksa adı tek başına söylemen gerekmez; &quot;Baha geldi&quot; gibi bir cümlede geçmesi yeter."/>
+                        </StackPanel>
+                    </CheckBox>
 
                     <TextBlock Text="Adımlar (sırayla çalışır)" Style="{StaticResource Label}"/>
                     <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,0,0,8" Text="Henüz adım yok; aşağıdan ekle."

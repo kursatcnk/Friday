@@ -33,8 +33,14 @@ public static partial class QuickIntents
     };
 
     /// <param name="routines">Tanımlı rutinlerin adları ("çalışma modu", "mola"…).</param>
-    public static QuickCommand? Match(string text, IEnumerable<string>? routines = null)
+    /// <param name="triggers">Özel komutların ifadeleri ("baha"); cümlenin herhangi bir yerinde geçince çalışır.</param>
+    public static QuickCommand? Match(string text, IEnumerable<string>? routines = null, IEnumerable<string>? triggers = null)
     {
+        if (CustomCommand(text) is { } custom)
+        {
+            return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
+        }
+
         var sentence = Normalize(text);
         if (sentence.Length == 0)
         {
@@ -42,6 +48,14 @@ public static partial class QuickIntents
         }
 
         return Chat(sentence)
+            ?? Closing(sentence)
+            ?? Trigger(sentence, triggers ?? [])
+            ?? StatusReport(sentence)
+            ?? SystemControl(sentence)
+            ?? Watch(sentence)
+            ?? Luck(sentence)
+            ?? Stopwatch(sentence)
+            ?? WakeUp(sentence)
             ?? Video(sentence)
             ?? Clock(sentence)
             ?? Weather(sentence)
@@ -383,7 +397,7 @@ public static partial class QuickIntents
     private static partial Regex NowPlaying();
 
     // "10 dakika sonra beni uyar", "yarım saat sonra toplantıyı hatırlat", "beş dakikalık zamanlayıcı kur"
-    [GeneratedRegex(@"^(?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>dakika|saniye|saat)(?:lık)? (?:(?:sonra|içinde) )?(?:(?<note>.+?) )??(?:için )?(?:beni |bana )?(?:uyar|hatırlat|haber ver|alarm kur|(?:bir )?(?:zamanlayıcı|sayaç|alarm) kur)$")]
+    [GeneratedRegex(@"^(?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>dakika|saniye|saat)(?:lık)? (?:(?:sonra|içinde) )?(?:(?<note>.+?) )??(?:için )?(?:beni |bana )?(?:uyar|uyandır|hatırlat|haber ver|alarm kur|(?:bir )?(?:zamanlayıcı|sayaç|alarm) kur)$")]
     private static partial Regex TimerRequest();
 
     // "odak modu", "25 dakika odaklanacağım", "pomodoro başlat", "elli dakikalık odak aç"
@@ -402,7 +416,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:bu )?(?:sohbeti|konuşmayı) (?:temizle|sil)$")]
     private static partial Regex ClearChat();
 
-    [GeneratedRegex(@"^(?<x>.+?) rutin(?:ini|i)? (?:çalıştır|aç)$")]
+    [GeneratedRegex(@"^(?<x>.+?) (?:rutin(?:ini|i)?|protokol(?:ünü|ü)?) (?:çalıştır|aç|devreye sok)$")]
     private static partial Regex RoutineRun();
 
     [GeneratedRegex(@"^(?:bir )?mola(?: ver(?:elim|eyim|iyorum|mek istiyorum)?| zamanı)?$|^molaya (?:çıkıyorum|çıkalım|gidiyorum)$")]

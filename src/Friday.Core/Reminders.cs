@@ -120,7 +120,9 @@ public sealed class ReminderStore
 
     /// <summary>Söylenecek cümle: "Toplantıyı unutma, zamanı geldi." ya da "Hatırlatma: ilaç."</summary>
     public static string Announcement(Reminder reminder) =>
-        reminder.Text.Length == 0
+        reminder.Text == QuickIntents.AlarmText
+            ? $"Günaydın! Saat {reminder.Due.ToString("HH:mm", CultureInfo.InvariantCulture)}, uyanma vakti."
+            : reminder.Text.Length == 0
             ? $"{TurkishGrammar.Capitalize(TurkishGrammar.Duration((reminder.Due - reminder.Created).TotalMinutes))} doldu."
             : TurkishGrammar.IsAccusative(reminder.Text)
                 ? $"{TurkishGrammar.Capitalize(reminder.Text)} unutma, zamanı geldi."

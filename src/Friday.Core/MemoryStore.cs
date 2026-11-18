@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Friday.Core;
 
@@ -11,7 +12,7 @@ public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created, 
 /// Uzun süreli hafıza: "Unutma, arabanın muayenesi Kasım'da" gibi bilgiler D:\Friday\data\memory.json'a yazılır ve
 /// her soruda dil modeline verilir. Dosya yalnızca bilgisayarda durur.
 /// </summary>
-public sealed class MemoryStore
+public sealed partial class MemoryStore
 {
     private const int MaxItems = 500;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
@@ -65,11 +66,21 @@ public sealed class MemoryStore
                 return existing;
             }
 
-            item = new MemoryItem(Guid.NewGuid().ToString("N")[..8], clean, _clock.GetUtcNow());
-            _items.Add(item);
-            if (_items.Count > MaxItems)
+            // Aynı bilginin biraz farklı söylenişi (ya da düzeltilmiş hali) yeni kayıt açmaz; eskisinin yerine geçer.
+            var index = _items.FindIndex(entry => SameFact(entry.Text, clean));
+            if (index >= 0)
             {
-                _items.RemoveAt(0);
+                item = _items[index] with { Text = clean, Created = _clock.GetUtcNow() };
+                _items[index] = item;
+            }
+            else
+            {
+                item = new MemoryItem(Guid.NewGuid().ToString("N")[..8], clean, _clock.GetUtcNow());
+                _items.Add(item);
+                if (_items.Count > MaxItems)
+                {
+                    _items.RemoveAt(0);
+                }
             }
 
             Save();
@@ -197,4 +208,28 @@ public sealed class MemoryStore
     }
 
     private static string Normalize(string text) => text.Trim().TrimEnd('.').ToLower(Turkish);
+
+    /// <summary>
+    /// İki bilgi aynı şeyi mi söylüyor? Sözcüklerin büyük kısmı ortaksa evet: "muayene 20 Kasım'da" ile "muayene 25
+    /// Kasım'da" aynı bilginin düzeltilmesidir; "kızının doğum günü 3 Mart" ile "oğlunun doğum günü 5 Nisan" değil.
+    /// </summary>
+    public static bool SameFact(string first, string second)
+    {
+        var a = Words(first);
+        var b = Words(second);
+        if (a.Count < 3 || b.Count < 3)
+        {
+            return false;
+        }
+
+        var common = a.Count(b.Contains);
+        var union = a.Count + b.Count - common;
+        return common / (double)union >= 0.6;
+    }
+
+    private static HashSet<string> Words(string text) =>
+        [.. WordSplit().Split(text.ToLower(Turkish)).Where(word => word.Length > 1 || (word.Length == 1 && char.IsDigit(word[0])))];
+
+    [GeneratedRegex(@"[^\p{L}\d]+")]
+    private static partial Regex WordSplit();
 }
