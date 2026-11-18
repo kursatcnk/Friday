@@ -11,6 +11,10 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **"Hey Friday"** | Elin klavyede değilken seslenmen yeterli. Model Friday için bu bilgisayarda eğitildi ve işlemcide çalışır; ses kaydedilmez. Türkçe aksanla ("Hey Fraydey") da tanır. Ayarlardan kapatılır. |
 | **Sohbetler** | Her konuşma ayrı bir sohbet olarak saklanır; başlığı ilk sorudan kendiliğinden çıkar. Sol listede Bugün, Dün, Bu hafta diye gruplanır; sabitle, yeniden adlandır, Markdown olarak kaydet ya da sil. Bütün sohbetlerde arama yapılır ("istanbul" yazınca "İstanbul" geçenler de bulunur). Eski bir sohbeti açıp kaldığı yerden sürdürebilirsin; Friday o sohbetin bağlamıyla devam eder. "Yeni sohbet", "konuyu değiştirelim" ya da "sohbeti temizle" demen de yeter. Bir süre konuşmazsan (varsayılan 30 dk) sonraki soru kendiliğinden yeni bir sohbet olur. |
 | **Hızlı komut kutusu** | **Ctrl+Alt+Space** ile her yerden küçük bir kutu açılır (Raycast ya da Spotlight gibi): yaz, Enter'a bas, kutu kapanır, cevap köşede görünür ve okunur. Yazdıkça rutinlerin, son sorduğun şeyler ve hazır komutlar süzülür; ok tuşlarıyla seç, Tab ile tamamla. |
+| **Araştırma raporu** | "Yerel sesli asistanlar hakkında rapor hazırla" ya da "elektrikli arabaları araştır": Friday arka planda arar, en iyi dört sayfayı okur, yerel modelle kaynaklı bir rapor yazar (`D:\Friday\data\reports`, Markdown). Sen işine devam edersin; hazır olunca özetini söyler, "raporu aç" deyince açar. |
+| **Takvim** | Google ya da Outlook takviminin gizli iCal adresini Ayarlar › Takvim'e yapıştır: "bugün neler var", "yarın programım ne", "bu hafta neler var", "sıradaki toplantım ne". Etkinlikten 10 dk önce haber verir; sabah karşılaması ve Bugün ekranı etkinlikleri de gösterir. Tekrarlayan etkinlikler desteklenir. |
+| **İndirilenler'i düzenle** | "İndirilenleri düzenle" önce ne yapacağını söyler ("52 belge, 40 resim ve 12 video var, klasörlere ayırayım mı?"); "evet" deyince Belgeler, Resimler, Videolar, Müzik, Arşivler, Kurulumlar klasörlerine taşır. Yarım indirmelere ve yeni dosyalara dokunmaz. "Düzenlemeyi geri al" her şeyi eski yerine koyar. |
+| **Gün sonu** | "Günü kapat": bugün ne kadar çalıştığın, kaç mola verdiğin, kaç kez konuştuğumuz, yarının ilk etkinliği ve hatırlatmaları, yarının havası. |
 | **Görsel cevaplar** | Hava, durum raporu, döviz, hatırlatmalar, notlar, haberler ve kronometre ekranın altındaki kapsülün üstünde küçük bir cam kart olarak da görünür: büyük sıcaklık, işlemci ve disk göstergeleri, kur listesi. Cevap yine sesli okunur. |
 | **Seçili metin** | Herhangi bir uygulamada metni seç ve "seçili metni düzelt", "seçili metni İngilizceye çevir", "seçili e-postayı resmileştir", "kısalt" ya da "özetle" de. Sonuç seçimin yerine yazılır (özet okunur); pano eski haline döner. |
 | **Dikte** | "Şunu yaz: yarın 10'da görüşelim" o an açık pencereye yazar. "Dikte modunu aç" deyince konuştukların yazılır; "yeni satır", "geri al" çalışır, "dikte bitti" deyince biter. |
@@ -60,7 +64,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 34 araç, nöbetçiler, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 36 araç, nöbetçiler, takvim, araştırma raporu, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼
@@ -239,6 +243,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 | `MorningGreeting` | `true` | Günün ilk oturuşunda kısa karşılama |
 | `GpuIdleMinutes` | `2` | Bu kadar boşta kalınca dil modeli, Whisper ve Piper kapanır (GPU ve RAM boşalır) |
 | `City` | `İstanbul` | Hava durumunda şehir söylenmezse |
+| `CalendarUrl` | boş | Takvimin gizli iCal (.ics) adresi; boşsa takvim kapalı |
 | `KeepHistory` | `true` | Sohbetleri `D:\Friday\data\chats` altında sakla |
 | `LinguaFlowPath` | LinguaFlow yayını | "Bu videoyu çevir" komutu |
 | `Routines` | çalışma modu, günaydın, mola, toplantı modu, iyi geceler | Panelden düzenlenir. Adımlar: `uygulama:`, `site:`, `ara:`, `medya:`, `ses:30`, `soyle:`, `ozet`, `ritim:odak 25`, `hatirlat:5 dakika sonra\|çay`, `bekle:3`, `linguaflow` |
@@ -252,6 +257,7 @@ Panelin **Ayarlar** bölümünden (kısayollar, Windows açılışında başlatm
 - Dışarı yalnızca şunlar çıkar ve hepsi gizlilik defterine yazılır: Azure açıksa okunacak cevap metni; hava durumu sorulursa şehir adı (Open-Meteo); açmasını istediğin siteler ve aramalar (tarayıcın üzerinden); "Güncellemeleri denetle"ye basarsan GitHub'daki son sürüm numarası sorgusu.
 - Sohbetler, hafıza ve hatırlatmalar Ayarlar › Verilerin bölümünden tek tıkla (onayla) kalıcı olarak silinir.
 - "Ekran görüntüsü al" görüntüyü yalnızca `D:\Friday\data\captures` altına kaydeder. "İnternet gelince haber ver" nöbeti sürerken 10 sn'de bir 1.1.1.1'e ping atar; bu da deftere yazılır. Durum raporu ve nöbetler yalnızca sistem sayaçlarını ve `nvidia-smi`'yi okur. "Gündem ne" haber akışını (TRT Haber) indirir; bu da deftere yazılır.
+- Araştırma raporu arama motoruna yalnızca konuyu gönderir, sayfaları okur ve raporu yerel modelle yazar; her sayfa deftere yazılır. Takvim adresi yalnızca `settings.json`'da durur, takvim 15 dk'da bir okunur.
 - Seçili metin komutları seçimi Ctrl+C ile alır, yerel modelde işler ve panonun eski içeriğini geri koyar. Dikte sesi kaydetmez; yazılan metin sohbete de yazılmaz.
 
 ## Geliştirme
