@@ -101,9 +101,10 @@ public sealed partial class PanelViewModel
                 .Select((done, index) => new HabitDay(done, index == 6, today.AddDays(index - 6).ToString("d MMM ddd", TurkishCulture)))
                 .ToList();
             var rate = HabitBook.Rate(habit, today);
-            HabitRows.Add(new HabitView(habit.Name,
-                streak > 1 ? $"{streak} gün seri · son 30 gün %{Math.Round(rate * 100)}" : $"Son 30 gün %{Math.Round(rate * 100)}",
-                habit.IsDoneOn(today), week));
+            var detail = habit.IsWeekly
+                ? $"Bu hafta {HabitBook.WeekCount(habit, today)}/{habit.PerWeek}" + (streak > 1 ? $" · {streak} hafta hedefte" : "")
+                : streak > 1 ? $"{streak} gün seri · son 30 gün %{Math.Round(rate * 100)}" : $"Son 30 gün %{Math.Round(rate * 100)}";
+            HabitRows.Add(new HabitView(habit.Name, detail, habit.IsDoneOn(today), week));
         }
 
         var done = habits.Count(habit => habit.IsDoneOn(today));

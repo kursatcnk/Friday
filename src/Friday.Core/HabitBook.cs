@@ -13,6 +13,11 @@ public sealed class DailyHabit
 
     public List<DateOnly> Done { get; set; } = [];
 
+    /// <summary>Haftalık hedef ("haftada 3 kez"); 0 ise her gün.</summary>
+    public int PerWeek { get; set; }
+
+    public bool IsWeekly => PerWeek > 0;
+
     public bool IsDoneOn(DateOnly day) => Done.Contains(day);
 }
 
@@ -59,18 +64,24 @@ public sealed class HabitBook
         }
     }
 
-    /// <summary>Yeni alışkanlık; aynı adda varsa var olan döner.</summary>
-    public DailyHabit Add(string name, DateOnly today)
+    /// <summary>Yeni alışkanlık; aynı adda varsa var olan döner (haftalık hedef söylendiyse güncellenir).</summary>
+    public DailyHabit Add(string name, DateOnly today, int perWeek = 0)
     {
         var clean = TurkishGrammar.Capitalize(name.Trim().TrimEnd('.', '!'));
         lock (_gate)
         {
             if (_habits.FirstOrDefault(habit => Key(habit.Name) == Key(clean)) is { } existing)
             {
+                if (perWeek > 0 && existing.PerWeek != perWeek)
+                {
+                    existing.PerWeek = perWeek;
+                    Save();
+                }
+
                 return existing;
             }
 
-            var habit = new DailyHabit { Name = clean, Created = today };
+            var habit = new DailyHabit { Name = clean, Created = today, PerWeek = Math.Clamp(perWeek, 0, 7) };
             _habits.Add(habit);
             Save();
             return habit;
@@ -128,9 +139,29 @@ public sealed class HabitBook
         }
     }
 
-    /// <summary>Bugüne (bugün yapılmadıysa düne) kadar üst üste yapılan gün sayısı.</summary>
+    /// <summary>
+    /// Günlük alışkanlıkta bugüne (bugün yapılmadıysa düne) kadar üst üste yapılan gün sayısı; haftalıkta hedefin
+    /// tutturulduğu ardışık hafta sayısı (bu hafta henüz tutmadıysa geçen haftadan geriye).
+    /// </summary>
     public static int Streak(DailyHabit habit, DateOnly today)
     {
+        if (habit.IsWeekly)
+        {
+            var monday = WeekStart(today);
+            var weeks = WeekCount(habit, today) >= habit.PerWeek ? 1 : 0;
+            for (var start = monday.AddDays(-7); start >= habit.Created.AddDays(-6); start = start.AddDays(-7))
+            {
+                if (habit.Done.Count(day => day >= start && day < start.AddDays(7)) < habit.PerWeek)
+                {
+                    break;
+                }
+
+                weeks++;
+            }
+
+            return weeks;
+        }
+
         var days = habit.Done.ToHashSet();
         var day = days.Contains(today) ? today : today.AddDays(-1);
         var streak = 0;
@@ -171,12 +202,48 @@ public sealed class HabitBook
         return span <= 0 ? 0 : Math.Min(1, habit.Done.Count(day => day >= start && day <= today) / (double)span);
     }
 
-    /// <summary>Bugün henüz yapılmayanlar.</summary>
-    public IReadOnlyList<DailyHabit> Pending(DateOnly today) => [.. Habits.Where(habit => !habit.IsDoneOn(today))];
+    /// <summary>Bugün henüz yapılmayanlar; haftalık alışkanlık bu haftanın hedefi tuttuysa sayılmaz.</summary>
+    public IReadOnlyList<DailyHabit> Pending(DateOnly today) =>
+        [.. Habits.Where(habit => !habit.IsDoneOn(today) && (!habit.IsWeekly || WeekCount(habit, today) < habit.PerWeek))];
+
+    /// <summary>Bu hafta (pazartesiden bugüne) yapıldığı gün sayısı.</summary>
+    public static int WeekCount(DailyHabit habit, DateOnly today)
+    {
+        var monday = WeekStart(today);
+        return habit.Done.Count(day => day >= monday && day <= today);
+    }
+
+    /// <summary>Haftalık hedefe yetişmek için bu hafta artık her gün yapılması gerekiyor mu?</summary>
+    public static bool WeekAtRisk(DailyHabit habit, DateOnly today) =>
+        habit.IsWeekly && habit.PerWeek - WeekCount(habit, today) >= 7 - (today.DayNumber - WeekStart(today).DayNumber);
+
+    private static DateOnly WeekStart(DateOnly day) => day.AddDays(-(((int)day.DayOfWeek + 6) % 7));
+
+    /// <summary>"spor, haftada 3" / "haftada üç kez yüzmek" → ("spor", 3); hedef söylenmediyse 0.</summary>
+    public static (string Name, int PerWeek) ParseTarget(string text)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(text, @"[,\s]*\bhaftada\s+(?<n>\d|bir|iki|üç|dört|beş|altı|yedi)\s*(?:kez|kere|defa|gün)?\b[,\s]*", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return (text.Trim(), 0);
+        }
+
+        string[] words = ["sıfır", "bir", "iki", "üç", "dört", "beş", "altı", "yedi"];
+        var value = match.Groups["n"].Value.ToLower(Turkish);
+        var count = int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) ? number : Array.IndexOf(words, value);
+        var name = (text[..match.Index] + " " + text[(match.Index + match.Length)..]).Trim().Trim(',').Trim();
+        return (name, Math.Clamp(count, 0, 7));
+    }
 
     /// <summary>"Kitap okumak: 5 gündür üst üste, bu hafta 6/7."</summary>
     public static string Describe(DailyHabit habit, DateOnly today)
     {
+        if (habit.IsWeekly)
+        {
+            var weeks = Streak(habit, today);
+            return $"{habit.Name}: bu hafta {WeekCount(habit, today)}/{habit.PerWeek}" + (weeks > 1 ? $", {weeks} haftadır hedefte" : "");
+        }
+
         var streak = Streak(habit, today);
         var week = Week(habit, today).Count(done => done);
         var state = habit.IsDoneOn(today) ? "bugün yapıldı" : "bugün henüz yapılmadı";

@@ -36,11 +36,12 @@ public sealed partial class AssistantTools
                 }
 
                 var before = book.Habits.Count;
-                var habit = book.Add(clean, today);
+                var (habitName, perWeek) = HabitBook.ParseTarget(clean);
+                var habit = book.Add(habitName, today, perWeek);
                 ledger.Record(DataFlow.Local, "Alışkanlık", $"{habit.Name} takibe alındı");
                 return new QuickReply(book.Habits.Count == before
                     ? $"{habit.Name} zaten takip ettiğin alışkanlıklar arasında."
-                    : $"Tamam, \"{habit.Name}\" alışkanlığını takip ediyorum. Yaptığın gün söylemen yeter, ör. \"{DoneExample(habit.Name)}\".");
+                    : $"Tamam, \"{habit.Name}\" alışkanlığını {(habit.IsWeekly ? $"haftada {habit.PerWeek} kez olarak " : "")}takip ediyorum. Yaptığın gün söylemen yeter, ör. \"{DoneExample(habit.Name)}\".");
             case "yaptim":
                 return MarkHabit(book, name, today);
             case "gerial":
@@ -79,6 +80,15 @@ public sealed partial class AssistantTools
         if (!changed)
         {
             return new QuickReply($"{habit.Name} bugün zaten işaretliydi; serin {streak} gün.");
+        }
+
+        if (habit.IsWeekly)
+        {
+            var count = HabitBook.WeekCount(habit, today);
+            ShowHabitCard(book, today);
+            return new QuickReply(count >= habit.PerWeek
+                ? $"Harika, {habit.Name.ToLower(Turkish)} bu haftanın hedefi tamam: {count}/{habit.PerWeek}." + (streak > 1 ? $" {streak} haftadır hedefi tutturuyorsun." : "")
+                : $"İşaretledim: {habit.Name.ToLower(Turkish)} bu hafta {count}/{habit.PerWeek}.");
         }
 
         var praise = Milestones.Contains(streak)
@@ -133,7 +143,7 @@ public sealed partial class AssistantTools
         ShowCard(new AnswerCard("Alışkanlıklar", "")
         {
             Rows = [.. book.Habits.Take(MaxCardRows).Select(habit => new CardRow(habit.Name,
-                $"{string.Concat(HabitBook.Week(habit, today).Select(done => done ? "●" : "○"))}  {HabitBook.Streak(habit, today)} gün"))]
+                $"{string.Concat(HabitBook.Week(habit, today).Select(done => done ? "●" : "○"))}  " + (habit.IsWeekly ? $"{HabitBook.WeekCount(habit, today)}/{habit.PerWeek} bu hafta" : $"{HabitBook.Streak(habit, today)} gün")))]
         });
 
     /// <summary>"Kitap okumak" → "kitap okudum"; bilinmeyen biçimde "X yaptım".</summary>
@@ -352,7 +362,9 @@ public sealed partial class AssistantTools
             return null;
         }
 
-        var risky = book.Pending(today).Select(habit => (habit.Name, Streak: HabitBook.Streak(habit, today))).Where(item => item.Streak >= 2).OrderByDescending(item => item.Streak).ToList();
+        // Günlük alışkanlıkta seri, haftalıkta haftanın hedefi tehlikedeyse.
+        var risky = book.Pending(today).Where(habit => !habit.IsWeekly || HabitBook.WeekAtRisk(habit, today))
+            .Select(habit => (habit.Name, Streak: habit.IsWeekly ? 2 : HabitBook.Streak(habit, today))).Where(item => item.Streak >= 2).OrderByDescending(item => item.Streak).ToList();
         if (risky.Count == 0)
         {
             return null;
@@ -417,7 +429,7 @@ public sealed partial class AssistantTools
         var today = DateOnly.FromDateTime(now);
         if (HabitBook is { } book && book.Habits.Count > 0)
         {
-            var streaks = book.Habits.Select(habit => (habit.Name, Streak: HabitBook.Streak(habit, today))).Where(item => item.Streak >= 3).ToList();
+            var streaks = book.Habits.Where(habit => !habit.IsWeekly).Select(habit => (habit.Name, Streak: HabitBook.Streak(habit, today))).Where(item => item.Streak >= 3).ToList();
             parts.Add(streaks.Count > 0
                 ? $"Bugün {book.Habits.Count} alışkanlığın var; {streaks[0].Name.ToLower(Turkish)} serin {streaks[0].Streak} gün, bozma."
                 : $"Bugün takip ettiğin {book.Habits.Count} alışkanlık var.");
