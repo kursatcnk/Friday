@@ -483,13 +483,30 @@ public sealed partial class App : Application, IDisposable
             panel.ShowPlan(plan, now);
         }
 
+        // Selam kartındaki tek satırlık özet.
+        void ShowSummary()
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var (from, to, _) = ExpenseBook.Period("ay", DateTime.Now);
+            panel.ShowTodaySummary(todos.Open, habitBook.Pending(today), vocabulary.Started ? vocabulary.Stats(today) : null, expenses.Summary(from, to).Total, today);
+        }
+
+        todos.Changed += (_, _) => Ui(ShowSummary);
+        habitBook.Changed += (_, _) => Ui(ShowSummary);
+        expenses.Changed += (_, _) => Ui(ShowSummary);
+        vocabulary.Changed += (_, _) => Ui(ShowSummary);
+        ShowSummary();
         todos.Changed += (_, _) => Ui(ShowPlan);
         habitBook.Changed += (_, _) => Ui(ShowPlan);
         reminders.Changed += (_, _) => Ui(ShowPlan);
         tools.Calendar.Changed += (_, _) => Ui(ShowPlan);
         ShowPlan();
         var planClock = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
-        planClock.Tick += (_, _) => ShowPlan();
+        planClock.Tick += (_, _) =>
+        {
+            ShowPlan();
+            ShowSummary();
+        };
         planClock.Start();
         vocabulary.Changed += (_, _) => Ui(() => panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started));
         panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started);

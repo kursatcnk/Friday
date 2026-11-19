@@ -172,6 +172,17 @@
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding TimeGreeting}" FontFamily="{StaticResource DisplayFont}" FontSize="28" FontWeight="SemiBold"/>
                                     <TextBlock Text="{Binding WakeHint}" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding TodaySummary}" Foreground="{StaticResource AccentBrush}" FontSize="12.5" Margin="0,6,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TodaySummary}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="20,0,0,0"
                                             Visibility="{Binding HasWeather, Converter={StaticResource Visible}}">

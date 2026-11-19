@@ -45,6 +45,7 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Metin kısaltmaları** | "İmza kısaltması: Saygılarımla, …" ya da bir metni kopyalayıp "panodakini adres olarak kaydet"; sonra "imzamı yaz", "adresimi yapıştır" deyince açık pencereye yazılır. Ayarlardan da düzenlenir. |
 | **Gün sonu sorusu** | Akşam 21.30–23.00 arası bir kez "Günün nasıl geçti?" diye sorar; cevabı günlüğe yazar, söz ettiğin alışkanlıkları işaretler. "Şimdi değil" demen yeter; "günümü yazalım" ile istediğin an. |
 | **Ayarlarda arama** | Ayarlar sayfasının üstündeki kutuya "ses", "görüşme", "yedek" yaz; yalnızca eşleşen kartlar kalır. |
+| **Günün özeti** | Bugün ekranındaki selam kartının altında tek satır: bekleyen işler (acil olanlar), kalan alışkanlıklar, bekleyen kelimeler ve bu ayın harcaması. |
 | **Şimdi ne yapayım?** | Geciken ve bugün teslim işlere, uzun süredir mola verilmemesine, ödeme gününe, serisi bozulacak alışkanlığa, gün planına ve bekleyen kelimelere bakıp tek bir öneri verir. Dil modeli kullanmaz. |
 | **Haftalık hedefli alışkanlıklar** | "Haftada 3 kez spor alışkanlığı ekle": seri hafta hafta sayılır, kartta "bu hafta 2/3" görünür; yalnızca o hafta hedefe yetişmek için gün kalmadıysa hatırlatır. |
 | **Fişten harcama ve ay sonu tahmini** | Fişin ekran alıntısını kopyala, "panodaki fişi harcamaya ekle" de: toplam ve mağaza yerel görme modeliyle okunur. Aylık özet bu gidişle ay sonunda ne kadar harcanacağını ve bütçenin aşılıp aşılmayacağını söyler. |

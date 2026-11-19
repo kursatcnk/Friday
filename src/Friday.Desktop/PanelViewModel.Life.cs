@@ -62,6 +62,37 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _billsText = "";
 
+    /// <summary>Selam kartında günün tek satırlık özeti; gösterecek bir şey yoksa boş.</summary>
+    [ObservableProperty]
+    private string _todaySummary = "";
+
+    public void ShowTodaySummary(IReadOnlyList<TodoItem> open, IReadOnlyList<DailyHabit> pending, DeckStats? words, decimal monthSpent, DateOnly today)
+    {
+        var parts = new List<string>();
+        if (open.Count > 0)
+        {
+            var urgent = open.Count(item => item.Due is { } due && due <= today.AddDays(1));
+            parts.Add($"{open.Count} iş" + (urgent > 0 ? $" ({urgent} tanesi acil)" : ""));
+        }
+
+        if (pending.Count > 0)
+        {
+            parts.Add($"{pending.Count} alışkanlık kaldı");
+        }
+
+        if (words is { Waiting: > 0 } deck)
+        {
+            parts.Add($"{deck.Waiting} kelime bekliyor");
+        }
+
+        if (monthSpent > 0)
+        {
+            parts.Add($"bu ay {ExpenseBook.Money(monthSpent)}");
+        }
+
+        TodaySummary = string.Join(" · ", parts);
+    }
+
     public ObservableCollection<PlanRow> PlanRows { get; } = [];
 
     [ObservableProperty]
