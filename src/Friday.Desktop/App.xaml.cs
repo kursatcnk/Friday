@@ -251,13 +251,15 @@ public sealed partial class App : Application, IDisposable
         var notes = new NoteStore(Path.Combine(paths.Data, "notes.md"));
         var todos = new TodoStore(Path.Combine(paths.Data, "todos.json"));
         var habits = new HabitTracker(Path.Combine(paths.Data, "habits.json"));
+        var habitBook = new HabitBook(Path.Combine(paths.Data, "habit-book.json"));
+        var expenses = new ExpenseBook(Path.Combine(paths.Data, "expenses.json"));
 
         // Yerel model yanıtları uzun sürebilir; zaman aşımını istekler kendi belirler.
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits };
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses };
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -349,6 +351,10 @@ public sealed partial class App : Application, IDisposable
                 }
             },
             RemoveTodo = id => todos.Remove(id),
+            AddHabit = text => habitBook.Add(text, DateOnly.FromDateTime(DateTime.Now)),
+            ToggleHabit = (name, done) => habitBook.Mark(name, DateOnly.FromDateTime(DateTime.Now), done),
+            RemoveHabit = name => habitBook.Remove(name),
+            RemoveExpense = id => expenses.Remove(id),
             RestoreData = () => RestoreData(paths),
             Restart = RestartFriday,
             ScanReclaimable = () => Task.Run(() => DataMaintenance.Reclaimable(paths, settings)),
@@ -435,6 +441,10 @@ public sealed partial class App : Application, IDisposable
         notes.Changed += (_, _) => Ui(() => panel.ShowNotes(notes.All));
         todos.Changed += (_, _) => Ui(() => panel.ShowTodos(todos.Visible(DateTime.Now)));
         panel.ShowTodos(todos.Visible(DateTime.Now));
+        habitBook.Changed += (_, _) => Ui(() => panel.ShowHabits(habitBook.Habits, DateOnly.FromDateTime(DateTime.Now)));
+        panel.ShowHabits(habitBook.Habits, DateOnly.FromDateTime(DateTime.Now));
+        expenses.Changed += (_, _) => Ui(() => panel.ShowSpending(expenses, DateTime.Now));
+        panel.ShowSpending(expenses, DateTime.Now);
         ShowToday();
         panel.ShowNotes(notes.All);
         async Task RefreshWeatherAsync()

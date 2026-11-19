@@ -44,7 +44,8 @@ public sealed partial class AssistantTools
             case "tamamla":
                 if (todos.Find(text) is not { } match)
                 {
-                    return null;
+                    // "Meditasyonu tamamladım": listede böyle bir iş yoksa takip edilen bir alışkanlık olabilir.
+                    return HabitBook is { } book ? MarkHabit(book, text, DateOnly.FromDateTime(now)) : null;
                 }
 
                 todos.Complete(match.Id, now);

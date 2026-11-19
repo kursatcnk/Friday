@@ -79,6 +79,7 @@ public static partial class QuickIntents
             ?? CalendarQuestion(sentence)
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
+            ?? Life(sentence)
             ?? Todo(sentence)
             ?? RecurringReminder(sentence)
             ?? Ambient(sentence)
@@ -100,6 +101,7 @@ public static partial class QuickIntents
             ?? Countdown(text)
             ?? Rhythm(sentence)
             ?? Routine(sentence, routines ?? [])
+            ?? HabitDone(sentence)
             ?? TodoDone(sentence)
             ?? CloseApp(sentence)
             ?? App(sentence);

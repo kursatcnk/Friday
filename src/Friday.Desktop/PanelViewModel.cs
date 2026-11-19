@@ -152,6 +152,15 @@ public sealed class PanelActions
 
     public Action<string> RemoveTodo { get; init; } = _ => { };
 
+    public Action<string> AddHabit { get; init; } = _ => { };
+
+    /// <summary>Alışkanlığın bugünkü işaretini koyar ya da kaldırır.</summary>
+    public Action<string, bool> ToggleHabit { get; init; } = (_, _) => { };
+
+    public Action<string> RemoveHabit { get; init; } = _ => { };
+
+    public Action<string> RemoveExpense { get; init; } = _ => { };
+
     /// <summary>Takvim adresini dener; sonucu anlatan cümle.</summary>
     public Func<string, Task<string>> TestCalendar { get; init; } = _ => Task.FromResult("");
 }

@@ -346,6 +346,176 @@
                                     </Grid>
                                 </StackPanel>
                             </Border>
+                            <!-- Alışkanlıklar: bugünün işareti, son 7 gün ve seri. -->
+                            <Border local:CardFlowPanel.Key="habits" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock Text="Alışkanlıklar" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock Text="{Binding HabitSummary}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,6,0,0" Visibility="{Binding HabitRows.Count, Converter={StaticResource ZeroVisible}}"
+                                               Text="Her gün yapmak istediğin şeyleri ekle; &quot;bugün spor yaptım&quot; deyince işaretleyip serini sayarım."/>
+                                    <ItemsControl ItemsSource="{Binding HabitRows}" Margin="0,8,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:HabitView}">
+                                                <Grid x:Name="Row" Background="Transparent" Margin="0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="28"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding IsDoneToday, Mode=OneWay}" VerticalAlignment="Center" ToolTip="Bugün yaptım"
+                                                              Command="{Binding DataContext.ToggleHabitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                              CommandParameter="{Binding}"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Streak}" Style="{StaticResource Caption}" Margin="0,1,0,0"/>
+                                                    </StackPanel>
+                                                    <ItemsControl Grid.Column="2" ItemsSource="{Binding Week}" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="{x:Type local:HabitDay}">
+                                                                <Ellipse x:Name="Dot" Width="9" Height="9" Margin="2.5,0" Fill="#2CFFFFFF" ToolTip="{Binding Tip}"/>
+                                                                <DataTemplate.Triggers>
+                                                                    <DataTrigger Binding="{Binding Done}" Value="True">
+                                                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource AccentBrush}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                        <Setter TargetName="Dot" Property="Stroke" Value="{StaticResource MutedBrush}"/>
+                                                                        <Setter TargetName="Dot" Property="StrokeThickness" Value="1"/>
+                                                                    </DataTrigger>
+                                                                </DataTemplate.Triggers>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <Button Grid.Column="3" x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Takipten çıkar" Opacity="0" Padding="5" Margin="4,0,0,0"
+                                                            Command="{Binding DataContext.RemoveHabitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
+                                                    </Button>
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Remove" Property="Opacity" Value="1"/>
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Grid Margin="0,8,0,0">
+                                        <TextBox Text="{Binding NewHabit, UpdateSourceTrigger=PropertyChanged}" Padding="12,7" FontSize="12.5" AutomationProperties.Name="Yeni alışkanlık">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding AddHabitCommand}"/>
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                        <TextBlock Text="Yeni alışkanlık, ör. kitap okumak" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False" Margin="14,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12.5">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding NewHabit}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!-- Harcamalar: bu ayın toplamı, bütçe ve kategoriler. -->
+                            <Border local:CardFlowPanel.Key="spending" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock Text="Harcamalar" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock Text="{Binding SpendingCaption}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding SpendingTotal}" FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="SemiBold" Margin="0,6,0,0"
+                                               Typography.NumeralAlignment="Tabular"/>
+                                    <StackPanel Visibility="{Binding HasBudget, Converter={StaticResource Visible}}" Margin="0,6,0,2">
+                                        <Grid Height="6">
+                                            <Border CornerRadius="3" Background="{StaticResource LineBrush}"/>
+                                            <Border CornerRadius="3" HorizontalAlignment="Left" Opacity="0.85">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsOverBudget}" Value="True">
+                                                                <Setter Property="Background" Value="#FF6B6B"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Border.Width>
+                                                    <MultiBinding Converter="{StaticResource Fraction}">
+                                                        <Binding Path="BudgetFraction"/>
+                                                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                                    </MultiBinding>
+                                                </Border.Width>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Text="{Binding BudgetText}" Style="{StaticResource Caption}" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,6,0,0" Visibility="{Binding HasSpending, Converter={StaticResource Hidden}}"
+                                               Text="&quot;Kahveye 80 lira harcadım&quot; de, kaydedeyim. &quot;Aylık bütçem 15 bin lira&quot; dersen bütçeyi de takip ederim."/>
+                                    <ItemsControl ItemsSource="{Binding SpendingRows}" Margin="0,10,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:SpendingRow}">
+                                                <Grid Margin="0,0,0,7">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="86"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Label}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    <Grid Grid.Column="1" Height="5" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                        <Border CornerRadius="2.5" HorizontalAlignment="Left" Background="{StaticResource AccentBrush}" Opacity="0.7">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource Fraction}">
+                                                                    <Binding Path="Fraction"/>
+                                                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
+                                                        </Border>
+                                                    </Grid>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Value}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <ItemsControl ItemsSource="{Binding RecentExpenses}" Margin="0,4,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:ExpenseView}">
+                                                <Grid x:Name="Row" Background="Transparent" Margin="0,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Text}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Amount}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <Button Grid.Column="2" x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Harcamayı sil" Opacity="0" Padding="5" Margin="2,0,0,0"
+                                                            Command="{Binding DataContext.RemoveExpenseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
+                                                    </Button>
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Remove" Property="Opacity" Value="1"/>
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
                             <!-- Notlar. -->
                             <Border local:CardFlowPanel.Key="notes" Style="{StaticResource Card}">
                                 <StackPanel>

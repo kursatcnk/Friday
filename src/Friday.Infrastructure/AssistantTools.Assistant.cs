@@ -395,6 +395,8 @@ public sealed partial class AssistantTools
             rows.Add(new CardRow("Yarın hatırlatma", $"{dueTomorrow.Count}"));
         }
 
+        LifeDayEnd(parts, rows, now);
+
         try
         {
             parts.Add(await WeatherSpeechAsync("", "yarin", rainQuestion: false, cancellationToken).ConfigureAwait(false));

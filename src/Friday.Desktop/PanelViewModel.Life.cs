@@ -1,0 +1,128 @@
+using System.Collections.ObjectModel;
+using System.Globalization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Friday.Core;
+
+namespace Friday.Desktop;
+
+/// <summary>Alışkanlık kartında bir günün noktası: yapıldı mı, bugün mü, üstüne gelince görünen gün adı.</summary>
+public sealed record HabitDay(bool Done, bool IsToday, string Tip);
+
+/// <summary>"Bugün" ekranındaki alışkanlık satırı.</summary>
+public sealed record HabitView(string Name, string Streak, bool IsDoneToday, IReadOnlyList<HabitDay> Week);
+
+/// <summary>Harcama kartında bir kategori: adı, tutarı ve en büyüğe göre doluluğu (0–1).</summary>
+public sealed record SpendingRow(string Label, string Value, double Fraction);
+
+/// <summary>Harcama kartındaki son harcamalardan biri.</summary>
+public sealed record ExpenseView(string Id, string Text, string Amount);
+
+public sealed partial class PanelViewModel
+{
+    private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+    public ObservableCollection<HabitView> HabitRows { get; } = [];
+
+    public ObservableCollection<SpendingRow> SpendingRows { get; } = [];
+
+    public ObservableCollection<ExpenseView> RecentExpenses { get; } = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddHabitCommand))]
+    private string _newHabit = "";
+
+    [ObservableProperty]
+    private string _habitSummary = "";
+
+    [ObservableProperty]
+    private string _spendingTotal = "0 TL";
+
+    [ObservableProperty]
+    private string _spendingCaption = "";
+
+    [ObservableProperty]
+    private bool _hasSpending;
+
+    [ObservableProperty]
+    private bool _hasBudget;
+
+    [ObservableProperty]
+    private double _budgetFraction;
+
+    [ObservableProperty]
+    private string _budgetText = "";
+
+    [ObservableProperty]
+    private bool _isOverBudget;
+
+    public void ShowHabits(IReadOnlyList<DailyHabit> habits, DateOnly today)
+    {
+        HabitRows.Clear();
+        foreach (var habit in habits)
+        {
+            var streak = HabitBook.Streak(habit, today);
+            var week = HabitBook.Week(habit, today)
+                .Select((done, index) => new HabitDay(done, index == 6, today.AddDays(index - 6).ToString("d MMM ddd", TurkishCulture)))
+                .ToList();
+            var rate = HabitBook.Rate(habit, today);
+            HabitRows.Add(new HabitView(habit.Name,
+                streak > 1 ? $"{streak} gün seri · son 30 gün %{Math.Round(rate * 100)}" : $"Son 30 gün %{Math.Round(rate * 100)}",
+                habit.IsDoneOn(today), week));
+        }
+
+        var done = habits.Count(habit => habit.IsDoneOn(today));
+        HabitSummary = habits.Count == 0 ? "" : done == habits.Count ? "Bugün hepsi tamam" : $"Bugün {done}/{habits.Count}";
+    }
+
+    private bool CanAddHabit() => NewHabit.Trim().Length > 1;
+
+    [RelayCommand(CanExecute = nameof(CanAddHabit))]
+    private void AddHabit()
+    {
+        _actions.AddHabit(NewHabit.Trim());
+        NewHabit = "";
+    }
+
+    [RelayCommand]
+    private void ToggleHabit(HabitView habit) => _actions.ToggleHabit(habit.Name, !habit.IsDoneToday);
+
+    [RelayCommand]
+    private void RemoveHabit(HabitView habit) => _actions.RemoveHabit(habit.Name);
+
+    public void ShowSpending(ExpenseBook book, DateTime now)
+    {
+        var (from, to, _) = ExpenseBook.Period("ay", now);
+        var items = book.Between(from, to);
+        var summary = book.Summary(from, to);
+        HasSpending = items.Count > 0;
+        SpendingTotal = ExpenseBook.Money(summary.Total);
+        SpendingCaption = $"{now.ToString("MMMM", TurkishCulture)} · {summary.Count} harcama";
+        var budget = book.MonthlyBudget;
+        HasBudget = budget > 0;
+        BudgetFraction = budget > 0 ? (double)Math.Min(1, summary.Total / budget) : 0;
+        IsOverBudget = budget > 0 && summary.Total > budget;
+        BudgetText = budget <= 0
+            ? ""
+            : summary.Total <= budget
+                ? $"Bütçe {ExpenseBook.Money(budget)} · {ExpenseBook.Money(budget - summary.Total)} kaldı"
+                : $"Bütçe {ExpenseBook.Money(budget)} · {ExpenseBook.Money(summary.Total - budget)} aşıldı";
+
+        SpendingRows.Clear();
+        var largest = summary.Categories.Count > 0 ? summary.Categories[0].Amount : 1;
+        foreach (var (category, amount) in summary.Categories.Take(5))
+        {
+            SpendingRows.Add(new SpendingRow(category, ExpenseBook.Money(amount), largest == 0 ? 0 : (double)(amount / largest)));
+        }
+
+        RecentExpenses.Clear();
+        foreach (var item in book.Items.OrderByDescending(item => item.When).Take(3))
+        {
+            var label = item.Note.Length > 0 ? TurkishGrammar.Capitalize(item.Note) : item.Category;
+            RecentExpenses.Add(new ExpenseView(item.Id, $"{item.When.ToString("d MMM", TurkishCulture)} · {label}", ExpenseBook.Money(item.Amount)));
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveExpense(ExpenseView item) => _actions.RemoveExpense(item.Id);
+}

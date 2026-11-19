@@ -101,6 +101,8 @@ public sealed partial class AssistantTools
                 "ortam" => AmbientCommand(Arg("islem"), Arg("tur"), Arg("dakika")),
                 "pano_gecmisi" => ClipboardHistoryCommand(Arg("islem"), Arg("sira")),
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
+                "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
+                "harcama" => ExpenseCommand(Arg("islem"), Arg("tutar"), Arg("aciklama"), Arg("donem"), Arg("kategori")),
                 _ => null
             };
             return reply is not null && TakeCard() is { } card ? reply with { Card = card } : reply;
@@ -416,7 +418,7 @@ public sealed partial class AssistantTools
             "ertele" => coach.Snooze(minutes),
             "nefes" => RhythmCoach.Breathe(),
             "esneme" => RhythmCoach.Stretch(),
-            "su" => coach.Water(),
+            "su" => WaterWithHabit(coach),
             "durum" => coach.Status(),
             "hafta" => coach.WeekSummary(),
             "kaldigimyer" => coach.Where(),
@@ -484,7 +486,20 @@ public sealed partial class AssistantTools
                 : $"Bugünkü odak hedefin {TurkishGrammar.Duration(Settings.FocusGoalMinutes)}.");
         }
 
+        LifeMorning(parts, DateTime.Now);
         return string.Join(" ", parts);
+    }
+
+    /// <summary>"Su içtim": ritim sayacı artar; "su içmek" gibi bir alışkanlık takip ediliyorsa o da işaretlenir.</summary>
+    private QuickReply WaterWithHabit(RhythmCoach coach)
+    {
+        var reply = coach.Water();
+        if (HabitBook is { } book && book.Find("su") is { } habit && HabitBook.Key(habit.Name).StartsWith("su", StringComparison.Ordinal))
+        {
+            book.Mark(habit.Name, DateOnly.FromDateTime(DateTime.Now));
+        }
+
+        return reply;
     }
 
     /// <summary>Rutin adımı: "mola", "odak 25", "nefes".</summary>

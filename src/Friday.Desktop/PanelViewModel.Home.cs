@@ -29,6 +29,8 @@ public sealed partial class PanelViewModel
         ("upcoming", "Yaklaşanlar"),
         ("rhythm", "Ritim"),
         ("todos", "Yapılacaklar"),
+        ("habits", "Alışkanlıklar"),
+        ("spending", "Harcamalar"),
         ("notes", "Notlar"),
         ("routines", "Rutinler"),
         ("system", "Sistem"),
@@ -104,7 +106,13 @@ public sealed partial class PanelViewModel
     {
         HomeCards.Clear();
         var order = _settings.HomeOrder.Where(key => AllHomeCards.Any(card => card.Key == key)).Distinct().ToList();
-        order.AddRange(AllHomeCards.Select(card => card.Key).Where(key => !order.Contains(key)));
+        // Kayıtlı düzende olmayan (yeni sürümle gelen) kart, varsayılan sırada kendinden önce gelen kartın arkasına girer.
+        var defaults = AllHomeCards.Select(card => card.Key).ToList();
+        foreach (var key in defaults.Where(key => !order.Contains(key)).ToList())
+        {
+            var before = defaults.Take(defaults.IndexOf(key)).LastOrDefault(order.Contains);
+            order.Insert(before is null ? 0 : order.IndexOf(before) + 1, key);
+        }
         foreach (var key in order)
         {
             HomeCards.Add(new HomeCardOption(key, AllHomeCards.First(card => card.Key == key).Label, !_settings.HomeHidden.Contains(key), HomeChanged));
