@@ -1607,7 +1607,7 @@ public sealed class FridayAssistant : IDisposable
     private DateTime _lastEyeBreak = DateTime.Now;
     private DateOnly _weatherWarned;
 
-    private DateTime _lastNudge;
+    private readonly ProactiveScheduler _scheduler = new();
 
     /// <summary>Kendiliğinden söylenen bir şey: türü kaydedilir ("bunu bir daha söyleme" ona uygulanır).</summary>
     private void AnnounceNudge(string kind, string text, bool listenAfter = false)
@@ -1617,13 +1617,72 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>
-    /// Kendiliğinden yapılan akşam dürtmeleri (son tarih, seri, hava, doğum günü arifesi, günlük sorusu) arasında en az
-    /// 45 dakika olur; hepsi aynı saatte üst üste konuşmaz. Kullanıcının kurduğu uyarılar (kur alarmı, süre sınırı, uyku
-    /// saati, hatırlatmalar) bu sınıra takılmaz.
+    /// Kendiliğinden söylenebilecekler, önem sırasıyla. Rahatsız etme, bilgisayar başında olmamak, tam ekran, akşam
+    /// dürtmeleri arasındaki 45 dakika ve kullanıcının geri çevirdikleri <see cref="ProactiveScheduler"/>'da tek yerde
+    /// uygulanır; burada yalnızca her birinin ne zaman ve ne söyleyeceği durur.
     /// </summary>
-    private bool CanNudge(DateTime now) => now - _lastNudge >= TimeSpan.FromMinutes(45);
+    private IEnumerable<ProactiveCandidate> ProactiveCandidates()
+    {
+        static bool Between(DateTime now, int fromHour, int fromMinute, int toHour, int toMinute)
+        {
+            var minute = (now.Hour * 60) + now.Minute;
+            return minute >= (fromHour * 60) + fromMinute && minute < (toHour * 60) + toMinute;
+        }
 
-    private void Nudged(DateTime now) => _lastNudge = now;
+        // Kullanıcının kendi kurduğu kur alarmı rahatsız etme açıkken de söylenir (görüşmedeyse sonra okunur).
+        yield return new ProactiveCandidate("kur", 100, context => _tools.RateAlertCheckAsync(context.Now, CancellationToken.None)) { UserSet = true };
+        yield return new ProactiveCandidate("sinir", 90, context => Task.FromResult(_tools.AppLimitAlert(context.Now))) { NeedsPresence = true };
+        yield return new ProactiveCandidate("uyku", 85, context => Task.FromResult(_tools.BedTimeNudge(context.Now))) { NeedsPresence = true };
+        yield return new ProactiveCandidate("arife", 70, context => Task.FromResult(Between(context.Now, 19, 0, 21, 30) ? _tools.EveReminder(context.Now) : null))
+        {
+            Spaced = true,
+            ListenAfter = true
+        };
+        yield return new ProactiveCandidate("son_tarih", 65, context => Task.FromResult(Between(context.Now, 18, 0, 21, 30) ? _tools.DeadlineNudge(context.Now) : null))
+        {
+            Spaced = true,
+            NeedsPresence = true
+        };
+        yield return new ProactiveCandidate("goz", 60, context => Task.FromResult(EyeBreak(context.Now))) { NeedsPresence = true, AvoidFullScreen = true };
+        yield return new ProactiveCandidate("seri", 55, context => Task.FromResult(Between(context.Now, 20, 0, 21, 30) ? _tools.StreakNudge(context.Now) : null))
+        {
+            Spaced = true,
+            NeedsPresence = true
+        };
+        yield return new ProactiveCandidate("gun_sonu", 50, context => Task.FromResult(Between(context.Now, 21, 30, 23, 0) ? _tools.JournalQuestion(context.Now) : null))
+        {
+            Spaced = true,
+            NeedsPresence = true,
+            AvoidFullScreen = true,
+            ListenAfter = true
+        };
+        yield return new ProactiveCandidate("hava", 40, WeatherAlertAsync) { Spaced = true };
+    }
+
+    /// <summary>20-20-20: 20 dakika aralıksız ekran başında ve odakta değilken.</summary>
+    private string? EyeBreak(DateTime now)
+    {
+        if (!_settings.EyeBreaks || _rhythm.Snapshot().FocusEnd is { } end && end > now || now - _lastEyeBreak < TimeSpan.FromMinutes(20))
+        {
+            return null;
+        }
+
+        _lastEyeBreak = now;
+        return "Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.";
+    }
+
+    /// <summary>Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.</summary>
+    private async Task<string?> WeatherAlertAsync(ProactiveContext context)
+    {
+        var now = context.Now;
+        if (!_settings.WeatherAlerts || !(now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) || _weatherWarned == DateOnly.FromDateTime(now))
+        {
+            return null;
+        }
+
+        _weatherWarned = DateOnly.FromDateTime(now);
+        return await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false);
+    }
 
     private async Task CareTickAsync()
     {
@@ -1638,87 +1697,24 @@ public sealed class FridayAssistant : IDisposable
                 }
             }
 
-            // Kur alarmı: kullanıcının kurduğu bir uyarı; rahatsız etme açıkken de söylenir (görüşmedeyse sonra okunur).
-            if (await _tools.RateAlertCheckAsync(now, CancellationToken.None).ConfigureAwait(false) is { } rate)
+            // Göz molası sayacı: yeni bir oturuşta (2 dakikadan kısa aralıksız kullanım) baştan başlar.
+            var snapshot = _rhythm.Snapshot();
+            if (snapshot.StretchStart is not { } start || now - start < TimeSpan.FromMinutes(2))
             {
-                Announce(rate);
-                return;
+                _lastEyeBreak = now;
             }
 
-            // Uyku saati: yarım saat önce ve yarım saat geç kalınca birer kez (bilgisayar başındaysa).
-            if (!Muted && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("uyku") && _tools.BedTimeNudge(now) is { } bed)
+            _scheduler.Allowed = _tools.AllowsNudge;
+            var context = new ProactiveContext(now, Muted, snapshot.IsAway, FullScreenDetector.IsBusy());
+            if (await _scheduler.NextAsync(ProactiveCandidates(), context).ConfigureAwait(false) is { } next)
             {
-                AnnounceNudge("uyku", bed);
-                return;
-            }
-
-            // 20-20-20: 20 dakika aralıksız ekran başında, odakta değilken, tam ekran yokken.
-            if (_settings.EyeBreaks && !Muted && !FullScreenDetector.IsBusy())
-            {
-                var snapshot = _rhythm.Snapshot();
-                var stretch = snapshot.StretchStart is { } start ? now - start : TimeSpan.Zero;
-                var inFocus = snapshot.FocusEnd is { } end && end > now;
-                if (stretch < TimeSpan.FromMinutes(2))
+                if (next.Candidate.UserSet)
                 {
-                    _lastEyeBreak = now;
+                    Announce(next.Text);
                 }
-                else if (!inFocus && now - _lastEyeBreak >= TimeSpan.FromMinutes(20) && _tools.AllowsNudge("goz"))
+                else
                 {
-                    _lastEyeBreak = now;
-                    AnnounceNudge("goz", "Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
-                    return;
-                }
-            }
-
-            // Günlük süre sınırı dolan uygulama varsa bir kez söylenir.
-            if (!Muted && _tools.AppLimitAlert(now) is { } limit)
-            {
-                Announce(limit);
-                return;
-            }
-
-            // Yarın bir doğum günü ya da yıldönümü varsa akşam 19.00–21.30 arası bir kez sorulur.
-            if (!Muted && CanNudge(now) && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.AllowsNudge("arife") && _tools.EveReminder(now) is { } eve)
-            {
-                Nudged(now);
-                AnnounceNudge("arife", eve, listenAfter: true);
-                return;
-            }
-
-            // Son tarih: yarın teslim edilecek işler akşam 18.00–21.30 arası bir kez söylenir.
-            if (!Muted && CanNudge(now) && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("son_tarih") && _tools.DeadlineNudge(now) is { } deadline)
-            {
-                Nudged(now);
-                AnnounceNudge("son_tarih", deadline);
-                return;
-            }
-
-            // Seri koruma: 20.00–21.30 arası, serisi olan bir alışkanlık bugün yapılmadıysa bir kez hatırlatılır.
-            if (!Muted && CanNudge(now) && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("seri") && _tools.StreakNudge(now) is { } nudge)
-            {
-                Nudged(now);
-                AnnounceNudge("seri", nudge);
-                return;
-            }
-
-            // Gün sonu günlük sorusu: 21.30–23.00 arası, bilgisayar başındayken, günde bir kez.
-            if (!Muted && CanNudge(now) && (now.Hour == 22 || (now.Hour == 21 && now.Minute >= 30)) && !_rhythm.Snapshot().IsAway && !FullScreenDetector.IsBusy()
-                && _tools.AllowsNudge("gun_sonu") && _tools.JournalQuestion(now) is { } journal)
-            {
-                Nudged(now);
-                AnnounceNudge("gun_sonu", journal, listenAfter: true);
-                return;
-            }
-
-            // Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.
-            if (_settings.WeatherAlerts && !Muted && CanNudge(now) && _tools.AllowsNudge("hava") && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
-                && _weatherWarned != DateOnly.FromDateTime(now))
-            {
-                _weatherWarned = DateOnly.FromDateTime(now);
-                if (await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false) is { } alert)
-                {
-                    Nudged(now);
-                    AnnounceNudge("hava", alert);
+                    AnnounceNudge(next.Candidate.Kind, next.Text, next.Candidate.ListenAfter);
                 }
             }
         }

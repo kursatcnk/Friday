@@ -33,6 +33,7 @@ public sealed class NudgePolicy
         ["uyku"] = "uyku saati hatırlatması",
         ["hava"] = "akşam hava uyarısı",
         ["goz"] = "göz molası",
+        ["sinir"] = "süre sınırı uyarısı",
         ["kayip"] = "ben yokken söylediklerimin tekrarı"
     };
 
