@@ -25,7 +25,10 @@ public sealed partial class PanelViewModel
         "Mola ver", "25 dakika odaklanacağım", "4 pomodoro yap", "Odağı bitir", "Nefes egzersizi yapalım", "Durum raporu",
         "Bugün neler var?", "Yarın hava nasıl?", "Ekran sürem", "Bu hafta neler yaptım", "1 saat rahatsız etme",
         "Rahatsız etmeyi kapat", "Geçici dosyaları temizle", "Diskimde ne yer kaplıyor", "Okuma listem", "Masalarım",
-        "Listelerim", "Günlüğümü oku", "Hedefime ne kadar kaldı", "Gündem ne?", "Kopyaladıklarım", "Yeni sohbet"
+        "Listelerim", "Günlüğümü oku", "Hedefime ne kadar kaldı", "Gündem ne?", "Kopyaladıklarım", "Yeni sohbet",
+        "Günümü planla", "İnternetim nasıl", "Bu ay ne kadar harcadım", "Harcamaları Excel'e aktar", "Sabit giderlerim",
+        "Alışkanlıklarım nasıl gidiyor", "Kelime çalışalım", "Kaç kelime biliyorum", "Yaklaşan özel günler", "Kısaltmalarım",
+        "Panodaki resmi oku", "Hangi uygulamalar ses çıkarıyor", "Süre sınırlarım", "Döviz alarmlarım", "Günümü yazalım"
     ];
 
     public ObservableCollection<PaletteItem> PaletteResults { get; } = [];

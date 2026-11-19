@@ -880,8 +880,10 @@ public sealed class FridayAssistant : IDisposable
 
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
         // "Günün nasıl geçti?" gibi serbest cevap bekleyen bir soru varsa söz ona gider; açıkça bir komutsa komut çalışır.
+        // "Şimdi değil", "hayır" gibi sözler de soruya gider (yoksa "şimdi değil" mola ertelemesi sanılır).
         var answering = _tools.AwaitsAnswer
-            && (_tools.AnswerTakesPriority || QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false });
+            && (_tools.AnswerTakesPriority || QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
+                || QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false });
         var command = _tools.InChecklist
             ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
             : answering

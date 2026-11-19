@@ -21,7 +21,9 @@ public sealed partial class AssistantTools
             return new QuickReply("Önümüzdeki iki ayda bildiğim özel bir gün yok. \"Unutma, annemin doğum günü 3 Mart\" dersen hatırlar, günü gelince söylerim.");
         }
 
-        var first = days.Take(3).Select(day => $"{SpecialDays.When(day.Date, today)} {day.Title}").ToList();
+        var first = days.Take(3).Select(day => day.Date.DayNumber - today.DayNumber <= 6
+            ? $"{SpecialDays.When(day.Date, today)} {day.Title}"
+            : $"{day.Title}, {SpecialDays.When(day.Date, today)}").ToList();
         return new QuickReply($"Yaklaşanlar: {TurkishGrammar.Join(first)}." + (personal.Count == 0
             ? " Hafızanda tarihli bir doğum günü yok; \"Unutma, annemin doğum günü 3 Mart\" diyebilirsin."
             : ""));
