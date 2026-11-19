@@ -967,6 +967,8 @@ public sealed class FridayAssistant : IDisposable
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context));
         string? reply;
+        // Bu isteğin kayıtlarda yaptığı her değişiklik tek kayıt olur; "geri al" hepsini birlikte döndürür.
+        using var changes = _tools.Changes.Begin(text);
         try
         {
             reply = command is { } quick

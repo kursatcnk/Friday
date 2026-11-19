@@ -26,7 +26,7 @@ public sealed class DailyHabit
 /// Her alışkanlık için yapılan günler tutulur; seri (üst üste gün), son 7 gün ve son 30 günün oranı hesaplanır.
 /// D:\Friday\data\habit-book.json'da durur, bilgisayardan çıkmaz.
 /// </summary>
-public sealed class HabitBook
+public sealed class HabitBook : IRestorableStore
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -52,6 +52,22 @@ public sealed class HabitBook
     }
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "alışkanlıklar";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _habits.Clear();
+            _habits.AddRange(content is null ? [] : JsonSerializer.Deserialize<List<DailyHabit>>(content, Options) ?? []);
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public IReadOnlyList<DailyHabit> Habits
     {
@@ -311,6 +327,7 @@ public sealed class HabitBook
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_habits, Options));
         Changed?.Invoke(this, EventArgs.Empty);

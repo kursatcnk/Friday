@@ -37,7 +37,7 @@ public sealed record DeckStats(int Total, int Learned, int DueToday, int Unseen,
 /// sonra yeniden sorulur; yanlış bilinen ilk kutuya döner. Günde en fazla 8 yeni kelime gelir. Hazır deste 110 sık
 /// kullanılan İngilizce kelimedir; kullanıcı kendi kelimelerini ekler. D:\Friday\data\vocabulary.json'da durur.
 /// </summary>
-public sealed class VocabularyDeck
+public sealed class VocabularyDeck : IRestorableStore
 {
     public const int NewPerDay = 8;
     public const int SessionSize = 12;
@@ -65,6 +65,22 @@ public sealed class VocabularyDeck
     }
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "kelime kartları";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _cards.Clear();
+            _cards.AddRange(content is null ? [] : JsonSerializer.Deserialize<List<WordCard>>(content, Options) ?? []);
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public IReadOnlyList<WordCard> Cards
     {
@@ -276,6 +292,7 @@ public sealed class VocabularyDeck
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_cards, Options));
         Changed?.Invoke(this, EventArgs.Empty);

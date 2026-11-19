@@ -171,7 +171,7 @@ public static class RepeatRule
 /// Kalıcı hatırlatmalar (D:\Friday\data\reminders.json). "10 dakika sonra" da "yarın 9'da" da buraya yazılır; Friday
 /// kapanıp açılsa bile kaybolmaz. Friday kapalıyken zamanı geçenler açılışta "sen yokken" diye söylenir.
 /// </summary>
-public sealed class ReminderStore
+public sealed class ReminderStore : IRestorableStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -190,6 +190,21 @@ public sealed class ReminderStore
         {
             _items = [];
         }
+    }
+
+    /// <inheritdoc/>
+    public string Title => "hatırlatıcılar";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _items = content is null ? [] : JsonSerializer.Deserialize<List<Reminder>>(content, Options) ?? [];
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     public event EventHandler? Changed;
@@ -348,6 +363,7 @@ public sealed class ReminderStore
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_items, Options));
     }
@@ -356,13 +372,27 @@ public sealed class ReminderStore
 public sealed record Note(DateTime Time, string Text);
 
 /// <summary>Sesli notlar: D:\Friday\data\notes.md, her satır bir not. Dosya Not Defteri'yle de okunup düzenlenebilir.</summary>
-public sealed class NoteStore(string file)
+public sealed class NoteStore(string file) : IRestorableStore
 {
     private readonly object _gate = new();
 
     public event EventHandler? Changed;
 
     public string File => file;
+
+    /// <inheritdoc/>
+    public string Title => "notlar";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public IReadOnlyList<Note> All
     {
@@ -388,6 +418,7 @@ public sealed class NoteStore(string file)
         var note = new Note(now, text.Trim());
         lock (_gate)
         {
+            UndoLog.Touching(this, file);
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             if (!System.IO.File.Exists(file))
             {

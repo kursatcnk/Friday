@@ -14,7 +14,7 @@ public sealed record TodoItem(string Id, string Text, DateTime Created, DateTime
 /// Yapılacaklar listesi (D:\Friday\data\todos.json): "yapılacaklara ekle: faturayı öde", "faturayı ödedim", "yapılacaklarım
 /// neler". Tamamlananlar bir gün daha görünür, sonra listeden düşer.
 /// </summary>
-public sealed class TodoStore
+public sealed class TodoStore : IRestorableStore
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -37,6 +37,21 @@ public sealed class TodoStore
     }
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "yapılacaklar";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _items = content is null ? [] : JsonSerializer.Deserialize<List<TodoItem>>(content, Options) ?? [];
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Açık işler (eskiden yeniye) ve son bir günde tamamlananlar.</summary>
     /// <summary>Bu tarihten sonra tamamlanan işlerin sayısı.</summary>
@@ -193,6 +208,7 @@ public sealed class TodoStore
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_items, Options));
     }

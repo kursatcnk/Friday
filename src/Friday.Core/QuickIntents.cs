@@ -90,6 +90,7 @@ public static partial class QuickIntents
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
             ?? Recall(sentence)
+            ?? Undo(sentence)
             ?? Life(sentence)
             ?? Snippets(sentence)
             ?? Practice(sentence)

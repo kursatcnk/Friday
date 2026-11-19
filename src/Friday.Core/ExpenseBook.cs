@@ -24,7 +24,7 @@ public sealed record ExpenseSummary(decimal Total, int Count, IReadOnlyList<(str
 /// Harcama kaydı: "kahveye 80 lira harcadım", "bu ay ne kadar harcadım", "aylık bütçem 15 bin lira". Kategori
 /// söylenenden tahmin edilir; aylık bütçe aşılmaya yaklaşınca uyarılır. D:\Friday\data\expenses.json'da durur.
 /// </summary>
-public sealed class ExpenseBook
+public sealed class ExpenseBook : IRestorableStore
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -47,7 +47,7 @@ public sealed class ExpenseBook
 
     private readonly string _file;
     private readonly object _gate = new();
-    private readonly ExpenseData _data;
+    private ExpenseData _data;
 
     public ExpenseBook(string file)
     {
@@ -63,6 +63,21 @@ public sealed class ExpenseBook
     }
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "harcamalar";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _data = content is null ? new ExpenseData() : JsonSerializer.Deserialize<ExpenseData>(content, Options) ?? new ExpenseData();
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Aylık bütçe (TL); 0 ise bütçe yok.</summary>
     public decimal MonthlyBudget
@@ -356,6 +371,7 @@ public sealed class ExpenseBook
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_data, Options));
         Changed?.Invoke(this, EventArgs.Empty);

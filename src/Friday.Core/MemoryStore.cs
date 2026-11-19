@@ -12,7 +12,7 @@ public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created, 
 /// Uzun süreli hafıza: "Unutma, arabanın muayenesi Kasım'da" gibi bilgiler D:\Friday\data\memory.json'a yazılır ve
 /// her soruda dil modeline verilir. Dosya yalnızca bilgisayarda durur.
 /// </summary>
-public sealed partial class MemoryStore
+public sealed partial class MemoryStore : IRestorableStore
 {
     /// <summary>Hafıza soruya göre arandığı için büyük olabilir (eskiden en yeni 80'i görülürdü).</summary>
     private const int MaxItems = 2000;
@@ -38,6 +38,21 @@ public sealed partial class MemoryStore
     }
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "hafıza";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _items = content is null ? [] : JsonSerializer.Deserialize<List<MemoryItem>>(content, Options) ?? [];
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public IReadOnlyList<MemoryItem> Items
     {
@@ -204,6 +219,7 @@ public sealed partial class MemoryStore
 
     private void Save()
     {
+        UndoLog.Touching(this, _file);
         Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
         File.WriteAllText(_file, JsonSerializer.Serialize(_items, Options));
     }

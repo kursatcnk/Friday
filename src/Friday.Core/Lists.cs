@@ -8,13 +8,28 @@ namespace Friday.Core;
 /// Adlandırılmış listeler: "market listesine süt ekle", "market listemde ne var", "market listesinden sütü çıkar".
 /// D:\Friday\data\lists.json içinde durur.
 /// </summary>
-public sealed class ListStore(string file)
+public sealed class ListStore(string file) : IRestorableStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
     private readonly object _gate = new();
     private Dictionary<string, List<string>>? _lists;
 
     public event EventHandler? Changed;
+
+    /// <inheritdoc/>
+    public string Title => "listeler";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            _lists = content is null ? [] : JsonSerializer.Deserialize<Dictionary<string, List<string>>>(content, Options) ?? [];
+            UndoLog.WriteBack(file, content);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public IReadOnlyList<string> Names
     {
@@ -125,6 +140,7 @@ public sealed class ListStore(string file)
 
     private void Save()
     {
+        UndoLog.Touching(this, file);
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         File.WriteAllText(file, JsonSerializer.Serialize(Lists, Options));
     }

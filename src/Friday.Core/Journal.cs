@@ -6,10 +6,22 @@ namespace Friday.Core;
 /// Sesli günlük: "günlüğe yaz: bugün sunum çok iyi geçti". Ay ay Markdown dosyalarında durur
 /// (data\\journal\\2026-11.md); Not Defteri'yle de okunup düzenlenebilir.
 /// </summary>
-public sealed class JournalStore(string folder)
+public sealed class JournalStore(string folder) : IRestorableStore
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private readonly object _gate = new();
+
+    /// <inheritdoc/>
+    public string Title => "günlük";
+
+    /// <inheritdoc/>
+    public void Restore(string file, string? content)
+    {
+        lock (_gate)
+        {
+            UndoLog.WriteBack(file, content);
+        }
+    }
 
     public void Add(DateTime when, string text)
     {
@@ -22,6 +34,7 @@ public sealed class JournalStore(string folder)
         lock (_gate)
         {
             Directory.CreateDirectory(folder);
+            UndoLog.Touching(this, PathFor(when));
             System.IO.File.AppendAllText(PathFor(when), $"- {when.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} · {TurkishGrammar.Capitalize(clean)}\n");
         }
     }
