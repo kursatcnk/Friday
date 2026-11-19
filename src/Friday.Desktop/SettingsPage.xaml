@@ -37,8 +37,16 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Uzun sayfada bölümler arasında tek tıkla geçiş. -->
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="36,0,24,8">
+        <!-- Uzun sayfada arama ve bölümler arasında tek tıkla geçiş. -->
+        <DockPanel Margin="36,0,24,8">
+        <Grid DockPanel.Dock="Left" Width="210" Margin="0,0,10,6" VerticalAlignment="Top">
+            <TextBox x:Name="SearchBox" Padding="30,6,10,6" FontSize="12.5" TextChanged="OnSearch" AutomationProperties.Name="Ayarlarda ara"/>
+            <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="11" Foreground="{StaticResource FaintBrush}" Margin="11,0,0,0"
+                       VerticalAlignment="Center" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+            <TextBlock x:Name="SearchHint" Text="Ayarlarda ara" Foreground="{StaticResource FaintBrush}" FontSize="12.5" Margin="31,0,0,0"
+                       VerticalAlignment="Center" IsHitTestVisible="False"/>
+        </Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource ChipButton}" Content="Görünüm" Tag="SectionLook" Click="OnJump" Margin="0,0,6,6"/>
                 <Button Style="{StaticResource ChipButton}" Content="Kısayollar" Tag="Section1" Click="OnJump" Margin="0,0,6,6"/>
@@ -56,9 +64,12 @@
                 <Button Style="{StaticResource ChipButton}" Content="Hakkında" Tag="Section11" Click="OnJump" Margin="0,0,6,6"/>
             </StackPanel>
         </ScrollViewer>
+        </DockPanel>
 
         <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
             <StackPanel x:Name="Sections" Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
+                <TextBlock x:Name="NoResults" Style="{StaticResource Body}" Margin="0,8,0,14" Visibility="Collapsed"
+                           Text="Bu aramayla eşleşen bir ayar yok. Ör. &quot;ses&quot;, &quot;kısayol&quot;, &quot;görüşme&quot;, &quot;yedek&quot;."/>
 
                 <!-- ================= Görünüm ================= -->
                 <Border x:Name="SectionLook" Style="{StaticResource SettingsCard}">
@@ -300,7 +311,12 @@
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Kısık" IsChecked="{Binding AmbientLow}"/>
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Orta" IsChecked="{Binding AmbientMedium}"/>
                                     <RadioButton Style="{StaticResource SegmentOption}" Content="Yüksek" IsChecked="{Binding AmbientHigh}"/>
-                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ScreenTimeEnabled}" Margin="0,14,0,0">
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="150,4,0,0"
+                                   Text="&quot;Yağmur sesi aç&quot;, &quot;30 dakika beyaz gürültü aç&quot;, &quot;dalga sesi aç&quot;: ses bilgisayarda üretilir, indirilmez."/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ScreenTimeEnabled}" Margin="0,14,0,0">
                             <StackPanel>
                                 <TextBlock Text="Ekran süresi" FontWeight="SemiBold"/>
                                 <TextBlock Style="{StaticResource Hint}" Text="Öndeki uygulamanın adı 15 sn'de bir sayılır; tarayıcıda yalnızca bilinen sitenin adı (YouTube, GitHub…) çıkarılır. Başlıklar ve içerikler saklanmaz, son 14 gün tutulur."/>
@@ -324,11 +340,6 @@
                                 <TextBlock Style="{StaticResource Hint}" Text="Haftada bir verilerin (ayarlar, hafıza, sohbetler, hatırlatmalar) yedeği Friday'in diskindeki Friday-yedekler klasörüne alınır; son 4 yedek kalır."/>
                             </StackPanel>
                         </CheckBox>
-                    </StackPanel>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource Hint}" Margin="150,4,0,0"
-                                   Text="&quot;Yağmur sesi aç&quot;, &quot;30 dakika beyaz gürültü aç&quot;, &quot;dalga sesi aç&quot;: ses bilgisayarda üretilir, indirilmez."/>
                     </StackPanel>
                 </Border>
 
