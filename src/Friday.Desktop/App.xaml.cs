@@ -298,15 +298,34 @@ public sealed partial class App : Application, IDisposable
             new WakeWordListener(paths.WakeWordModels),
             rhythm);
 
+        // Paneldeki tıklamalar da geri alma günlüğüne girer: "geri al" ya da Ctrl+Z onları da döndürür.
+        void Recorded(string change, Action action)
+        {
+            using (tools.Changes.Begin(UndoLog.PanelPrefix + change))
+            {
+                action();
+            }
+        }
+
+        T RecordedValue<T>(string change, Func<T> action)
+        {
+            using (tools.Changes.Begin(UndoLog.PanelPrefix + change))
+            {
+                return action();
+            }
+        }
+
+        string TodoName(string id) => todos.Visible(DateTime.Now).FirstOrDefault(item => item.Id == id)?.Text is { } text ? $"\"{text}\" işini" : "bir işi";
+
         var panel = new PanelViewModel(settings, new PanelActions
         {
             Send = assistant.SubmitText,
-            Remember = text =>
+            Remember = text => Recorded("hafızaya bilgi ekleme", () =>
             {
                 memory.Remember(text);
                 ledger.Record(DataFlow.Local, "Hafıza", $"Panodan eklendi: {text}");
-            },
-            Forget = memory.Remove,
+            }),
+            Forget = id => Recorded("hafızadan bir bilgiyi silme", () => memory.Remove(id)),
             OpenSettingsFile = () => Open(paths.SettingsFile),
             OpenDataFolder = () => Open(paths.Data),
             PreviewVoice = assistant.PreviewVoice,
@@ -322,14 +341,14 @@ public sealed partial class App : Application, IDisposable
             },
             PickImportFile = PickMemoryFile,
             KnownMemories = () => memory.Items,
-            ImportMemories = (facts, source) =>
+            ImportMemories = (facts, source) => RecordedValue("hafızaya bilgi aktarma", () =>
             {
                 var added = memory.Import(facts, source);
                 ledger.Record(DataFlow.Local, "Hafıza", $"{source} kaynağından {added} bilgi aktarıldı");
                 return added;
-            },
+            }),
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
-            DeleteReminder = id => reminders.Remove(id),
+            DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             OpenNotes = () =>
             {
                 if (!File.Exists(notes.File))
@@ -355,15 +374,17 @@ public sealed partial class App : Application, IDisposable
             ApplyHotkey = text => ApplyHotkey(text, quickAsk: false),
             ApplyQuickAskHotkey = text => ApplyHotkey(text, quickAsk: true),
             SetStartWithWindows = StartupRegistration.Set,
-            ClearData = kind => ClearData(kind, chats, memory, reminders, ledger),
+            ClearData = kind => RecordedValue(kind == "memory" ? "hafızayı temizleme" : kind == "reminders" ? "hatırlatıcıları temizleme" : "verileri temizleme",
+                () => ClearData(kind, chats, memory, reminders, ledger)),
+            Undo = redo => tools.UndoFromPanel(redo),
             OpenLogs = () => Open(paths.Logs),
             CheckForUpdate = () => UpdateCheck.CheckAsync(_http!, typeof(App).Assembly.GetName().Version ?? new Version(0, 0, 0), ledger, CancellationToken.None),
             PiperVoices = PiperVoices(paths),
             SmartModelInstalled = SmartModelInstalled(paths, settings),
             BackupData = () => BackupData(paths, ledger),
             TestCalendar = url => tools.Calendar.TestAsync(url, CancellationToken.None),
-            AddTodo = text => todos.Add(text, DateTime.Now),
-            ToggleTodo = (id, done) =>
+            AddTodo = text => Recorded($"\"{text}\" işini ekleme", () => todos.Add(text, DateTime.Now)),
+            ToggleTodo = (id, done) => Recorded($"{TodoName(id)} {(done ? "tamamlama" : "yeniden açma")}", () =>
             {
                 if (done)
                 {
@@ -373,12 +394,13 @@ public sealed partial class App : Application, IDisposable
                 {
                     todos.Reopen(id);
                 }
-            },
-            RemoveTodo = id => todos.Remove(id),
-            AddHabit = text => habitBook.Add(text, DateOnly.FromDateTime(DateTime.Now)),
-            ToggleHabit = (name, done) => habitBook.Mark(name, DateOnly.FromDateTime(DateTime.Now), done),
-            RemoveHabit = name => habitBook.Remove(name),
-            RemoveExpense = id => expenses.Remove(id),
+            }),
+            RemoveTodo = id => Recorded($"{TodoName(id)} silme", () => todos.Remove(id)),
+            AddHabit = text => Recorded($"\"{text}\" alışkanlığını ekleme", () => habitBook.Add(text, DateOnly.FromDateTime(DateTime.Now))),
+            ToggleHabit = (name, done) => Recorded($"\"{name}\" alışkanlığını {(done ? "işaretleme" : "işaretini kaldırma")}",
+                () => habitBook.Mark(name, DateOnly.FromDateTime(DateTime.Now), done)),
+            RemoveHabit = name => Recorded($"\"{name}\" alışkanlığını silme", () => habitBook.Remove(name)),
+            RemoveExpense = id => Recorded("bir harcamayı silme", () => expenses.Remove(id)),
             RestoreData = () => RestoreData(paths),
             Restart = RestartFriday,
             ScanReclaimable = () => Task.Run(() => DataMaintenance.Reclaimable(paths, settings)),

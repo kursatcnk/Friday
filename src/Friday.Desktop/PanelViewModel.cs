@@ -165,6 +165,9 @@ public sealed class PanelActions
 
     public Action<string> RemoveExpense { get; init; } = _ => { };
 
+    /// <summary>Son değişikliği geri alır (true: geri alınanı geri getirir); söylenecek sonuç.</summary>
+    public Func<bool, string> Undo { get; init; } = _ => "";
+
     /// <summary>Takvim adresini dener; sonucu anlatan cümle.</summary>
     public Func<string, Task<string>> TestCalendar { get; init; } = _ => Task.FromResult("");
 }
@@ -516,6 +519,9 @@ public sealed partial class PanelViewModel : ObservableObject
         "Kalıbı belli komutlar (saat, hava, döviz, müzik, zamanlayıcı, uygulama) dil modeline gitmeden yarım saniyede cevaplanır.";
 
     // ---------- Asistandan gelenler ----------
+
+    /// <summary>Ctrl+Z / Ctrl+Y: paneldeki ya da sesle yapılan son kayıt değişikliğini geri alır ya da geri getirir.</summary>
+    public void UndoLast(bool redo) => StatusText = _actions.Undo(redo);
 
     public void OnStatus(AssistantStatus status)
     {

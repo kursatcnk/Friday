@@ -34,6 +34,9 @@ public sealed class UndoLog(TimeProvider? clock = null)
 {
     public const int Capacity = 20;
 
+    /// <summary>Paneldeki tıklamalarla yapılan değişikliklerin istek adı bununla başlar ("panel:\"süt al\" işini silme").</summary>
+    public const string PanelPrefix = "panel:";
+
     /// <summary>Bundan eski değişiklikler geri alınmaz; "geri al" çok eski bir şeyi beklenmedik biçimde bozmasın.</summary>
     public static readonly TimeSpan Window = TimeSpan.FromHours(6);
 

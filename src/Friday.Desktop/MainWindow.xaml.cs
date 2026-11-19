@@ -48,6 +48,13 @@ public sealed partial class MainWindow : Window, IDisposable
             model.OpenPalette();
             e.Handled = true;
         }
+        else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key is Key.Z or Key.Y
+            && Keyboard.FocusedElement is not (System.Windows.Controls.Primitives.TextBoxBase or System.Windows.Controls.PasswordBox))
+        {
+            // Yazı kutusunda değilken Ctrl+Z son kayıt değişikliğini (silinen iş, işaretlenen alışkanlık…) geri alır.
+            model.UndoLast(redo: e.Key == Key.Y);
+            e.Handled = true;
+        }
         else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key is >= Key.D1 and <= Key.D7)
         {
             model.ShowPage(e.Key - Key.D0);
