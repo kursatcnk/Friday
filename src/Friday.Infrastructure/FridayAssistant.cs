@@ -1414,6 +1414,7 @@ public sealed class FridayAssistant : IDisposable
 
         _activity.Records = _settings.ScreenTime;
         _tools.Activity = _settings.ScreenTime ? _activity : null;
+        _tools.Tracker = _activity;
     }
 
     private ActivityTracker? _activity;
@@ -1694,33 +1695,27 @@ public sealed class FridayAssistant : IDisposable
     /// </summary>
     private IEnumerable<ProactiveCandidate> ProactiveCandidates()
     {
-        static bool Between(DateTime now, int fromHour, int fromMinute, int toHour, int toMinute)
-        {
-            var minute = (now.Hour * 60) + now.Minute;
-            return minute >= (fromHour * 60) + fromMinute && minute < (toHour * 60) + toMinute;
-        }
-
         // Kullanıcının kendi kurduğu kur alarmı rahatsız etme açıkken de söylenir (görüşmedeyse sonra okunur).
         yield return new ProactiveCandidate("kur", 100, context => _tools.RateAlertCheckAsync(context.Now, CancellationToken.None)) { UserSet = true };
         yield return new ProactiveCandidate("sinir", 90, context => Task.FromResult(_tools.AppLimitAlert(context.Now))) { NeedsPresence = true };
         yield return new ProactiveCandidate("uyku", 85, context => Task.FromResult(_tools.BedTimeNudge(context.Now))) { NeedsPresence = true };
-        yield return new ProactiveCandidate("arife", 70, context => Task.FromResult(Between(context.Now, 19, 0, 21, 30) ? _tools.EveReminder(context.Now) : null))
+        yield return new ProactiveCandidate("arife", 70, context => Evening(context.Now, 240, 90, _tools.EveReminder))
         {
             Spaced = true,
             ListenAfter = true
         };
-        yield return new ProactiveCandidate("son_tarih", 65, context => Task.FromResult(Between(context.Now, 18, 0, 21, 30) ? _tools.DeadlineNudge(context.Now) : null))
+        yield return new ProactiveCandidate("son_tarih", 65, context => Evening(context.Now, 300, 90, _tools.DeadlineNudge))
         {
             Spaced = true,
             NeedsPresence = true
         };
         yield return new ProactiveCandidate("goz", 60, context => Task.FromResult(EyeBreak(context.Now))) { NeedsPresence = true, AvoidFullScreen = true };
-        yield return new ProactiveCandidate("seri", 55, context => Task.FromResult(Between(context.Now, 20, 0, 21, 30) ? _tools.StreakNudge(context.Now) : null))
+        yield return new ProactiveCandidate("seri", 55, context => Evening(context.Now, 180, 90, _tools.StreakNudge))
         {
             Spaced = true,
             NeedsPresence = true
         };
-        yield return new ProactiveCandidate("gun_sonu", 50, context => Task.FromResult(Between(context.Now, 21, 30, 23, 0) ? _tools.JournalQuestion(context.Now) : null))
+        yield return new ProactiveCandidate("gun_sonu", 50, context => Evening(context.Now, 90, 0, now => _tools.JournalQuestion(now)))
         {
             Spaced = true,
             NeedsPresence = true,
@@ -1729,6 +1724,17 @@ public sealed class FridayAssistant : IDisposable
         };
         yield return new ProactiveCandidate("hava", 40, WeatherAlertAsync) { Spaced = true };
     }
+
+    /// <summary>
+    /// Akşam penceresi, kullanıcının öğrenilen gün sonuna göre (bkz. <see cref="ActiveHours"/>): gün sonundan
+    /// <paramref name="fromMinutes"/> dakika önce açılır, <paramref name="toMinutes"/> dakika önce kapanır. Öğrenilmiş
+    /// bir şey yokken gün sonu 23.00'tür ve pencereler eski sabit saatlerle aynıdır. Gece yarısından sonraki dakikalar
+    /// hâlâ önceki güne sayılır; "bugün" ve "yarın" o güne göre hesaplansın diye araç önceki günün son dakikasını görür.
+    /// </summary>
+    private Task<string?> Evening(DateTime now, int fromMinutes, int toMinutes, Func<DateTime, string?> produce) =>
+        Task.FromResult(ActiveHours.InEvening(now, _tools.DayEnd(now), TimeSpan.FromMinutes(fromMinutes), TimeSpan.FromMinutes(toMinutes))
+            ? produce(now.Hour < ActiveHours.DayStartHour ? now.Date.AddMinutes(-1) : now)
+            : null);
 
     /// <summary>20-20-20: 20 dakika aralıksız ekran başında ve odakta değilken.</summary>
     private string? EyeBreak(DateTime now)
@@ -1742,16 +1748,17 @@ public sealed class FridayAssistant : IDisposable
         return "Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.";
     }
 
-    /// <summary>Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.</summary>
+    /// <summary>Akşam hava uyarısı: gün sonundan 3 saat ile 1,5 saat önce arası (öğrenilmediyse 20.00–21.30), günde bir kez.</summary>
     private async Task<string?> WeatherAlertAsync(ProactiveContext context)
     {
         var now = context.Now;
-        if (!_settings.WeatherAlerts || !(now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) || _weatherWarned == DateOnly.FromDateTime(now))
+        if (!_settings.WeatherAlerts || _weatherWarned == ActiveHours.DayOf(now)
+            || !ActiveHours.InEvening(now, _tools.DayEnd(now), TimeSpan.FromMinutes(180), TimeSpan.FromMinutes(90)))
         {
             return null;
         }
 
-        _weatherWarned = DateOnly.FromDateTime(now);
+        _weatherWarned = ActiveHours.DayOf(now);
         return await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false);
     }
 

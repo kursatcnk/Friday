@@ -15,7 +15,9 @@ public sealed class ActivityTracker : IDisposable
     private static readonly TimeSpan AwayAfter = TimeSpan.FromMinutes(2);
 
     private readonly string _file;
+    private readonly string _hoursFile;
     private readonly ScreenTimeLog _log;
+    private readonly ActiveHours _hours;
     private readonly Dictionary<string, string?> _descriptions = new(StringComparer.OrdinalIgnoreCase);
     private Timer? _timer;
     private DateTime _saved = DateTime.Now;
@@ -31,6 +33,26 @@ public sealed class ActivityTracker : IDisposable
     {
         _file = file;
         _log = Load(file);
+        _hoursFile = Path.Combine(Path.GetDirectoryName(file)!, "active-hours.json");
+        _hours = LoadHours(_hoursFile);
+    }
+
+    /// <summary>Kullanıcının günü genelde bitirdiği saat (öğrenilmediyse 23.00); akşam hatırlatmaları buna göre.</summary>
+    public TimeSpan DayEnd(DateTime now)
+    {
+        lock (_log)
+        {
+            return _hours.DayEnd(now);
+        }
+    }
+
+    /// <summary>Öğrenilmiş gün başı ve sonu; yeterli kayıt yoksa null.</summary>
+    public (TimeSpan Start, TimeSpan End)? TypicalDay(DateTime now)
+    {
+        lock (_log)
+        {
+            return _hours.TypicalStart(now) is { } start && _hours.TypicalEnd(now) is { } end ? (start, end) : null;
+        }
     }
 
     /// <summary>Dikkat dağıtan bir sitede ~45 sn kalındı (YouTube, Netflix, Instagram…); site adıyla.</summary>
@@ -112,6 +134,7 @@ public sealed class ActivityTracker : IDisposable
                 lock (_log)
                 {
                     _log.Add(DateTime.Now, label, TickSeconds);
+                    _hours.Add(DateTime.Now, TickSeconds);
                     _recent.Enqueue((DateTime.Now, label));
                     while (_recent.Count > 0 && _recent.Peek().At < DateTime.Now.AddHours(-4))
                     {
@@ -177,18 +200,33 @@ public sealed class ActivityTracker : IDisposable
         try
         {
             string json;
+            string hours;
             lock (_log)
             {
                 json = _log.ToJson();
+                hours = _hours.ToJson();
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
             File.WriteAllText(_file, json);
+            File.WriteAllText(_hoursFile, hours);
             _saved = DateTime.Now;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             FridayLog.Warn($"Ekran süresi kaydedilemedi: {exception.Message}");
+        }
+    }
+
+    private static ActiveHours LoadHours(string file)
+    {
+        try
+        {
+            return File.Exists(file) ? ActiveHours.FromJson(File.ReadAllText(file)) : new ActiveHours();
+        }
+        catch (IOException)
+        {
+            return new ActiveHours();
         }
     }
 

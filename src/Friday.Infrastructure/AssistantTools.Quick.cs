@@ -107,6 +107,7 @@ public sealed partial class AssistantTools
                 "ne_yapayim" => NextAction(),
                 "geri_al" => UndoCommand(Arg("islem")),
                 "duzeltme" => CorrectionCommand(Arg("islem")),
+                "aktif_saatler" => ActiveHoursAnswer(),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),

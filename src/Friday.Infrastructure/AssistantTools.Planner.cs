@@ -18,7 +18,9 @@ public sealed partial class AssistantTools
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
-        var dayEnd = now.Hour >= 21 ? Math.Min(24, now.Hour + 2) : 22;
+        // Plan, kullanıcının günü genelde bitirdiği saatten bir saat önce biter (öğrenilmediyse 22.00).
+        var usualEnd = Math.Clamp((int)DayEnd(now).TotalHours - 1, 17, 24);
+        var dayEnd = now.Hour >= usualEnd - 1 ? Math.Min(24, now.Hour + 2) : usualEnd;
         var fixedItems = new List<FixedItem>();
         if (Calendar.IsConfigured)
         {

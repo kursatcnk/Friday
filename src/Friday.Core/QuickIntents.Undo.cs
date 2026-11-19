@@ -11,7 +11,11 @@ public static partial class QuickIntents
         : ChangesQuestion().IsMatch(sentence) ? Command("geri_al", ("islem", "liste"))
         : CorrectionsReset().IsMatch(sentence) ? Command("duzeltme", ("islem", "sifirla"))
         : CorrectionsList().IsMatch(sentence) ? Command("duzeltme", ("islem", "listele"))
+        : DayShapeQuestion().IsMatch(sentence) ? Command("aktif_saatler")
         : null;
+
+    [GeneratedRegex(@"^(?:ben )?genelde (?:saat )?(?:kaçta|ne zaman) (?:başlıyorum|bırakıyorum|bilgisayar başındayım|bilgisayarı bırakıyorum|çalışmayı bırakıyorum|günü bitiriyorum|yatıyorum)$|^günüm genelde (?:ne zaman|kaçta) (?:bitiyor|başlıyor)$|^(?:günlük ritmim|aktif saatlerim|bilgisayar başında olduğum saatler|çalışma saatlerim) (?:ne|neler|nasıl|ne öğrendin)$|^hangi saatlerde bilgisayar başındayım$")]
+    private static partial Regex DayShapeQuestion();
 
     [GeneratedRegex(@"^(?:öğrendiğin |bütün )?düzeltmeleri (?:unut|sıfırla|sil|temizle)$")]
     private static partial Regex CorrectionsReset();
