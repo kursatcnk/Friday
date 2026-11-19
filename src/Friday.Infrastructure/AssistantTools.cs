@@ -100,6 +100,7 @@ public sealed partial class AssistantTools(
         ["gun_sayaci"] = "Günleri sayıyorum",
         ["aliskanlik"] = "Alışkanlıklarına bakıyorum",
         ["harcama"] = "Harcamalarına bakıyorum",
+        ["ozel_gunler"] = "Takvimdeki özel günlere bakıyorum",
     };
 
     /// <summary>Hatırlatma ya da zamanlayıcı dolunca söylenecek metin.</summary>
@@ -229,6 +230,7 @@ public sealed partial class AssistantTools(
             [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
         Tool("yapilacaklar", "Kullanıcının yapılacaklar listesi: iş ekler, listeler, tamamlar.",
             [("islem", "string", "ekle, listele ya da tamamla", true), ("metin", "string", "İşin metni (ekle ve tamamla için)", false)]),
+        Tool("ozel_gunler", "Yaklaşan önemli günler: hafızadaki doğum günleri, yıldönümleri ve resmî günler (iki ay içinde).", []),
         Tool("aliskanlik", "Günlük alışkanlık takipçisi (kitap okumak, spor, meditasyon…): yeni alışkanlık ekler, bugün yapıldığını işaretler (yaptim), işareti kaldırır (geri_al), siler ya da serileri ve bu haftayı söyler (listele).",
             [("islem", "string", "ekle, yaptim, geri_al, sil ya da listele", true), ("ad", "string", "Alışkanlığın adı", false)]),
         Tool("harcama", "Harcama kaydı: harcama ekler (tutar TL ve ne için), bugün/hafta/ay harcamalarını kategori kategori özetler, son harcamayı siler, aylık bütçe koyar ya da hepsini Excel'e (CSV) aktarır.",
@@ -298,6 +300,7 @@ public sealed partial class AssistantTools(
                 "not" => NoteCommand(Argument(call, "islem"), Argument(call, "metin")),
                 "hesap" => SpokenMath.Answer(Argument(call, "soru")) ?? "Bu hesabı çözemedim; sayıları ve işlemi açıkça söyle.",
                 "gun_sayaci" => CountdownAnswer(Argument(call, "hedef")),
+                "ozel_gunler" => SpecialDaysCommand().Text,
                 "aliskanlik" => HabitCommand(Argument(call, "islem"), Argument(call, "ad"))?.Text ?? "Böyle bir alışkanlık takip edilmiyor; eklemek için islem=ekle kullan.",
                 "harcama" => ExpenseCommand(Argument(call, "islem"), Argument(call, "tutar"), Argument(call, "aciklama"), Argument(call, "donem"), Argument(call, "kategori")).Text,
                 "internette_ara" => await SearchWebAsync(Argument(call, "soru"), cancellationToken).ConfigureAwait(false),

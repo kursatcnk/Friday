@@ -61,6 +61,11 @@ public static partial class QuickIntents
             return Command("aliskanlik", ("islem", "ekle"), ("ad", add.Groups["x"].Value.Trim()));
         }
 
+        if (SpecialDaysQuestion().IsMatch(sentence))
+        {
+            return Command("ozel_gunler");
+        }
+
         if (HabitList().IsMatch(sentence))
         {
             return Command("aliskanlik", ("islem", "listele"));
@@ -163,6 +168,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^alışkanlıklarım(?: neler| nasıl(?: gidiyor)?| ne durumda)?$|^alışkanlıklarımı (?:oku|söyle|göster)$|^alışkanlık (?:durumum|serim|serilerim|raporu|raporum)$|^serilerim(?: nasıl)?$|^bugün (?:hangi alışkanlıkları|neleri) yapmadım$")]
     private static partial Regex HabitList();
+
+    [GeneratedRegex(@"^(?:yaklaşan |önümüzdeki )?(?:özel|önemli) günler(?:im)?(?: neler| ne| var mı)?$|^yaklaşan (?:doğum günleri|özel günler|önemli günler|bayramlar)(?: neler| var mı)?$|^(?:yakında )?kimin doğum günü (?:var|yaklaşıyor)$")]
+    private static partial Regex SpecialDaysQuestion();
 
     [GeneratedRegex(@"^(?<x>.+?) alışkanlığını (?:sil|kaldır|bırak|takip etme)$")]
     private static partial Regex HabitRemove();

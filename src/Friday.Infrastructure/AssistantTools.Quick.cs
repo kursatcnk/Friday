@@ -102,6 +102,7 @@ public sealed partial class AssistantTools
                 "pano_gecmisi" => ClipboardHistoryCommand(Arg("islem"), Arg("sira")),
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
+                "ozel_gunler" => SpecialDaysCommand(),
                 "harcama" => ExpenseCommand(Arg("islem"), Arg("tutar"), Arg("aciklama"), Arg("donem"), Arg("kategori")),
                 _ => null
             };
@@ -459,13 +460,17 @@ public sealed partial class AssistantTools
         var today = DateOnly.FromDateTime(DateTime.Now);
         foreach (var item in memory.Items)
         {
-            if (MemoryDates.NextOccurrence(item.Text, today) is { } date && date.DayNumber - today.DayNumber is var left and <= 3)
+            if (MemoryDates.NextOccurrence(item.Text, today) is { } date && date.DayNumber - today.DayNumber is var left and <= 3
+                && !(left == 0 && SpecialDays.KindOf(item.Text) is SpecialKind.OwnBirthday or SpecialKind.Birthday or SpecialKind.Anniversary))
             {
                 var when = left switch { 0 => "Bugün", 1 => "Yarın", _ => $"{left} gün sonra" };
                 var fact = item.Text.StartsWith("Kullanıcının ", StringComparison.Ordinal) ? item.Text["Kullanıcının ".Length..] : item.Text;
                 parts.Add($"{when}: {fact.TrimEnd('.')}.");
             }
         }
+
+        // Doğum günü, yıldönümü ya da resmî gün: günün kendisinde kutlanır.
+        SpecialDayGreetings(parts, DateTime.Now);
 
         // Günün işi: bekleyen işler, okuma listesi, odak hedefi ve seri.
         if (Todos is { } todos && todos.Open.Count > 0)

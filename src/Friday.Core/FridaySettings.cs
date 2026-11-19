@@ -20,6 +20,9 @@ public sealed class FridaySettings
     /// <summary>Alışkanlık önerileri: hep aynı saatlerde açtığın rutini ya da uygulamayı o saat gelince önerir.</summary>
     public bool HabitSuggestions { get; set; } = true;
 
+    /// <summary>Başka bir uygulama mikrofonu kullanınca (görüşme) rahatsız etme açılır, uyandırma kelimesi duraklar.</summary>
+    public bool MeetingQuiet { get; set; } = true;
+
     /// <summary>Ortam seslerinin (yağmur, beyaz gürültü…) ses düzeyi, 0–1.</summary>
     public double AmbientVolume { get; set; } = 0.25;
 

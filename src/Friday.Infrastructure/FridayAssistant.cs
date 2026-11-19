@@ -104,6 +104,7 @@ public sealed class FridayAssistant : IDisposable
     public string SetQuiet(TimeSpan? duration)
     {
         _quietUntil = duration is { } span ? DateTime.Now + span : DateTime.MinValue;
+        _meetingQuiet = false;
         QuietChanged?.Invoke(this, EventArgs.Empty);
         if (duration is null)
         {
@@ -317,7 +318,7 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Uyandırma kelimesini ayara göre açar, yeniden başlatır ya da kapatır.</summary>
     private void StartWakeWord()
     {
-        if (_settings.WakeWord.Length == 0)
+        if (_settings.WakeWord.Length == 0 || _meetingPausedWake)
         {
             _wakeWord.Stop();
             return;
@@ -434,6 +435,7 @@ public sealed class FridayAssistant : IDisposable
 
         _idleTimer = new Timer(_ => _ = SleepModelsAsync(), null, Timeout.Infinite, Timeout.Infinite);
         _habitTimer = new Timer(_ => SuggestHabit(), null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        _meetingTimer = new Timer(_ => CheckMeeting(), null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
         ScheduleRoutines();
         _ = RunStartupRoutinesAsync();
         UpdateActivity();
@@ -1389,6 +1391,100 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
+    // ---------------------------------------------------------------- görüşme algılama
+
+    private Timer? _meetingTimer;
+    private string? _meeting;
+    private bool _meetingQuiet;
+    private bool _meetingPausedWake;
+    private readonly List<string> _meetingHeld = [];
+
+    /// <summary>Friday dışında mikrofonu kullanan uygulama (Teams, Zoom, Meet…); görüşme yoksa null.</summary>
+    public string? Meeting => _meeting;
+
+    /// <summary>Görüşme başladı ya da bitti.</summary>
+    public event EventHandler? MeetingChanged;
+
+    /// <summary>
+    /// 20 sn'de bir Windows'un mikrofon kaydına bakılır. Başka bir uygulama mikrofonu kullanıyorsa (görüşme, kayıt)
+    /// Friday rahatsız etmeye geçer, uyandırma kelimesini dinlemeyi bırakır ve hatırlatmaları sesli okumaz; görüşme
+    /// bitince her şey eski haline döner ve bekleyen hatırlatmalar okunur.
+    /// </summary>
+    private void CheckMeeting()
+    {
+        try
+        {
+            var app = _settings.MeetingQuiet ? MeetingDetector.ActiveCall() : null;
+            if (app is not null && _meeting is null)
+            {
+                StartMeeting(app);
+            }
+            else if (app is null && _meeting is not null)
+            {
+                EndMeeting();
+            }
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            FridayLog.Warn($"Görüşme algılama: {exception.Message}");
+        }
+    }
+
+    private void StartMeeting(string app)
+    {
+        _meeting = app;
+        if (!Muted)
+        {
+            _quietUntil = DateTime.Now.AddHours(8);
+            _meetingQuiet = true;
+            QuietChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        if (_wakeWord.IsRunning)
+        {
+            _wakeWord.Stop();
+            _meetingPausedWake = true;
+        }
+
+        _ledger.Record(DataFlow.Local, "Görüşme", $"{app} mikrofonu kullanıyor · Friday sessiz, uyandırma kelimesi duraklatıldı");
+        FridayLog.Info($"Görüşme başladı: {app}");
+        MeetingChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void EndMeeting()
+    {
+        var app = _meeting;
+        _meeting = null;
+        if (_meetingQuiet)
+        {
+            _meetingQuiet = false;
+            _quietUntil = DateTime.MinValue;
+            QuietChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        if (_meetingPausedWake)
+        {
+            _meetingPausedWake = false;
+            StartWakeWord();
+        }
+
+        FridayLog.Info($"Görüşme bitti: {app}");
+        MeetingChanged?.Invoke(this, EventArgs.Empty);
+        string[] held;
+        lock (_meetingHeld)
+        {
+            held = [.. _meetingHeld];
+            _meetingHeld.Clear();
+        }
+
+        if (held.Length > 0)
+        {
+            Announce(held.Length == 1
+                ? $"Görüşme sırasında bir hatırlatma geldi: {held[0]}"
+                : $"Görüşme sırasında {held.Length} hatırlatma geldi. {string.Join(" ", held)}");
+        }
+    }
+
     // ---------------------------------------------------------------- dakikalık bakım: göz molası, hava uyarısı
 
     private Timer? _careTimer;
@@ -1424,6 +1520,13 @@ public sealed class FridayAssistant : IDisposable
                     Announce("Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
                     return;
                 }
+            }
+
+            // Yarın bir doğum günü ya da yıldönümü varsa akşam 19.00–21.30 arası bir kez sorulur.
+            if (!Muted && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
+            {
+                Announce([new CoachStep(eve)], listenAfter: true);
+                return;
             }
 
             // Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.
@@ -1669,6 +1772,20 @@ public sealed class FridayAssistant : IDisposable
 
     private void Announce(IReadOnlyList<CoachStep> script, bool listenAfter = false)
     {
+        if (_meeting is not null)
+        {
+            // Görüşmedeyken Friday sesli konuşmaz; hatırlatma görüşme bitince okunur.
+            lock (_meetingHeld)
+            {
+                if (_meetingHeld.Count < 10)
+                {
+                    _meetingHeld.Add(string.Join(" ", script.Select(step => step.Text)));
+                }
+            }
+
+            return;
+        }
+
         CancellationToken token;
         lock (_gate)
         {
@@ -1747,7 +1864,7 @@ public sealed class FridayAssistant : IDisposable
         try
         {
             var greeting = await _tools.MorningGreetingAsync(_settings.UserName, CancellationToken.None).ConfigureAwait(false);
-            Announce([new CoachStep(greeting)]);
+            Announce([new CoachStep(greeting)], listenAfter: _tools.GreetingAsks);
         }
         catch (HttpRequestException exception)
         {
@@ -1833,6 +1950,7 @@ public sealed class FridayAssistant : IDisposable
     {
         _idleTimer?.Dispose();
         _habitTimer?.Dispose();
+        _meetingTimer?.Dispose();
         _routineTimer?.Dispose();
         _activity?.Dispose();
         _careTimer?.Dispose();

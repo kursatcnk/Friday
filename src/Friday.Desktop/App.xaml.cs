@@ -413,7 +413,7 @@ public sealed partial class App : Application, IDisposable
                 }
 
                 // Rahatsız etme süresi dolduysa rozet kalkar.
-                if (panel.QuietBadge.Length > 0 && assistant.QuietUntil is null)
+                if (panel.QuietBadge.Length > 0 && assistant.QuietUntil is null && assistant.Meeting is null)
                 {
                     panel.QuietBadge = "";
                 }
@@ -460,7 +460,11 @@ public sealed partial class App : Application, IDisposable
         memory.Changed += (_, _) => Ui(() => panel.ShowMemories(memory.Items));
         assistant.DocumentsChanged += (_, status) => Ui(() => panel.DocumentStatus = status);
         assistant.LatencyMeasured += (_, latency) => Ui(() => panel.LastLatency = latency);
-        assistant.QuietChanged += (_, _) => Ui(() => panel.QuietBadge = assistant.QuietUntil is { } until ? $"Rahatsız etme · {until:HH:mm}" : "");
+        void ShowQuiet() => panel.QuietBadge = assistant.Meeting is { } call
+            ? $"Görüşmede · {call}"
+            : assistant.QuietUntil is { } until ? $"Rahatsız etme · {until:HH:mm}" : "";
+        assistant.QuietChanged += (_, _) => Ui(ShowQuiet);
+        assistant.MeetingChanged += (_, _) => Ui(ShowQuiet);
         ledger.Added += (_, entry) => Ui(() => panel.AddLedger(entry));
         assistant.StatusChanged += (_, status) => Ui(() =>
         {

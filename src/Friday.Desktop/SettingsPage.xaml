@@ -267,6 +267,13 @@
                                            Text="Birkaç gündür aynı saatlerde açtığın bir rutini ya da uygulamayı o saat gelince önerir: &quot;Genelde bu saatte çalışma modunu açıyorsun, açayım mı?&quot;"/>
                             </StackPanel>
                         </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding MeetingQuiet}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Görüşmede sessiz kal" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="Teams, Zoom, Meet gibi bir uygulama mikrofonu kullanınca Friday kendiliğinden konuşmaz, &quot;Hey Friday&quot;ı dinlemeyi bırakır, hatırlatmaları görüşme bitince okur. Ses dinlenmez; yalnızca Windows'un mikrofonu kimin kullandığı kaydına bakılır."/>
+                            </StackPanel>
+                        </CheckBox>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ClipboardHistoryEnabled}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="Pano geçmişi" FontWeight="SemiBold"/>

@@ -115,6 +115,9 @@ public sealed partial class PanelViewModel
     private bool _habitSuggestionsEnabled = true;
 
     [ObservableProperty]
+    private bool _meetingQuiet = true;
+
+    [ObservableProperty]
     private bool _ambientLow;
 
     [ObservableProperty]
@@ -429,6 +432,7 @@ public sealed partial class PanelViewModel
         _settings.ClipboardHistory = ClipboardHistoryEnabled;
         _settings.OllamaModel = BrainSmart && _actions.SmartModelInstalled ? FridaySettings.SmartTextModel : FridaySettings.FastTextModel;
         _settings.HabitSuggestions = HabitSuggestionsEnabled;
+        _settings.MeetingQuiet = MeetingQuiet;
         _settings.AmbientVolume = AmbientLow ? 0.12 : AmbientHigh ? 0.45 : 0.25;
 
         var notes = new List<string>();
@@ -534,6 +538,7 @@ public sealed partial class PanelViewModel
         BrainSmart = _settings.OllamaModel == FridaySettings.SmartTextModel;
         BrainFast = !BrainSmart;
         HabitSuggestionsEnabled = _settings.HabitSuggestions;
+        MeetingQuiet = _settings.MeetingQuiet;
         AmbientLow = _settings.AmbientVolume < 0.18;
         AmbientHigh = _settings.AmbientVolume > 0.35;
         AmbientMedium = !AmbientLow && !AmbientHigh;
