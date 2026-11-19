@@ -378,3 +378,23 @@ public class DeepFeatureTests
     }
 }
 
+public class FocusStepTests
+{
+    [Theory]
+    [InlineData("sessiz:90", "90 dk rahatsız etme")]
+    [InlineData("pomodoro:4", "4 pomodoro başlat")]
+    public void NewStepsRoundTrip(string text, string description)
+    {
+        var step = RoutineStep.Parse(text);
+        Assert.Equal(description, step.Describe());
+        Assert.Equal(text, step.Format());
+    }
+
+    [Fact]
+    public void QuietNeedsMinutes() => Assert.Throws<FormatException>(() => RoutineStep.Parse("sessiz:uzun"));
+
+    [Fact]
+    public void DeepWorkTemplateParses() =>
+        Assert.All(RoutineStep.Templates.First(template => template.Name == "derin çalışma").Steps, step => RoutineStep.Parse(step));
+}
+

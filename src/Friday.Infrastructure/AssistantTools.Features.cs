@@ -176,6 +176,8 @@ public sealed partial class AssistantTools
                 RoutineAction.Open => OpenPath(step.Value),
                 RoutineAction.Window => WindowCommand(step.Value).Text,
                 RoutineAction.Workspace => (await WorkspaceCommandAsync("kur", step.Value, cancellationToken).ConfigureAwait(false)).Text,
+                RoutineAction.Quiet => QuietControl?.Invoke(TimeSpan.FromMinutes(Math.Clamp(step.Number, 5, 24 * 60))) ?? "",
+                RoutineAction.Pomodoro => PomodoroControl?.Invoke(Math.Clamp(step.Number, 1, 8)) ?? "",
                 _ => ""
             });
         }

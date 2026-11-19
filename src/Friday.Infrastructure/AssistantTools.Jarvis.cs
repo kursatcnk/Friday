@@ -304,6 +304,12 @@ public sealed partial class AssistantTools
                 case RoutineAction.Window:
                     _ = WindowCommand(step.Value);
                     break;
+                case RoutineAction.Quiet:
+                    _ = QuietControl?.Invoke(TimeSpan.FromMinutes(Math.Clamp(step.Number, 5, 24 * 60)));
+                    break;
+                case RoutineAction.Pomodoro:
+                    said.Add(PomodoroControl?.Invoke(Math.Clamp(step.Number, 1, 8)) ?? "");
+                    break;
                 case RoutineAction.Workspace:
                     var workspace = await WorkspaceCommandAsync("kur", step.Value, cancellationToken).ConfigureAwait(false);
                     if (workspace.Text.Contains("yok", StringComparison.Ordinal))

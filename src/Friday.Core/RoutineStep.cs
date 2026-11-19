@@ -37,7 +37,13 @@ public enum RoutineAction
     Window,
 
     /// <summary>Kaydedilmiş masa düzenini kurar: "masa:kodlama".</summary>
-    Workspace
+    Workspace,
+
+    /// <summary>Rahatsız etme modunu açar (dakika): "sessiz:90".</summary>
+    Quiet,
+
+    /// <summary>Pomodoro serisi başlatır (adet): "pomodoro:4".</summary>
+    Pomodoro
 }
 
 /// <summary>Rutin düzenleyicisindeki bir adım türü: dosyadaki adı, paneldeki etiketi, değer ipucu ve simgesi.</summary>
@@ -71,11 +77,17 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
         new(RoutineAction.Open, "dosya", "Dosya ya da klasör aç", "D:\\Projeler, belgeler, indirilenler…", "\uE8B7"),
         new(RoutineAction.Window, "pencere", "Pencereyi yerleştir", "sol, sag, buyut, kucult ya da bol", "\uE737"),
         new(RoutineAction.Workspace, "masa", "Masa düzenini kur", "kayıtlı masanın adı, ör. kodlama", "\uE7F4"),
+        new(RoutineAction.Quiet, "sessiz", "Rahatsız etme", "dakika, ör. 90", "\uE708"),
+        new(RoutineAction.Pomodoro, "pomodoro", "Pomodoro serisi", "kaç tur, ör. 4", "\uE916"),
     ];
 
     /// <summary>"Şablondan başla" listesi.</summary>
     public static IReadOnlyList<RoutineTemplate> Templates { get; } =
     [
+        new("derin çalışma", "2 saat rahatsız etme, yağmur sesi, 4 pomodoro, kısa bir söz",
+            ["sessiz:120", "ortam:yagmur 50", "pomodoro:4", "soyle:Derin çalışma başladı. Telefonu uzağa koy."]),
+        new("akşam kapanışı", "Günün ritmi, bekleyen işler, sakin bir kapanış",
+            ["ritim:durum", "soyle:Yarın için bekleyen işlerine Bugün ekranından bakabilirsin. İyi akşamlar."]),
         new("sabah", "Günün özeti, sesi ayarla, müziği başlat",
             ["ozet", "ses:25", "medya:oynat_duraklat"]),
         new("odak modu", "Müziği durdur, 50 dakika odak, kısa bir söz",
@@ -120,6 +132,8 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             "dosya" or "klasor" or "klasör" => RoutineAction.Open,
             "pencere" => RoutineAction.Window,
             "masa" => RoutineAction.Workspace,
+            "sessiz" => RoutineAction.Quiet,
+            "pomodoro" => RoutineAction.Pomodoro,
             _ => throw new FormatException($"Bilinmeyen rutin adımı: {text}")
         };
 
@@ -128,7 +142,7 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             throw new FormatException($"Rutin adımında değer eksik: {text}");
         }
 
-        if (action is RoutineAction.Volume or RoutineAction.Wait
+        if (action is RoutineAction.Volume or RoutineAction.Wait or RoutineAction.Quiet or RoutineAction.Pomodoro
             && !int.TryParse(value.TrimEnd('%', 's', 'n', ' '), NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
         {
             throw new FormatException($"Rutin adımında sayı bekleniyordu: {text}");
@@ -200,6 +214,8 @@ public sealed record RoutineStep(RoutineAction Action, string Value)
             _ => $"Pencere: {Value}"
         },
         RoutineAction.Workspace => $"\"{Value}\" masa düzenini kur",
+        RoutineAction.Quiet => $"{Number} dk rahatsız etme",
+        RoutineAction.Pomodoro => $"{Number} pomodoro başlat",
         RoutineAction.Ambient => Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) switch
         {
             ["kapat", ..] => "Ortam sesini kapat",
