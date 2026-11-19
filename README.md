@@ -28,6 +28,11 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Listeler** | "Market listesine süt ve ekmek ekle", "market listemde ne var", "market listesinden sütü çıkar", "listelerim". |
 | **Aralıklı hatırlatmalar** | "Her 30 dakikada bir su içmeyi hatırlat", "her saat başı esnemeyi hatırlat", "her 2 saatte bir gözlerimi dinlendirmeyi hatırlat". Gece 22.00–08.00 arası susar. |
 | **Haftalık özet** | "Bu hafta neler yaptım": son 7 günün ekran süresi ve en çok kullanılanlar, tamamlanan ve bekleyen işler, sohbetler, yaklaşan hatırlatmalar. |
+| **Okuma listesi** | Tarayıcıda bir sayfadayken "bunu sonra okuyacağım": başlığı ve adresi kaydedilir. "Okuma listem", "sıradakini aç" (açar ve listeden çıkarır). |
+| **Bu şarkıyı kaydet** | Çalan şarkıyı "beğendiğim şarkılar" listesine ekler; "beğendiğim şarkılar listem" ile okunur. |
+| **Disk analizi** | "Diskimde ne yer kaplıyor", "yer açmama yardım et": kullanıcı klasörlerinde en büyük klasörler ve dosyalar (en fazla 20 sn, düşük öncelik). Hiçbir şey silinmez. |
+| **Sesli günlük** | "Günlüğe yaz: sunum çok iyi geçti", "günlüğümü oku", "bu hafta günlüğüme ne yazmışım". Ay ay Markdown dosyalarında (). |
+| **Odak özeti** | Odak oturumu bitince o sürede en çok hangi uygulamaların açık olduğu söylenir; dikkat dağıtan sitelerin payı büyükse nazikçe belirtilir (ekran süresi açıkken). |
 | **Rahatsız etme** | "1 saat rahatsız etme", "yarım saat sessiz ol", tepsi menüsü ya da başlıktaki rozet. Mola ve alışkanlık önerileri, odak hatırlatması ve sabah selamı susar; kurduğun hatırlatmalar yine gelir. |
 | **Görünüm ve kısayollar** | Ayarlar › Görünüm: vurgu rengi (anında uygulanır) ve arayüz boyutu. Ctrl+1…7 sayfalar arasında geçer, Esc düzenlemeyi kapatır. Tepsi menüsünden rutinler tek tıkla çalışır. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
@@ -85,7 +90,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 48 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 52 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼

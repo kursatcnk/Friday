@@ -44,6 +44,9 @@ public sealed partial class RhythmCoach : IDisposable
     /// <summary>Okunacak cümleler (öneri, hoş geldin, odak bitti). Friday boştaysa okur.</summary>
     public event EventHandler<IReadOnlyList<CoachStep>>? Speak;
 
+    /// <summary>Odak süresi verilince o sürede neyle uğraşıldığını söyleyen cümle (ekran süresi açıksa); yoksa null.</summary>
+    public Func<TimeSpan, string?>? FocusInsight { get; set; }
+
     /// <summary>Günün ilk oturuşu: Friday sabah karşılamasını yapar.</summary>
     public event EventHandler? MorningGreeting;
 
@@ -193,7 +196,7 @@ public sealed partial class RhythmCoach : IDisposable
         Changed?.Invoke(this, EventArgs.Empty);
         return new QuickReply(spent < TimeSpan.FromMinutes(1)
             ? "Şu an açık bir odak oturumu yok."
-            : $"Odak bitti; {RhythmCoachLines.Span(spent)} odaklandın.");
+            : $"Odak bitti; {RhythmCoachLines.Span(spent)} odaklandın.{(FocusInsight?.Invoke(spent) is { } insight ? " " + insight : "")}");
     }
 
     public QuickReply Snooze(double minutes)
@@ -319,7 +322,7 @@ public sealed partial class RhythmCoach : IDisposable
 
                 break;
             case RhythmEventKind.FocusEnded:
-                Say(RhythmCoachLines.FocusEnded(item.Length, Today, _tracker.BreakLength), mustTell: true);
+                Say(RhythmCoachLines.FocusEnded(item.Length, Today, _tracker.BreakLength) + (FocusInsight?.Invoke(item.Length) is { } insight ? " " + insight : ""), mustTell: true);
                 break;
             case RhythmEventKind.BreakOver:
                 Say(RhythmCoachLines.BreakOver(_where), mustTell: false);

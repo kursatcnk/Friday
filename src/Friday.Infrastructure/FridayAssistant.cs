@@ -259,12 +259,14 @@ public sealed class FridayAssistant : IDisposable
             }
         };
         _tools.QuietControl = SetQuiet;
+        _rhythm.FocusInsight = FocusInsight;
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
         _tools.SaveFolder = Path.Combine(paths.Home, "Kaydedilenler");
         _tools.Workspaces = new WorkspaceStore(Path.Combine(paths.Data, "workspaces.json"));
         _tools.Lists = new ListStore(Path.Combine(paths.Data, "lists.json"));
+        _tools.Journal = new JournalStore(Path.Combine(paths.Data, "journal"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -1283,6 +1285,30 @@ public sealed class FridayAssistant : IDisposable
         RunTriggeredRoutines(schedule => schedule.Trigger is { } trigger && trigger.StartsWith("uygulama:", StringComparison.Ordinal)
             && (ReminderStore.AppMatches(trigger["uygulama:".Length..], label) || ReminderStore.AppMatches(trigger["uygulama:".Length..], process)),
             TimeSpan.FromMinutes(30));
+    }
+
+    /// <summary>
+    /// Odak oturumunun özeti: o sürede en çok hangi uygulamalar öndeydi; dikkat dağıtan bir site payı büyükse nazikçe
+    /// söylenir. Ekran süresi kapalıysa null.
+    /// </summary>
+    private string? FocusInsight(TimeSpan length)
+    {
+        if (_tools.Activity is not { } activity || length < TimeSpan.FromMinutes(5))
+        {
+            return null;
+        }
+
+        var apps = activity.Since(DateTime.Now - length);
+        var total = apps.Sum(item => item.Seconds);
+        if (total < 120)
+        {
+            return null;
+        }
+
+        var top = string.Join(" ve ", apps.Take(2).Select(item => $"{item.App} ({ScreenTimeLog.Spoken(item.Seconds)})"));
+        var distraction = apps.Where(item => ScreenTimeLog.IsDistraction(item.App)).Sum(item => item.Seconds);
+        return $"Bu sürede en çok {top} açıktı."
+               + (distraction > total / 5 ? $" {ScreenTimeLog.Spoken(distraction)} dikkat dağıtan sitelerde geçti; bir dahakine onları kapatmayı deneyebilirsin." : "");
     }
 
     /// <summary>Kullanıcı bilgisayara döndü: "dönünce" hatırlatmaları ve rutinleri (en fazla saatte bir).</summary>

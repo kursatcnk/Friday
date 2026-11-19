@@ -5,6 +5,19 @@ namespace Friday.Infrastructure;
 /// <summary>Windows'un medya oturumlarından (Spotify, tarayıcıdaki YouTube…) o an çalanı okur.</summary>
 public static class NowPlaying
 {
+    /// <summary>Çalan parçanın adı ve sanatçısı; çalan bir şey yoksa null.</summary>
+    public static async Task<(string Title, string Artist)?> CurrentAsync()
+    {
+        var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+        if (manager.GetCurrentSession() is not { } session)
+        {
+            return null;
+        }
+
+        var properties = await session.TryGetMediaPropertiesAsync();
+        return string.IsNullOrWhiteSpace(properties.Title) ? null : (properties.Title.Trim(), properties.Artist?.Trim() ?? "");
+    }
+
     public static async Task<string> DescribeAsync()
     {
         var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();

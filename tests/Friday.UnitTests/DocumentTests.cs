@@ -253,3 +253,43 @@ public class IntervalReminderTests
     public void RecognisesWeeklyReview() => Assert.Equal("haftalik_ozet", QuickIntents.Match("bu hafta neler yaptım")?.Tool);
 }
 
+public class CreativeFeatureTests
+{
+    [Theory]
+    [InlineData("bunu sonra okuyacağım", "sonra_oku", "kaydet")]
+    [InlineData("bu sayfayı okuma listeme ekle", "sonra_oku", "kaydet")]
+    [InlineData("okuma listem", "sonra_oku", "listele")]
+    [InlineData("sıradakini aç", "sonra_oku", "ac")]
+    [InlineData("günlüğe yaz: sunum çok iyi geçti", "gunluk", "yaz")]
+    [InlineData("bu hafta günlüğüme ne yazmışım", "gunluk", "oku")]
+    public void RecognisesCommands(string sentence, string tool, string action)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal(tool, command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+    }
+
+    [Theory]
+    [InlineData("bu şarkıyı kaydet", "sarki_kaydet")]
+    [InlineData("diskimde ne yer kaplıyor", "disk_analizi")]
+    [InlineData("yer açmama yardım et", "disk_analizi")]
+    public void RecognisesSimpleCommands(string sentence, string tool) => Assert.Equal(tool, QuickIntents.Match(sentence)?.Tool);
+
+    [Fact]
+    public void DailyBriefingIsNotTheJournal() => Assert.NotEqual("gunluk", QuickIntents.Match("günlük özet")?.Tool);
+
+    [Fact]
+    public void JournalKeepsEntriesByDay()
+    {
+        using var temp = new TempDirectory();
+        var journal = new JournalStore(Path.Combine(temp.Path, "journal"));
+        var now = new DateTime(2026, 11, 19, 18, 30, 0);
+        journal.Add(now.AddDays(-1).AddHours(-2), "koşuya çıktım");
+        journal.Add(now.AddHours(-1), "sunum iyi geçti");
+        var week = journal.Between(now.Date.AddDays(-6), now);
+        Assert.Equal(2, week.Count);
+        Assert.Equal("Dün: 16:30 Koşuya çıktım. Bugün: 17:30 Sunum iyi geçti.", JournalStore.Describe(week, now));
+        Assert.Single(journal.Between(now.Date, now));
+    }
+}
+

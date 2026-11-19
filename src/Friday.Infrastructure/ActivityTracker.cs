@@ -22,6 +22,9 @@ public sealed class ActivityTracker : IDisposable
     private int _distractedSeconds;
     private bool _warned;
     private bool _away;
+
+    /// <summary>Son 4 saatin örnekleri (15 sn'de bir); odak oturumunun özetini çıkarmak için. Diske yazılmaz.</summary>
+    private readonly Queue<(DateTime At, string Label)> _recent = new();
     private string _lastLabel = "";
 
     public ActivityTracker(string file)
@@ -58,6 +61,16 @@ public sealed class ActivityTracker : IDisposable
         lock (_log)
         {
             return _log.Day(when);
+        }
+    }
+
+    /// <summary>Bu andan beri hangi uygulamada ne kadar kalındı (en çok önce).</summary>
+    public IReadOnlyList<(string App, int Seconds)> Since(DateTime since)
+    {
+        lock (_log)
+        {
+            return [.. _recent.Where(item => item.At >= since).GroupBy(item => item.Label)
+                .Select(group => (group.Key, group.Count() * TickSeconds)).OrderByDescending(item => item.Item2)];
         }
     }
 
@@ -99,6 +112,11 @@ public sealed class ActivityTracker : IDisposable
                 lock (_log)
                 {
                     _log.Add(DateTime.Now, label, TickSeconds);
+                    _recent.Enqueue((DateTime.Now, label));
+                    while (_recent.Count > 0 && _recent.Peek().At < DateTime.Now.AddHours(-4))
+                    {
+                        _recent.Dequeue();
+                    }
                 }
             }
 
