@@ -125,4 +125,37 @@ public sealed partial class PanelViewModel
 
     [RelayCommand]
     private void RemoveExpense(ExpenseView item) => _actions.RemoveExpense(item.Id);
+
+    [ObservableProperty]
+    private string _vocabularyDue = "110";
+
+    [ObservableProperty]
+    private string _vocabularyDetail = "";
+
+    [ObservableProperty]
+    private string _vocabularyCaption = "";
+
+    public void ShowVocabulary(DeckStats stats, bool started)
+    {
+        if (!started)
+        {
+            VocabularyDue = "110";
+            VocabularyDetail = "sık kullanılan İngilizce kelime hazır. Friday sorar, sen Türkçesini söylersin; bildiklerini aralıklı tekrar eder.";
+            VocabularyCaption = "";
+            return;
+        }
+
+        var waiting = stats.Waiting;
+        VocabularyDue = waiting.ToString(TurkishCulture);
+        VocabularyDetail = waiting == 0 ? "Bugünlük kelimeler bitti. Yarın yine." : $"kelime bugün seni bekliyor ({stats.DueToday} tekrar).";
+        VocabularyCaption = $"{stats.Learned}/{stats.Total} öğrenildi";
+    }
+
+    /// <summary>Sohbet sayfasına geçip pratiği başlatır; cevaplar yazılarak ya da sesle verilebilir.</summary>
+    [RelayCommand]
+    private void StartPractice()
+    {
+        GoTo("chat");
+        _actions.Send("Kelime çalışalım");
+    }
 }

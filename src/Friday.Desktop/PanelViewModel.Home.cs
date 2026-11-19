@@ -31,6 +31,7 @@ public sealed partial class PanelViewModel
         ("todos", "Yapılacaklar"),
         ("habits", "Alışkanlıklar"),
         ("spending", "Harcamalar"),
+        ("vocabulary", "Kelime pratiği"),
         ("notes", "Notlar"),
         ("routines", "Rutinler"),
         ("system", "Sistem"),

@@ -89,6 +89,8 @@ public sealed partial class AssistantTools
             parts.Add(string.Create(CultureInfo.GetCultureInfo("tr-TR"), $"Ruh hali ortalaman 10 üzerinden {mood:0.#}."));
         }
 
+        LifeWeek(parts, now);
+
         var chats = history.List().Count(chat => chat.Updated >= now.AddDays(-7));
         if (chats > 0)
         {

@@ -298,6 +298,47 @@ public sealed partial class AssistantTools
             : "";
     }
 
+    private DateOnly _streakNudged;
+
+    /// <summary>
+    /// Akşam bir kez: en az 2 günlük serisi olan ama bugün henüz işaretlenmemiş alışkanlıklar ("Bugün henüz kitap
+    /// okumak işaretlenmedi; 5 günlük serin var, bozma!"). Yoksa null.
+    /// </summary>
+    public string? StreakNudge(DateTime now)
+    {
+        var today = DateOnly.FromDateTime(now);
+        if (!Settings.HabitSuggestions || HabitBook is not { } book || _streakNudged == today)
+        {
+            return null;
+        }
+
+        var risky = book.Pending(today).Select(habit => (habit.Name, Streak: HabitBook.Streak(habit, today))).Where(item => item.Streak >= 2).OrderByDescending(item => item.Streak).ToList();
+        if (risky.Count == 0)
+        {
+            return null;
+        }
+
+        _streakNudged = today;
+        return risky.Count == 1
+            ? $"Bugün henüz {risky[0].Name.ToLower(Turkish)} işaretlenmedi; {risky[0].Streak} günlük serin var, bozma!"
+            : $"Bugün {TurkishGrammar.Join([.. risky.Select(item => item.Name.ToLower(Turkish))])} henüz işaretlenmedi; serilerini bozma!";
+    }
+
+    /// <summary>Haftalık özete: alışkanlıkların son 7 günü ve haftanın harcaması.</summary>
+    private void LifeWeek(List<string> parts, DateTime now)
+    {
+        var today = DateOnly.FromDateTime(now);
+        if (HabitBook is { } book && book.Habits.Count > 0)
+        {
+            parts.Add("Alışkanlıklar: " + string.Join(", ", book.Habits.Take(4).Select(habit => $"{habit.Name.ToLower(Turkish)} {HabitBook.Week(habit, today).Count(done => done)}/7")) + ".");
+        }
+
+        if (Expenses is { } expenses && expenses.Summary(now.Date.AddDays(-6), now.Date.AddDays(1)) is { Count: > 0 } week)
+        {
+            parts.Add($"Son 7 günde {ExpenseBook.Spoken(week.Total)} harcadın; en çok {week.Categories[0].Category.ToLower(Turkish)}.");
+        }
+    }
+
     /// <summary>Gün sonu özetine alışkanlıklar ve bugünkü harcamalar.</summary>
     private void LifeDayEnd(List<string> parts, List<CardRow> rows, DateTime now)
     {
@@ -334,6 +375,22 @@ public sealed partial class AssistantTools
             parts.Add(streaks.Count > 0
                 ? $"Bugün {book.Habits.Count} alışkanlığın var; {streaks[0].Name.ToLower(Turkish)} serin {streaks[0].Streak} gün, bozma."
                 : $"Bugün takip ettiğin {book.Habits.Count} alışkanlık var.");
+        }
+
+        // Ayın ilk günü: geçen ayın harcama özeti.
+        if (now.Day == 1 && Expenses is { } ledgerBook)
+        {
+            var (from, to, _) = ExpenseBook.Period("gecen_ay", now);
+            var last = ledgerBook.Summary(from, to);
+            if (last.Count > 0)
+            {
+                parts.Add($"Geçen ay toplam {ExpenseBook.Spoken(last.Total)} harcadın; en çok {last.Categories[0].Category.ToLower(Turkish)}, {ExpenseBook.Spoken(last.Categories[0].Amount)}.");
+            }
+        }
+
+        if (Vocabulary is { Started: true } deck && deck.Stats(today).DueToday is > 0 and var due)
+        {
+            parts.Add($"Bugün {due} kelime tekrar bekliyor.");
         }
 
         if (Expenses is { MonthlyBudget: > 0 } expenses)

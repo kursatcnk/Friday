@@ -8,6 +8,9 @@ public sealed partial class AssistantTools
     private static readonly TimeSpan AnswerLife = TimeSpan.FromMinutes(3);
 
     private Func<string, QuickReply>? _awaitingAnswer;
+
+    /// <summary>Soru "hayır", "pas" gibi cevapları kendisi değerlendirir (kelime pratiği).</summary>
+    private bool _awaitingOwnsDecline;
     private DateTime _awaitingAt;
     private DateOnly _journalAsked;
 
@@ -113,6 +116,7 @@ public sealed partial class AssistantTools
         }
 
         _journalAsked = today;
+        _awaitingOwnsDecline = false;
         _awaitingAnswer = AnswerJournal;
         _awaitingAt = DateTime.Now;
         var question = "Günün nasıl geçti? Bir iki cümleyle anlatırsan günlüğüne yazarım.";
@@ -134,7 +138,7 @@ public sealed partial class AssistantTools
             return new QuickReply("Bir şey sormamıştım.");
         }
 
-        return QuickIntents.IsNo(text) || QuickIntents.IsDecline(text)
+        return !_awaitingOwnsDecline && (QuickIntents.IsNo(text) || QuickIntents.IsDecline(text))
             ? new QuickReply("Peki, başka zaman.")
             : handler(text);
     }

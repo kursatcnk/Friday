@@ -695,7 +695,8 @@ public sealed class FridayAssistant : IDisposable
                     return;
                 }
 
-                if ((_settings.FollowUpSeconds <= 0 && !_tools.InChecklist) || stopListening.IsCancellationRequested || _endConversation)
+                // Kontrol listesi ya da kelime pratiği gibi cevap bekleyen bir soru varsa dinleme sürer.
+                if ((_settings.FollowUpSeconds <= 0 && !_tools.InChecklist && !_tools.AwaitsAnswer) || stopListening.IsCancellationRequested || _endConversation)
                 {
                     _endConversation = false;
                     return;
@@ -723,7 +724,7 @@ public sealed class FridayAssistant : IDisposable
         Report(AssistantState.Listening, (prompt ?? (followUp ? "Devam edebilirsin…" : "Dinliyorum…")) + device);
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
-        var timeout = wait ?? (followUp ? TimeSpan.FromSeconds(Math.Max(_settings.FollowUpSeconds, _tools.InChecklist ? 12 : 0)) : FirstListenTimeout);
+        var timeout = wait ?? (followUp ? TimeSpan.FromSeconds(Math.Max(_settings.FollowUpSeconds, _tools.InChecklist || _tools.AwaitsAnswer ? 12 : 0)) : FirstListenTimeout);
         var recording = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice, SpeculateAsync)
             .ConfigureAwait(false);
         var audio = recording.Audio;
@@ -878,7 +879,8 @@ public sealed class FridayAssistant : IDisposable
 
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
         // "Günün nasıl geçti?" gibi serbest cevap bekleyen bir soru varsa söz ona gider; açıkça bir komutsa komut çalışır.
-        var answering = _tools.AwaitsAnswer && QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false };
+        var answering = _tools.AwaitsAnswer
+            && (_tools.AnswerTakesPriority || QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false });
         var command = _tools.InChecklist
             ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
             : answering
@@ -1530,6 +1532,13 @@ public sealed class FridayAssistant : IDisposable
             if (!Muted && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
             {
                 Announce([new CoachStep(eve)], listenAfter: true);
+                return;
+            }
+
+            // Seri koruma: 20.00–21.30 arası, serisi olan bir alışkanlık bugün yapılmadıysa bir kez hatırlatılır.
+            if (!Muted && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.StreakNudge(now) is { } nudge)
+            {
+                Announce(nudge);
                 return;
             }
 

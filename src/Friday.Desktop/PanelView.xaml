@@ -516,6 +516,27 @@
                                     </ItemsControl>
                                 </StackPanel>
                             </Border>
+                            <!-- Kelime pratiği: bugün bekleyen tekrarlar ve öğrenilenler. -->
+                            <Border local:CardFlowPanel.Key="vocabulary" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock Text="Kelime pratiği" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock Text="{Binding VocabularyCaption}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding VocabularyDue}" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="SemiBold"
+                                                   Typography.NumeralAlignment="Tabular" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding VocabularyDetail}" Style="{StaticResource Body}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="Çalış" Padding="16,7" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                Command="{Binding StartPracticeCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
                             <!-- Notlar. -->
                             <Border local:CardFlowPanel.Key="notes" Style="{StaticResource Card}">
                                 <StackPanel>

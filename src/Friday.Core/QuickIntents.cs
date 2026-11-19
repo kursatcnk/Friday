@@ -51,6 +51,11 @@ public static partial class QuickIntents
             return Command("kisaltma", ("islem", "ekle"), ("ad", snippet.Name), ("metin", snippet.Text));
         }
 
+        if (WordDefinition(text) is { } word)
+        {
+            return Command("kelime", ("islem", "ekle"), ("kelime", word.Front), ("anlam", word.Back));
+        }
+
         if (CustomCommand(text) is { } custom)
         {
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
@@ -86,6 +91,7 @@ public static partial class QuickIntents
             ?? DayEnd(sentence)
             ?? Life(sentence)
             ?? Snippets(sentence)
+            ?? Practice(sentence)
             ?? Todo(sentence)
             ?? RecurringReminder(sentence)
             ?? Ambient(sentence)
@@ -97,6 +103,7 @@ public static partial class QuickIntents
             ?? Clock(sentence)
             ?? Weather(sentence)
             ?? Currency(sentence)
+            ?? AppVolume(sentence)
             ?? Volume(sentence)
             ?? Media(sentence)
             ?? ReminderAt(sentence)

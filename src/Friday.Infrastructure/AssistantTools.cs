@@ -102,6 +102,8 @@ public sealed partial class AssistantTools(
         ["harcama"] = "Harcamalarına bakıyorum",
         ["ozel_gunler"] = "Takvimdeki özel günlere bakıyorum",
         ["kisaltma"] = "Kısaltmaya bakıyorum",
+        ["kelime"] = "Kelime kartlarını hazırlıyorum",
+        ["uygulama_sesi"] = "Uygulama sesini ayarlıyorum",
     };
 
     /// <summary>Hatırlatma ya da zamanlayıcı dolunca söylenecek metin.</summary>
@@ -231,6 +233,10 @@ public sealed partial class AssistantTools(
             [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
         Tool("yapilacaklar", "Kullanıcının yapılacaklar listesi: iş ekler, listeler, tamamlar.",
             [("islem", "string", "ekle, listele ya da tamamla", true), ("metin", "string", "İşin metni (ekle ve tamamla için)", false)]),
+        Tool("kelime", "İngilizce kelime pratiği (aralıklı tekrar): çalışmayı başlatır (calis), desteye kelime ekler (ekle, kelime ve anlam ile), kaç kelime öğrenildiğini söyler (durum) ya da kelime siler (sil).",
+            [("islem", "string", "calis, ekle, durum, sil ya da bitir", true), ("kelime", "string", "İngilizce kelime", false), ("anlam", "string", "Türkçe anlamı (ekle için)", false)]),
+        Tool("uygulama_sesi", "Uygulama bazında ses (ses karıştırıcı): bir uygulamanın (Spotify, Chrome, Discord…) sesini kısar, açar, yüzdeye ayarlar, sessize alır ya da ses çıkaran uygulamaları listeler.",
+            [("islem", "string", "kis, ac, ayarla, sessiz, sesli ya da listele", true), ("ad", "string", "Uygulama adı", false), ("deger", "number", "ayarla için yüzde (0–100)", false)]),
         Tool("kisaltma", "Metin kısaltmaları: sık yazılan bir metni (imza, adres, IBAN…) adıyla kaydeder (ekle), açık pencereye yazar (kullan), listeler ya da siler.",
             [("islem", "string", "ekle, kullan, listele ya da sil", true), ("ad", "string", "Kısaltmanın adı, ör. imza", false), ("metin", "string", "ekle için kaydedilecek metin", false)]),
         Tool("ozel_gunler", "Yaklaşan önemli günler: hafızadaki doğum günleri, yıldönümleri ve resmî günler (iki ay içinde).", []),
@@ -304,6 +310,8 @@ public sealed partial class AssistantTools(
                 "hesap" => SpokenMath.Answer(Argument(call, "soru")) ?? "Bu hesabı çözemedim; sayıları ve işlemi açıkça söyle.",
                 "gun_sayaci" => CountdownAnswer(Argument(call, "hedef")),
                 "ozel_gunler" => SpecialDaysCommand().Text,
+                "kelime" => VocabularyCommand(Argument(call, "islem"), Argument(call, "kelime"), Argument(call, "anlam")).Text,
+                "uygulama_sesi" => await Task.Run(() => AppVolumeCommand(Argument(call, "islem"), Argument(call, "ad"), Argument(call, "deger")).Text, cancellationToken).ConfigureAwait(false),
                 "kisaltma" => SnippetCommand(Argument(call, "islem"), Argument(call, "ad"), Argument(call, "metin"))?.Text ?? "Böyle bir kısaltma yok.",
                 "aliskanlik" => HabitCommand(Argument(call, "islem"), Argument(call, "ad"))?.Text ?? "Böyle bir alışkanlık takip edilmiyor; eklemek için islem=ekle kullan.",
                 "harcama" => ExpenseCommand(Argument(call, "islem"), Argument(call, "tutar"), Argument(call, "aciklama"), Argument(call, "donem"), Argument(call, "kategori")).Text,

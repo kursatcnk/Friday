@@ -253,13 +253,14 @@ public sealed partial class App : Application, IDisposable
         var habits = new HabitTracker(Path.Combine(paths.Data, "habits.json"));
         var habitBook = new HabitBook(Path.Combine(paths.Data, "habit-book.json"));
         var expenses = new ExpenseBook(Path.Combine(paths.Data, "expenses.json"));
+        var vocabulary = new VocabularyDeck(Path.Combine(paths.Data, "vocabulary.json"));
 
         // Yerel model yanıtları uzun sürebilir; zaman aşımını istekler kendi belirler.
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses };
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Vocabulary = vocabulary };
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),
@@ -446,6 +447,8 @@ public sealed partial class App : Application, IDisposable
         panel.ShowHabits(habitBook.Habits, DateOnly.FromDateTime(DateTime.Now));
         expenses.Changed += (_, _) => Ui(() => panel.ShowSpending(expenses, DateTime.Now));
         panel.ShowSpending(expenses, DateTime.Now);
+        vocabulary.Changed += (_, _) => Ui(() => panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started));
+        panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started);
         ShowToday();
         panel.ShowNotes(notes.All);
         async Task RefreshWeatherAsync()

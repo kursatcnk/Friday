@@ -103,6 +103,8 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "kelime" => VocabularyCommand(Arg("islem"), Arg("kelime"), Arg("anlam")),
+                "uygulama_sesi" => await Task.Run(() => AppVolumeCommand(Arg("islem"), Arg("ad"), Arg("deger")), cancellationToken).ConfigureAwait(false),
                 "kisaltma" => SnippetCommand(Arg("islem"), Arg("ad"), Arg("metin")),
                 "serbest_cevap" => AnswerPending(Arg("metin")),
                 "gunluk_sorusu" => new QuickReply(JournalQuestion(DateTime.Now, force: true) ?? "Günlük şu an hazır değil."),
