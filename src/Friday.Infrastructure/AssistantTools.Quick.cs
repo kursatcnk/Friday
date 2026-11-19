@@ -103,6 +103,7 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "pano_gorseli" => await ClipboardImageAsync(Arg("islem"), Arg("soru"), cancellationToken).ConfigureAwait(false),
                 "kelime" => VocabularyCommand(Arg("islem"), Arg("kelime"), Arg("anlam")),
                 "uygulama_sesi" => await Task.Run(() => AppVolumeCommand(Arg("islem"), Arg("ad"), Arg("deger")), cancellationToken).ConfigureAwait(false),
                 "kisaltma" => SnippetCommand(Arg("islem"), Arg("ad"), Arg("metin")),

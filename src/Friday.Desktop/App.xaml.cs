@@ -16,6 +16,7 @@ public sealed partial class App : Application, IDisposable
 
     private HttpClient? _http;
     private FridayAssistant? _assistant;
+    private AssistantTools? _tools;
     private TrayIcon? _tray;
 
     /// <summary>Rutinlerin genel kısayolları (Ayarlar'da değişince yeniden kaydedilir).</summary>
@@ -109,6 +110,27 @@ public sealed partial class App : Application, IDisposable
         if (_window is null || _settings is null || _assistant is null)
         {
             return;
+        }
+
+        // Kısaltma kısayolu: imleçten önceki sözcük bir kısaltmanın adıysa yerine metni yazılır.
+        if (_tools is { } tools && _settings.SnippetHotkey.Length > 0)
+        {
+            var expand = new GlobalHotkey(_window, () => _ = tools.ExpandAtCursorAsync(), 0x46FF);
+            try
+            {
+                if (expand.Register(HotkeyGesture.Parse(_settings.SnippetHotkey)))
+                {
+                    _routineKeys.Add(expand);
+                }
+                else
+                {
+                    expand.Dispose();
+                }
+            }
+            catch (FormatException)
+            {
+                expand.Dispose();
+            }
         }
 
         var id = 0x4700;
@@ -261,6 +283,7 @@ public sealed partial class App : Application, IDisposable
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
         var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Vocabulary = vocabulary };
+        _tools = tools;
         var assistant = _assistant = new FridayAssistant(
             paths,
             new MicrophoneRecorder(),

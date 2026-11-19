@@ -103,6 +103,7 @@ public sealed partial class AssistantTools(
         ["ozel_gunler"] = "Takvimdeki özel günlere bakıyorum",
         ["kisaltma"] = "Kısaltmaya bakıyorum",
         ["kelime"] = "Kelime kartlarını hazırlıyorum",
+        ["pano_gorseli"] = "Görsele bakıyorum",
         ["uygulama_sesi"] = "Uygulama sesini ayarlıyorum",
     };
 
@@ -233,6 +234,8 @@ public sealed partial class AssistantTools(
             [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
         Tool("yapilacaklar", "Kullanıcının yapılacaklar listesi: iş ekler, listeler, tamamlar.",
             [("islem", "string", "ekle, listele ya da tamamla", true), ("metin", "string", "İşin metni (ekle ve tamamla için)", false)]),
+        Tool("pano_gorseli", "Panoya kopyalanan görsele (ekran alıntısı, resim) bakar: içindeki yazıyı aynen çıkarıp panoya koyar (oku) ya da görselle ilgili soruyu cevaplar (acikla).",
+            [("islem", "string", "oku ya da acikla", true), ("soru", "string", "acikla için soru", false)]),
         Tool("kelime", "İngilizce kelime pratiği (aralıklı tekrar): çalışmayı başlatır (calis), desteye kelime ekler (ekle, kelime ve anlam ile), kaç kelime öğrenildiğini söyler (durum) ya da kelime siler (sil).",
             [("islem", "string", "calis, ekle, durum, sil ya da bitir", true), ("kelime", "string", "İngilizce kelime", false), ("anlam", "string", "Türkçe anlamı (ekle için)", false)]),
         Tool("uygulama_sesi", "Uygulama bazında ses (ses karıştırıcı): bir uygulamanın (Spotify, Chrome, Discord…) sesini kısar, açar, yüzdeye ayarlar, sessize alır ya da ses çıkaran uygulamaları listeler.",
@@ -310,6 +313,7 @@ public sealed partial class AssistantTools(
                 "hesap" => SpokenMath.Answer(Argument(call, "soru")) ?? "Bu hesabı çözemedim; sayıları ve işlemi açıkça söyle.",
                 "gun_sayaci" => CountdownAnswer(Argument(call, "hedef")),
                 "ozel_gunler" => SpecialDaysCommand().Text,
+                "pano_gorseli" => (await ClipboardImageAsync(Argument(call, "islem"), Argument(call, "soru"), cancellationToken).ConfigureAwait(false)).Text,
                 "kelime" => VocabularyCommand(Argument(call, "islem"), Argument(call, "kelime"), Argument(call, "anlam")).Text,
                 "uygulama_sesi" => await Task.Run(() => AppVolumeCommand(Argument(call, "islem"), Argument(call, "ad"), Argument(call, "deger")).Text, cancellationToken).ConfigureAwait(false),
                 "kisaltma" => SnippetCommand(Argument(call, "islem"), Argument(call, "ad"), Argument(call, "metin"))?.Text ?? "Böyle bir kısaltma yok.",

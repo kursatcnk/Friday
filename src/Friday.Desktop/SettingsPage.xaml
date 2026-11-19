@@ -294,7 +294,7 @@
                         </CheckBox>
                         <TextBlock Text="Metin kısaltmaları" FontWeight="SemiBold" Margin="0,0,0,2"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
-                                   Text="Her satıra &quot;ad: metin&quot; yaz (satır sonu için \n). &quot;İmzamı yaz&quot; deyince açık pencereye yazılır; sesle de eklenir: &quot;imza kısaltması: Saygılarımla&quot;, &quot;panodakini adres olarak kaydet&quot;."/>
+                                   Text="Her satıra &quot;ad: metin&quot; yaz (satır sonu için \n). &quot;İmzamı yaz&quot; deyince açık pencereye yazılır; yazarken kısaltmanın adını yazıp Ctrl+Alt+K'ye basınca da yerine metni gelir. Sesle de eklenir: &quot;imza kısaltması: Saygılarımla&quot;, &quot;panodakini adres olarak kaydet&quot;."/>
                         <TextBox Text="{Binding SnippetsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="58" TextWrapping="NoWrap" Margin="0,0,0,14"
                                  AutomationProperties.Name="Metin kısaltmaları"/>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ClipboardHistoryEnabled}" Margin="0,0,0,14">

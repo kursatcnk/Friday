@@ -364,7 +364,7 @@
 
         <!-- Sohbet: Friday'in cevabı balonsuz, düz ve okunaklı; kullanıcının cümlesi sağda ince bir hap. -->
         <DataTemplate x:Key="ChatLineTemplate" DataType="{x:Type local:ChatLine}">
-            <Grid Margin="0,0,0,18">
+            <Grid x:Name="Line" Margin="0,0,0,18" Background="Transparent">
                 <Grid x:Name="Friday">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="30"/>
@@ -381,7 +381,20 @@
                     </Ellipse>
                     <StackPanel Grid.Column="1" MaxWidth="620" HorizontalAlignment="Left">
                         <TextBlock Text="{Binding Text}" TextWrapping="Wrap" LineHeight="23" FontSize="14.5" Foreground="{StaticResource TextBrush}"/>
-                        <TextBlock Text="{Binding Time}" Style="{StaticResource Caption}" Margin="0,5,0,0"/>
+                        <!-- Saat ve üstüne gelince görünen düğmeler: kopyala, aynı soruyu yeniden sor. -->
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <TextBlock Text="{Binding Time}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                            <StackPanel x:Name="LineActions" Orientation="Horizontal" Margin="8,0,0,0" Opacity="0">
+                                <Button Style="{StaticResource IconButton}" Padding="6,3" ToolTip="Kopyala"
+                                        Command="{Binding DataContext.CopyLineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                    <TextBlock x:Name="CopyGlyph" Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="10.5"/>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" Padding="6,3" ToolTip="Aynı soruyu yeniden sor"
+                                        Command="{Binding DataContext.RetryLineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="10.5"/>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
                 <StackPanel x:Name="User" HorizontalAlignment="Right" MaxWidth="520" Visibility="Collapsed">
@@ -395,6 +408,13 @@
                 <DataTrigger Binding="{Binding IsUser}" Value="True">
                     <Setter TargetName="Friday" Property="Visibility" Value="Collapsed"/>
                     <Setter TargetName="User" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <Trigger SourceName="Line" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="LineActions" Property="Opacity" Value="1"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding Copied}" Value="True">
+                    <Setter TargetName="CopyGlyph" Property="Text" Value="&#xE73E;"/>
+                    <Setter TargetName="LineActions" Property="Opacity" Value="1"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>

@@ -260,6 +260,36 @@ public sealed partial class PanelViewModel
     [RelayCommand]
     private void ClearChatSearch() => ChatSearch = "";
 
+    [RelayCommand]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "RelayCommand üreteci örnek yöntem ister.")]
+    private async Task CopyLine(ChatLine line)
+    {
+        try
+        {
+            System.Windows.Clipboard.SetText(line.Text);
+        }
+        catch (System.Runtime.InteropServices.COMException)
+        {
+            // Pano başka bir uygulamada kilitliyse kopyalama sessizce atlanır.
+            return;
+        }
+
+        line.Copied = true;
+        await Task.Delay(1500).ConfigureAwait(true);
+        line.Copied = false;
+    }
+
+    /// <summary>Bu cevaptan önceki soruyu yeniden sorar (ör. internet yokken gelen cevabı yenilemek için).</summary>
+    [RelayCommand]
+    private void RetryLine(ChatLine line)
+    {
+        var index = Lines.IndexOf(line);
+        if (index > 0 && Lines.Take(index).LastOrDefault(item => item.IsUser) is { } question && question.Text.Trim().Length > 0)
+        {
+            _actions.Send(question.Text);
+        }
+    }
+
     private void GoToChat()
     {
         IsToday = IsMemory = IsRhythm = IsPrivacy = IsRoutines = IsSettings = false;

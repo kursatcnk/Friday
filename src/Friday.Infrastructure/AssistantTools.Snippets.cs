@@ -96,6 +96,75 @@ public sealed partial class AssistantTools
         return flat.Length > 40 ? flat[..40] + "…" : flat;
     }
 
+
+    // ---------- Yazarken genişletme ----------
+
+    private int _expanding;
+
+    /// <summary>
+    /// Kısaltma kısayolu (varsayılan Ctrl+Alt+K): imleçten önceki sözcük seçilip kopyalanır; bir kısaltmanın adıysa yerine
+    /// metni yazılır, değilse seçim bırakılır. Pano eski haline döner. Komut satırı pencerelerinde çalışmaz (Ctrl+C orada
+    /// çalışan işi durdurur).
+    /// </summary>
+    /// <returns>Kısaltma yazıldıysa adı; yazılmadıysa null.</returns>
+    public async Task<string?> ExpandAtCursorAsync()
+    {
+        if (Settings.Snippets.Count == 0 || Keys.ForegroundIsConsole() || Interlocked.Exchange(ref _expanding, 1) == 1)
+        {
+            return null;
+        }
+
+        string? saved = null;
+        try
+        {
+            // Kısayolun tuşları bırakılmadan seçim yapılırsa Ctrl+Alt da basılı sayılır.
+            for (var wait = 0; wait < 40 && Keys.ModifiersDown(); wait++)
+            {
+                await Task.Delay(25).ConfigureAwait(false);
+            }
+
+            saved = ClipboardText.Get();
+            ClipboardText.Set("");
+            Keys.Chord(Keys.Control, Keys.Shift, Keys.Left);
+            await Task.Delay(40).ConfigureAwait(false);
+            Keys.Chord(Keys.Control, 0x43);
+            await Task.Delay(160).ConfigureAwait(false);
+            var word = ClipboardText.Get().Trim();
+            if (word.Length is > 0 and <= 40 && FindSnippet(word) is { } name)
+            {
+                Keys.Text(Settings.Snippets[name]);
+                ledger.Record(DataFlow.Local, "Kısaltma", $"\"{name}\" yazarken genişletildi");
+                return name;
+            }
+
+            // Kısaltma değil: seçim kaldırılır, imleç yerinde kalır.
+            Keys.Tap(Keys.Right, extended: true);
+            AudioCues.PlayListening();
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        finally
+        {
+            await Task.Delay(250).ConfigureAwait(false);
+            if (saved is not null)
+            {
+                try
+                {
+                    ClipboardText.Set(saved);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Pano kilitliyse eski metin geri konamaz; kopyalanan sözcük panoda kalır.
+                }
+            }
+
+            Volatile.Write(ref _expanding, 0);
+        }
+    }
+
     // ---------- Gün sonu günlük sorusu ----------
 
     /// <summary>

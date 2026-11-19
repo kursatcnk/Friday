@@ -24,6 +24,10 @@ public sealed partial class ChatLine : ObservableObject
 
     [ObservableProperty]
     private string _text;
+
+    /// <summary>Kopyala düğmesine basıldı; bir an onay işareti görünür.</summary>
+    [ObservableProperty]
+    private bool _copied;
 }
 
 public sealed record MemoryView(string Id, string Text, string Date, string? Source, string? Countdown)

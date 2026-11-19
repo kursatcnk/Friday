@@ -32,6 +32,45 @@ public sealed partial class AssistantTools
     }
 
     /// <summary>
+    /// Panodaki görsel (ekran alıntısı, kopyalanan resim): "oku" yazıyı aynen çıkarıp panoya koyar, "acikla" görselde
+    /// ne olduğunu söyler. Görsel yalnızca yerel görme modeline gider, kaydedilmez.
+    /// </summary>
+    private async Task<QuickReply> ClipboardImageAsync(string action, string question, CancellationToken cancellationToken)
+    {
+        if (await Task.Run(ClipboardImage.GetJpeg, cancellationToken).ConfigureAwait(false) is not { } jpeg)
+        {
+            return new QuickReply("Panoda bir görsel yok. Win+Shift+S ile ekrandan bir alan seçip sonra yeniden söyle.");
+        }
+
+        var read = Simplify(action) is "oku" or "metin" or "yazi";
+        ledger.Record(DataFlow.Local, "Pano görseli", "Bellekte işlendi, kaydedilmedi, yerel görme modeline verildi");
+        var answer = await chat.CompleteAsync(
+            Settings.VisionModel,
+            read
+                ? "Görseldeki bütün yazıyı olduğu gibi, satır düzenini koruyarak çıkar. Yorum, açıklama ya da başlık ekleme; yalnızca yazıyı ver. Yazı yoksa 'Yazı yok' de."
+                : "Kullanıcının panoya kopyaladığı görsele bakıyorsun. Soruyu görsele göre Türkçe, kısa ve net cevapla; cevabın sesli okunacak, en fazla 3 cümle, markdown kullanma. Görselde olmayan şeyleri uydurma.",
+            read ? "Görseldeki yazıyı çıkar." : string.IsNullOrWhiteSpace(question) ? "Bu görselde ne var?" : question,
+            [jpeg],
+            "0",
+            cancellationToken).ConfigureAwait(false);
+        if (!read)
+        {
+            return new QuickReply(answer.Trim());
+        }
+
+        var text = answer.Trim();
+        if (text.Length == 0 || text.StartsWith("Yazı yok", StringComparison.OrdinalIgnoreCase))
+        {
+            return new QuickReply("Görselde okunacak bir yazı bulamadım.");
+        }
+
+        ClipboardText.Set(text);
+        var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+        var preview = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Take(12));
+        return new QuickReply($"Görseldeki yazıyı ({words} sözcük) panoya koydum; istediğin yere yapıştırabilirsin. Başı şöyle: {preview}" + (words > 12 ? "…" : "."));
+    }
+
+    /// <summary>
     /// Sonucu doğrudan kullanıcıya okunan araçlar. Ekran cevabı görme modelinden hazır gelir; sohbet modelini yeniden
     /// yükleyip aynı şeyi bir daha söyletmek ~3 sn kaybettirir.
     /// </summary>

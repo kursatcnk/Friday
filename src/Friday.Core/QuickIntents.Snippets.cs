@@ -39,6 +39,16 @@ public static partial class QuickIntents
             return Command("kisaltma", ("islem", "sil"), ("ad", delete.Groups["k"].Value.Trim()));
         }
 
+        if (ClipboardImageRead().IsMatch(sentence))
+        {
+            return Command("pano_gorseli", ("islem", "oku"));
+        }
+
+        if (ClipboardImageAsk().IsMatch(sentence))
+        {
+            return Command("pano_gorseli", ("islem", "acikla"), ("soru", sentence));
+        }
+
         if (JournalPrompt().IsMatch(sentence))
         {
             return Command("gunluk_sorusu");
@@ -75,6 +85,14 @@ public static partial class QuickIntents
     // "imzamı yaz", "adresimi yapıştır", "iban'ımı yaz", "e-posta imzamı gir"
     [GeneratedRegex(@"^(?<k>[\p{L}\d][\p{L}\d \-]{1,30}?)(?:['’]?(?:ımı|imi|umu|ümü|mı|mi|mu|mü|yı|yi|yu|yü|ı|i|u|ü))? (?:yaz|yapıştır|gir)$")]
     private static partial Regex SnippetType();
+
+    // "panodaki resmi oku", "kopyaladığım görseldeki yazıyı çıkar", "ekran alıntısındaki metni kopyala"
+    [GeneratedRegex(@"^(?:panodaki|kopyaladığım|bu) (?:resm|görsel|ekran alıntısı|ekran görüntüsü|fotoğraf)\p{L}*(?:ndeki|deki|daki|teki|taki)? ?(?:yazıyı|metni|yazıları)? ?(?:oku|çıkar|kopyala|al|metne çevir|yazıya çevir)$")]
+    private static partial Regex ClipboardImageRead();
+
+    // "panodaki resimde ne var", "kopyaladığım görseli açıkla"
+    [GeneratedRegex(@"^(?:panodaki|kopyaladığım) (?:resim|görsel|ekran alıntısı|ekran görüntüsü|fotoğraf)\p{L}* (?:ne var|ne yazıyor|ne anlatıyor|açıkla|anlat|ne diyor)$|^(?:panodaki|kopyaladığım) (?:resm|görsel|ekran alıntısın|ekran görüntüsün|fotoğraf)\p{L}* (?:açıkla|anlat|incele|yorumla)$")]
+    private static partial Regex ClipboardImageAsk();
 
     [GeneratedRegex(@"^(?:günümü|bugünü) (?:günlüğe )?(?:yazalım|anlatayım|kaydedelim)$|^günlük sorusu(?: sor)?$|^günümü sor$")]
     private static partial Regex JournalPrompt();
