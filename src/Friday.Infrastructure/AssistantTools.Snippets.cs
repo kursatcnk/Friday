@@ -186,6 +186,7 @@ public sealed partial class AssistantTools
 
         _journalAsked = today;
         _awaitingOwnsDecline = false;
+        _awaitingKind = force ? null : "gun_sonu";
         _awaitingAnswer = AnswerJournal;
         _awaitingAt = DateTime.Now;
         var question = "Günün nasıl geçti? Bir iki cümleyle anlatırsan günlüğüne yazarım.";
@@ -201,15 +202,21 @@ public sealed partial class AssistantTools
     private QuickReply AnswerPending(string text)
     {
         var handler = _awaitingAnswer;
+        var kind = _awaitingKind;
         _awaitingAnswer = null;
+        _awaitingKind = null;
         if (handler is null)
         {
             return new QuickReply("Bir şey sormamıştım.");
         }
 
-        return !_awaitingOwnsDecline && (QuickIntents.IsNo(text) || QuickIntents.IsDecline(text))
-            ? new QuickReply("Peki, başka zaman.")
-            : handler(text);
+        if (!_awaitingOwnsDecline && (QuickIntents.IsNo(text) || QuickIntents.IsDecline(text)))
+        {
+            return new QuickReply("Peki, başka zaman." + Learn(kind, accepted: false));
+        }
+
+        _ = Learn(kind, accepted: true);
+        return handler(text);
     }
 
     private QuickReply AnswerJournal(string text)

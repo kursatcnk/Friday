@@ -15,6 +15,21 @@ public static partial class QuickIntents
             }
         }
 
+        if (NudgeSilence().IsMatch(sentence))
+        {
+            return Command("durtme", ("islem", "sustur"));
+        }
+
+        if (NudgeReset().IsMatch(sentence))
+        {
+            return Command("durtme", ("islem", "ac"));
+        }
+
+        if (NudgeList().IsMatch(sentence))
+        {
+            return Command("durtme", ("islem", "listele"));
+        }
+
         if (NextActionQuestion().IsMatch(sentence))
         {
             return Command("ne_yapayim");
@@ -72,6 +87,16 @@ public static partial class QuickIntents
     // "kira hakkında ne kaydetmiştim", "doktor ile ilgili ne not almıştım"
     [GeneratedRegex(@"^(?<q>.+?) (?:hakkında|ile ilgili|konusunda) (?:ne (?:kaydetmiştim|yazmıştım|not almıştım|demiştim|kaydettim)|neler (?:kaydetmişim|yazmışım)|kayıtlarımda ne var)$")]
     private static partial Regex SearchAbout();
+
+    // "bunu bir daha sorma", "bu hatırlatmayı kapat", "artık söyleme"
+    [GeneratedRegex(@"^(?:bunu|bunları|bu (?:hatırlatmayı|uyarıyı|öneriyi|soruyu))? ?(?:bir daha|artık|bundan sonra) (?:sorma|söyleme|hatırlatma|önerme|deme)$|^bu (?:hatırlatmayı|uyarıyı|öneriyi|soruyu) (?:kapat|sustur|kaldır)$")]
+    private static partial Regex NudgeSilence();
+
+    [GeneratedRegex(@"^(?:kapattığın|susturduğun|kapattığım|susturduğum) (?:hatırlatmaları|uyarıları|önerileri|şeyleri) (?:aç|geri aç|sıfırla|geri getir)$")]
+    private static partial Regex NudgeReset();
+
+    [GeneratedRegex(@"^(?:kapattığın|susturduğun|kapattığım|susturduğum) (?:hatırlatmalar|uyarılar|öneriler|şeyler)(?: neler| ne)?$|^neleri (?:susturdun|kapattın)$")]
+    private static partial Regex NudgeList();
 
     [GeneratedRegex(@"^(?:şimdi |şu an |peki )?ne yap(?:ayım|malıyım|sam|sam iyi olur)$|^sırada ne var$|^(?:bir )?öneri(?:n)? (?:var mı|ne|ver)$|^(?:bir )?öneri ver$|^neyle başlayayım$|^nereden başlayayım$")]
     private static partial Regex NextActionQuestion();

@@ -1559,9 +1559,10 @@ public sealed class FridayAssistant : IDisposable
         }
 
         // Uzun bir görüşmeden sonra not almak isteyip istemediği sorulur; cevap notlara yazılır.
-        var question = Muted || app is null ? null : _tools.MeetingNoteQuestion(app, _meetingStart, DateTime.Now);
+        var question = Muted || app is null || !_tools.AllowsNudge("gorusme_notu") ? null : _tools.MeetingNoteQuestion(app, _meetingStart, DateTime.Now);
         if (question is not null)
         {
+            _tools.MarkNudge("gorusme_notu");
             script.Add(new CoachStep(question));
         }
 
@@ -1578,6 +1579,13 @@ public sealed class FridayAssistant : IDisposable
     private DateOnly _weatherWarned;
 
     private DateTime _lastNudge;
+
+    /// <summary>Kendiliğinden söylenen bir şey: türü kaydedilir ("bunu bir daha söyleme" ona uygulanır).</summary>
+    private void AnnounceNudge(string kind, string text, bool listenAfter = false)
+    {
+        _tools.MarkNudge(kind);
+        Announce([new CoachStep(text)], listenAfter);
+    }
 
     /// <summary>
     /// Kendiliğinden yapılan akşam dürtmeleri (son tarih, seri, hava, doğum günü arifesi, günlük sorusu) arasında en az
@@ -1609,9 +1617,9 @@ public sealed class FridayAssistant : IDisposable
             }
 
             // Uyku saati: yarım saat önce ve yarım saat geç kalınca birer kez (bilgisayar başındaysa).
-            if (!Muted && !_rhythm.Snapshot().IsAway && _tools.BedTimeNudge(now) is { } bed)
+            if (!Muted && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("uyku") && _tools.BedTimeNudge(now) is { } bed)
             {
-                Announce(bed);
+                AnnounceNudge("uyku", bed);
                 return;
             }
 
@@ -1625,10 +1633,10 @@ public sealed class FridayAssistant : IDisposable
                 {
                     _lastEyeBreak = now;
                 }
-                else if (!inFocus && now - _lastEyeBreak >= TimeSpan.FromMinutes(20))
+                else if (!inFocus && now - _lastEyeBreak >= TimeSpan.FromMinutes(20) && _tools.AllowsNudge("goz"))
                 {
                     _lastEyeBreak = now;
-                    Announce("Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
+                    AnnounceNudge("goz", "Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
                     return;
                 }
             }
@@ -1641,47 +1649,47 @@ public sealed class FridayAssistant : IDisposable
             }
 
             // Yarın bir doğum günü ya da yıldönümü varsa akşam 19.00–21.30 arası bir kez sorulur.
-            if (!Muted && CanNudge(now) && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
+            if (!Muted && CanNudge(now) && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.AllowsNudge("arife") && _tools.EveReminder(now) is { } eve)
             {
                 Nudged(now);
-                Announce([new CoachStep(eve)], listenAfter: true);
+                AnnounceNudge("arife", eve, listenAfter: true);
                 return;
             }
 
             // Son tarih: yarın teslim edilecek işler akşam 18.00–21.30 arası bir kez söylenir.
-            if (!Muted && CanNudge(now) && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.DeadlineNudge(now) is { } deadline)
+            if (!Muted && CanNudge(now) && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("son_tarih") && _tools.DeadlineNudge(now) is { } deadline)
             {
                 Nudged(now);
-                Announce(deadline);
+                AnnounceNudge("son_tarih", deadline);
                 return;
             }
 
             // Seri koruma: 20.00–21.30 arası, serisi olan bir alışkanlık bugün yapılmadıysa bir kez hatırlatılır.
-            if (!Muted && CanNudge(now) && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.StreakNudge(now) is { } nudge)
+            if (!Muted && CanNudge(now) && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.AllowsNudge("seri") && _tools.StreakNudge(now) is { } nudge)
             {
                 Nudged(now);
-                Announce(nudge);
+                AnnounceNudge("seri", nudge);
                 return;
             }
 
             // Gün sonu günlük sorusu: 21.30–23.00 arası, bilgisayar başındayken, günde bir kez.
             if (!Muted && CanNudge(now) && (now.Hour == 22 || (now.Hour == 21 && now.Minute >= 30)) && !_rhythm.Snapshot().IsAway && !FullScreenDetector.IsBusy()
-                && _tools.JournalQuestion(now) is { } journal)
+                && _tools.AllowsNudge("gun_sonu") && _tools.JournalQuestion(now) is { } journal)
             {
                 Nudged(now);
-                Announce([new CoachStep(journal)], listenAfter: true);
+                AnnounceNudge("gun_sonu", journal, listenAfter: true);
                 return;
             }
 
             // Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.
-            if (_settings.WeatherAlerts && !Muted && CanNudge(now) && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
+            if (_settings.WeatherAlerts && !Muted && CanNudge(now) && _tools.AllowsNudge("hava") && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
                 && _weatherWarned != DateOnly.FromDateTime(now))
             {
                 _weatherWarned = DateOnly.FromDateTime(now);
                 if (await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false) is { } alert)
                 {
                     Nudged(now);
-                    Announce(alert);
+                    AnnounceNudge("hava", alert);
                 }
             }
         }
@@ -1790,8 +1798,9 @@ public sealed class FridayAssistant : IDisposable
             }
         }
 
-        if (missed.Count > 0)
+        if (missed.Count > 0 && _tools.AllowsNudge("kayip"))
         {
+            _tools.MarkNudge("kayip");
             Announce(missed.Count == 1
                 ? $"Sen yokken bir şey söyledim: {missed[0]}"
                 : $"Sen yokken {missed.Count} şey söyledim. {string.Join(" ", missed.TakeLast(3))}");
@@ -1951,9 +1960,9 @@ public sealed class FridayAssistant : IDisposable
                 }
             }
 
-            if (_tools.HabitSuggestion() is { } question)
+            if (_tools.AllowsNudge("rutin_onerisi") && _tools.HabitSuggestion() is { } question)
             {
-                Announce([new CoachStep(question)], listenAfter: true);
+                AnnounceNudge("rutin_onerisi", question, listenAfter: true);
             }
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException)

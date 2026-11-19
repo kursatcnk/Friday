@@ -177,6 +177,7 @@ public sealed partial class AssistantTools
         }
 
         _awaitingOwnsDecline = false;
+        _awaitingKind = "gorusme_notu";
         _awaitingAt = DateTime.Now;
         _awaitingAnswer = text =>
         {

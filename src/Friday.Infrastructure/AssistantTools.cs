@@ -110,6 +110,7 @@ public sealed partial class AssistantTools(
         ["her_yerde_ara"] = "Kayıtlarında arıyorum",
         ["haftalik_rapor"] = "Haftalık raporu yazıyorum",
         ["ne_yapayim"] = "Önceliklere bakıyorum",
+        ["durtme"] = "Ayarını değiştiriyorum",
         ["fis"] = "Fişi okuyorum",
         ["kacirdiklarim"] = "Son bildirimlere bakıyorum",
         ["kelime_cevir"] = "Kelimenin anlamına bakıyorum",

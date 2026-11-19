@@ -52,6 +52,7 @@ public sealed partial class AssistantTools
     {
         _pendingAction = run;
         _pendingAt = DateTime.Now;
+        _pendingKind = kind;
         ledger.Record(DataFlow.Local, kind, "Onay bekleniyor");
     }
 
@@ -281,12 +282,14 @@ public sealed partial class AssistantTools
     private async Task<QuickReply> ConfirmAsync(bool yes, CancellationToken cancellationToken)
     {
         var pending = HasPendingConfirmation ? _pendingAction : null;
+        var kind = NudgeKey(_pendingKind);
         _pendingAction = null;
         if (pending is null || !yes)
         {
-            return new QuickReply("Tamam, dokunmadım.");
+            return new QuickReply("Tamam, dokunmadım." + (pending is null ? "" : Learn(kind, accepted: false)));
         }
 
+        _ = Learn(kind, accepted: true);
         return await pending(cancellationToken).ConfigureAwait(false);
     }
 

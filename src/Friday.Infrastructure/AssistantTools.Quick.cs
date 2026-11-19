@@ -105,6 +105,7 @@ public sealed partial class AssistantTools
                 "ozel_gunler" => SpecialDaysCommand(),
                 "haftalik_rapor" => WeeklyReportFile(),
                 "ne_yapayim" => NextAction(),
+                "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),
                 "kacirdiklarim" => MissedAnnouncements(),
