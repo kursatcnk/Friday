@@ -45,6 +45,19 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Metin kısaltmaları** | "İmza kısaltması: Saygılarımla, …" ya da bir metni kopyalayıp "panodakini adres olarak kaydet"; sonra "imzamı yaz", "adresimi yapıştır" deyince açık pencereye yazılır. Ayarlardan da düzenlenir. |
 | **Gün sonu sorusu** | Akşam 21.30–23.00 arası bir kez "Günün nasıl geçti?" diye sorar; cevabı günlüğe yazar, söz ettiğin alışkanlıkları işaretler. "Şimdi değil" demen yeter; "günümü yazalım" ile istediğin an. |
 | **Ayarlarda arama** | Ayarlar sayfasının üstündeki kutuya "ses", "görüşme", "yedek" yaz; yalnızca eşleşen kartlar kalır. |
+| **Kelime pratiği** | "Kelime çalışalım": Friday İngilizce bir kelime söyler, sen Türkçesini söylersin. Aralıklı tekrar (Leitner): bildiğin kelime 1, 3, 7, 14, 30 gün sonra yeniden gelir, bilmediğin aynı gün tekrar sorulur. 110 kelimelik hazır deste; "kelime ekle: serendipity = mutlu tesadüf" ile kendi kelimelerin. "Pas", "yeter", "kaç kelime biliyorum". Bugün ekranında kartı var. |
+| **Gün planı** | "Günümü planla": takvim ve saatli hatırlatmalar yerinde kalır, bekleyen işler 45 dakikalık odak bloklarına, yapılmamış alışkanlıklar akşama yerleşir; molalar ve yemekler için yer bırakılır. "Evet" dersen blokların başında hatırlatır. Dil modeli kullanmaz, anında hazırlanır. |
+| **Bir işe odaklan** | "Raporu bitirmeye 40 dakika odaklan": odak başlar, bitince "bitirdin mi?" diye sorar; "evet" dersen iş yapılacaklardan düşer. |
+| **Uygulama sesi** | "Spotify'ın sesini kıs", "Chrome'un sesini yüzde 30 yap", "Discord'u sessize al", "hangi uygulamalar ses çıkarıyor". Windows ses karıştırıcısıyla aynı ayar. |
+| **Sabit giderler** | "Kira her ayın 5'inde 15 bin lira", "Netflix aboneliğim ayda 230 lira, her ayın 12'si". Ödeme günü sabah söylenir; "kirayı ödedim" deyince harcamalara işlenir. "Sabit giderlerim" aylık toplamı verir. |
+| **Süre sınırları** | "YouTube'a günde 1 saat sınır koy": ekran süresi dolunca bir kez, nazikçe söyler. "Sınırlarım", "YouTube sınırını kaldır". |
+| **Kur alarmı** | "Dolar 45 lirayı geçince haber ver", "euro 50'nin altına düşünce söyle": kur 15 dakikada bir kontrol edilir, eşik geçilince bir kez söylenir. |
+| **Uyku saati** | "Uyku saatim 23:30": yarım saat önce ekranları bırakmayı hatırlatır, yarım saat geç kalırsan bir kez daha söyler. |
+| **Bağlantı kontrolü** | "İnternetim nasıl", "internet yavaş mı": modeme ve internete gecikme, paket kaybı ve ad çözme ölçülür; sorun Wi-Fi'da mı, servis sağlayıcıda mı, DNS'te mi söylenir. |
+| **Pano görseli** | Win+Shift+S ile bir alan seç, "panodaki resmi oku" de: görseldeki yazı yerel görme modeliyle çıkarılıp panoya konur. "Panodaki resimde ne var" da sorulabilir. |
+| **Yazarken kısaltma** | Kısaltmanın adını yaz ("imza"), **Ctrl+Alt+K**'ye bas: yerine metni gelir. Komut satırı pencerelerinde çalışmaz. |
+| **Sohbette kopyala ve yeniden sor** | Friday'in cevabının üstüne gelince kopyala ve "aynı soruyu yeniden sor" düğmeleri görünür. |
+| **Akıllı dürtmeler** | Serisi olan bir alışkanlık akşam 20.00'ye kadar yapılmadıysa hatırlatır; 15 dakikadan uzun bir görüşme bitince not almak isteyip istemediğini sorar; 3 günden uzun bekleyen işi sabah önerir; ayın ilk günü geçen ayın harcama özetini, aylık özette geçen ayın aynı günleriyle karşılaştırmayı söyler. |
 | **Sesli kontrol listeleri** | "Seyahat listesine pasaport, şarj aleti ekle", sonra "seyahat listesini kontrol et": Friday her maddeyi sorar, "tamam" ya da "yok" dersin, sonunda eksikleri söyler; bu sırada dinlemeye devam eder. |
 | **Ruh hali** | "Ruh halim 7", "bugün kendimi yorgun hissediyorum": günlüğe yazılır, haftalık özette ortalaması söylenir. |
 | **Temizlik** | "Geçici dosyaları temizle", "biraz yer aç": bir günden eski geçici dosyaların ve geri dönüşüm kutusunun boyutunu söyler, "evet" deyince temizler. |
