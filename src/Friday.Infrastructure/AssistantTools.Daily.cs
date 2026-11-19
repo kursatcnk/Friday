@@ -38,9 +38,13 @@ public sealed partial class AssistantTools
         {
             case "ekle":
                 var before = todos.Open.Count;
-                var item = todos.Add(text, now);
+                var (task, due, important) = TodoDue.Extract(text, now);
+                var item = todos.Add(task, now, due, important);
                 ledger.Record(DataFlow.Local, "Yapılacaklar", "Bir iş eklendi");
-                return new QuickReply(todos.Open.Count == before ? $"\"{item.Text}\" zaten listende." : $"Yapılacaklara ekledim: {item.Text}.");
+                var deadline = item.Due is { } until ? $" Son gün {DueSpoken(until, DateOnly.FromDateTime(now))}." : "";
+                return new QuickReply(todos.Open.Count == before
+                    ? $"\"{item.Text}\" zaten listende.{deadline}"
+                    : $"Yapılacaklara ekledim: {item.Text}.{deadline}" + (item.Important ? " Önemli olarak işaretledim." : ""));
             case "tamamla":
                 if (todos.Find(text) is not { } match)
                 {
@@ -56,15 +60,27 @@ public sealed partial class AssistantTools
                 return new QuickReply(removed == 0 ? "Temizlenecek tamamlanmış iş yok." : $"{removed} tamamlanmış işi listeden kaldırdım.");
             default:
                 var open = todos.Open;
-                ShowListCard("Yapılacaklar", "", open.Select(todo => new CardRow(todo.Text, "")));
+                var today = DateOnly.FromDateTime(now);
+                string Spoken(TodoItem todo) => todo.Due is { } until ? $"{todo.Text} ({DueSpoken(until, today)})" : todo.Text;
+                ShowListCard("Yapılacaklar", "", open.Select(todo => new CardRow((todo.Important ? "★ " : "") + todo.Text, TodoDue.Label(todo.Due, today))));
                 return new QuickReply(open.Count switch
                 {
                     0 => "Yapılacaklar listen boş.",
-                    1 => $"Tek bir iş var: {open[0].Text}.",
-                    _ => $"{open.Count} iş var: {TurkishGrammar.Join([.. open.Take(5).Select(todo => todo.Text)])}" + (open.Count > 5 ? " ve diğerleri." : ".")
+                    1 => $"Tek bir iş var: {Spoken(open[0])}.",
+                    _ => $"{open.Count} iş var: {TurkishGrammar.Join([.. open.Take(5).Select(Spoken)])}" + (open.Count > 5 ? " ve diğerleri." : ".")
                 });
         }
     }
+
+    /// <summary>Son tarihin okunuşu: "bugün", "yarın", "cuma", "25 Kasım", "2 gün önce geçti".</summary>
+    private static string DueSpoken(DateOnly due, DateOnly today) => (due.DayNumber - today.DayNumber) switch
+    {
+        < 0 and var late => $"{-late} gün önce geçti",
+        0 => "bugün",
+        1 => "yarın",
+        <= 6 => due.ToString("dddd", Turkish).ToLower(Turkish),
+        _ => due.ToString("d MMMM", Turkish)
+    };
 
     // ---------- Ortam sesleri ----------
 

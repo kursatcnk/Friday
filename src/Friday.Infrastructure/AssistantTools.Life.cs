@@ -427,6 +427,7 @@ public sealed partial class AssistantTools
         }
 
         BillsMorning(parts, now);
+        WordOfTheDay(parts, now);
 
         if (Expenses is { MonthlyBudget: > 0 } expenses)
         {

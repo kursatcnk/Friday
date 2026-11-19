@@ -4,8 +4,8 @@ using System.Text.Json;
 
 namespace Friday.Core;
 
-/// <summary>Yapılacaklar listesinde bir iş; tamamlanınca zamanı yazılır.</summary>
-public sealed record TodoItem(string Id, string Text, DateTime Created, DateTime? Done = null)
+/// <summary>Yapılacaklar listesinde bir iş; tamamlanınca zamanı yazılır. Son tarihi ve önemi isteğe bağlıdır.</summary>
+public sealed record TodoItem(string Id, string Text, DateTime Created, DateTime? Done = null, DateOnly? Due = null, bool Important = false)
 {
     public bool IsDone => Done is not null;
 }
@@ -52,7 +52,7 @@ public sealed class TodoStore
     {
         lock (_gate)
         {
-            return [.. _items.Where(item => !item.IsDone).OrderBy(item => item.Created)
+            return [.. Ordered(_items.Where(item => !item.IsDone))
                 .Concat(_items.Where(item => item.Done is { } done && now - done < TimeSpan.FromDays(1)).OrderByDescending(item => item.Done))];
         }
     }
@@ -63,23 +63,34 @@ public sealed class TodoStore
         {
             lock (_gate)
             {
-                return [.. _items.Where(item => !item.IsDone).OrderBy(item => item.Created)];
+                return [.. Ordered(_items.Where(item => !item.IsDone))];
             }
         }
     }
 
-    public TodoItem Add(string text, DateTime now)
+    /// <param name="due">Son tarih; var olan işe söylenirse güncellenir.</param>
+    public TodoItem Add(string text, DateTime now, DateOnly? due = null, bool important = false)
     {
         var clean = TurkishGrammar.Capitalize(text.Trim().TrimEnd('.'));
         TodoItem item;
         lock (_gate)
         {
-            item = _items.FirstOrDefault(existing => !existing.IsDone && string.Equals(Key(existing.Text), Key(clean), StringComparison.Ordinal))
-                   ?? new TodoItem(Guid.NewGuid().ToString("N")[..8], clean, now);
-            if (!_items.Contains(item))
+            var existing = _items.FirstOrDefault(existing => !existing.IsDone && string.Equals(Key(existing.Text), Key(clean), StringComparison.Ordinal));
+            if (existing is null)
             {
+                item = new TodoItem(Guid.NewGuid().ToString("N")[..8], clean, now, Due: due, Important: important);
                 _items.Add(item);
                 Save();
+            }
+            else if ((due is not null && existing.Due != due) || (important && !existing.Important))
+            {
+                item = existing with { Due = due ?? existing.Due, Important = existing.Important || important };
+                _items[_items.IndexOf(existing)] = item;
+                Save();
+            }
+            else
+            {
+                item = existing;
             }
         }
 
@@ -165,6 +176,10 @@ public sealed class TodoStore
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
     }
+
+    /// <summary>Önce son tarihi yakın (gecikmiş en önde), sonra önemli, sonra eklenme sırası.</summary>
+    private static IEnumerable<TodoItem> Ordered(IEnumerable<TodoItem> items) =>
+        items.OrderBy(item => item.Due ?? DateOnly.MaxValue).ThenByDescending(item => item.Important).ThenBy(item => item.Created);
 
     /// <summary>Ekleri farklı olsa da aynı kelime sayılır: "faturayı", "fatura", "faturaları" → ilk 5 harf.</summary>
     private static bool Similar(string first, string second) =>

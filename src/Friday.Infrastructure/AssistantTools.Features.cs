@@ -44,30 +44,19 @@ public sealed partial class AssistantTools
 
         var read = Simplify(action) is "oku" or "metin" or "yazi";
         ledger.Record(DataFlow.Local, "Pano görseli", "Bellekte işlendi, kaydedilmedi, yerel görme modeline verildi");
+        if (read)
+        {
+            return await ReadImageTextAsync(jpeg, cancellationToken).ConfigureAwait(false);
+        }
+
         var answer = await chat.CompleteAsync(
             Settings.VisionModel,
-            read
-                ? "Görseldeki bütün yazıyı olduğu gibi, satır düzenini koruyarak çıkar. Yorum, açıklama ya da başlık ekleme; yalnızca yazıyı ver. Yazı yoksa 'Yazı yok' de."
-                : "Kullanıcının panoya kopyaladığı görsele bakıyorsun. Soruyu görsele göre Türkçe, kısa ve net cevapla; cevabın sesli okunacak, en fazla 3 cümle, markdown kullanma. Görselde olmayan şeyleri uydurma.",
-            read ? "Görseldeki yazıyı çıkar." : string.IsNullOrWhiteSpace(question) ? "Bu görselde ne var?" : question,
+            "Kullanıcının panoya kopyaladığı görsele bakıyorsun. Soruyu görsele göre Türkçe, kısa ve net cevapla; cevabın sesli okunacak, en fazla 3 cümle, markdown kullanma. Görselde olmayan şeyleri uydurma.",
+            string.IsNullOrWhiteSpace(question) ? "Bu görselde ne var?" : question,
             [jpeg],
             "0",
             cancellationToken).ConfigureAwait(false);
-        if (!read)
-        {
-            return new QuickReply(answer.Trim());
-        }
-
-        var text = answer.Trim();
-        if (text.Length == 0 || text.StartsWith("Yazı yok", StringComparison.OrdinalIgnoreCase))
-        {
-            return new QuickReply("Görselde okunacak bir yazı bulamadım.");
-        }
-
-        ClipboardText.Set(text);
-        var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-        var preview = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Take(12));
-        return new QuickReply($"Görseldeki yazıyı ({words} sözcük) panoya koydum; istediğin yere yapıştırabilirsin. Başı şöyle: {preview}" + (words > 12 ? "…" : "."));
+        return new QuickReply(answer.Trim());
     }
 
     /// <summary>

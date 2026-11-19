@@ -103,6 +103,11 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),
+                "kacirdiklarim" => MissedAnnouncements(),
+                "kelime_cevir" => await VocabularyTranslateAsync(Arg("islem"), Arg("kelime"), cancellationToken).ConfigureAwait(false),
+                "ekran_metni" => await ScreenTextAsync(cancellationToken).ConfigureAwait(false),
+                "pano_kaydet" => SaveClipboard(Arg("islem"), Arg("ad")),
                 "doviz_alarmi" => await RateAlertCommandAsync(Arg("islem"), Arg("birim"), Arg("deger"), Arg("yon")).ConfigureAwait(false),
                 "uyku_saati" => BedTimeCommand(Arg("islem"), Arg("saat")),
                 "sabit_gider" => BillCommand(Arg("islem"), Arg("ad"), Arg("tutar"), Arg("gun")),
@@ -485,8 +490,22 @@ public sealed partial class AssistantTools
         // Doğum günü, yıldönümü ya da resmî gün: günün kendisinde kutlanır.
         SpecialDayGreetings(parts, DateTime.Now);
 
-        // Günün işi: bekleyen işler, okuma listesi, odak hedefi ve seri.
-        if (Todos is { } todos && todos.Open.Count > 0)
+        // Günün işi: son günü bugün olan ya da geciken işler, bekleyen işler, okuma listesi, odak hedefi ve seri.
+        if (Todos is { } dueTodos && dueTodos.Open.Where(item => item.Due is { } due && due <= DateOnly.FromDateTime(DateTime.Now)).ToList() is { Count: > 0 } urgent)
+        {
+            var late = urgent.Where(item => item.Due < today).Select(item => item.Text.ToLower(Turkish)).ToList();
+            var dueNow = urgent.Where(item => item.Due == today).Select(item => item.Text.ToLower(Turkish)).ToList();
+            if (dueNow.Count > 0)
+            {
+                parts.Add($"Bugün son günü olan: {TurkishGrammar.Join(dueNow)}.");
+            }
+
+            if (late.Count > 0)
+            {
+                parts.Add($"Süresi geçen: {TurkishGrammar.Join(late)}.");
+            }
+        }
+        else if (Todos is { } todos && todos.Open.Count > 0)
         {
             parts.Add(todos.Open.Count == 1 ? $"Bekleyen bir işin var: {todos.Open[0].Text}." : $"{todos.Open.Count} bekleyen işin var; ilki {todos.Open[0].Text}.");
         }

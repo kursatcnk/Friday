@@ -261,6 +261,7 @@ public sealed class FridayAssistant : IDisposable
             }
         };
         _tools.QuietControl = SetQuiet;
+        _tools.Announcements = Announced;
         _tools.PomodoroControl = Pomodoro;
         _rhythm.FocusInsight = FocusInsight;
         _rhythm.Changed += (_, _) => FollowFocusSound();
@@ -1669,8 +1670,55 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>Kullanıcı bilgisayara döndü: "dönünce" hatırlatmaları ve rutinleri (en fazla saatte bir).</summary>
+    private readonly List<(DateTime At, string Text, bool Away)> _announced = [];
+
+    /// <summary>Kendiliğinden söylenen her şey kaydedilir; kullanıcı bilgisayar başında değilken söylenenler dönünce tekrar edilir.</summary>
+    private void RecordAnnouncement(IReadOnlyList<CoachStep> script)
+    {
+        var text = string.Join(" ", script.Select(step => step.Text)).Trim();
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        lock (_announced)
+        {
+            _announced.Add((DateTime.Now, text, _rhythm.Snapshot().IsAway));
+            if (_announced.Count > 40)
+            {
+                _announced.RemoveAt(0);
+            }
+        }
+    }
+
+    private IReadOnlyList<(DateTime At, string Text)> Announced()
+    {
+        lock (_announced)
+        {
+            return [.. _announced.Select(item => (item.At, item.Text))];
+        }
+    }
+
     private void OnReturned()
     {
+        // Yokken söylenen (boş odaya okunan) hatırlatmalar dönünce bir kez tekrar edilir.
+        List<string> missed;
+        lock (_announced)
+        {
+            missed = [.. _announced.Where(item => item.Away && DateTime.Now - item.At < TimeSpan.FromHours(6)).Select(item => item.Text)];
+            for (var index = 0; index < _announced.Count; index++)
+            {
+                _announced[index] = _announced[index] with { Away = false };
+            }
+        }
+
+        if (missed.Count > 0)
+        {
+            Announce(missed.Count == 1
+                ? $"Sen yokken bir şey söyledim: {missed[0]}"
+                : $"Sen yokken {missed.Count} şey söyledim. {string.Join(" ", missed.TakeLast(3))}");
+        }
+
         _tools.FireTriggers("donus");
         RunTriggeredRoutines(schedule => schedule.Trigger == "donus", TimeSpan.FromHours(1));
     }
@@ -1852,6 +1900,7 @@ public sealed class FridayAssistant : IDisposable
             return;
         }
 
+        RecordAnnouncement(script);
         CancellationToken token;
         lock (_gate)
         {

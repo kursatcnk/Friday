@@ -305,7 +305,11 @@
                                                     <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding IsDone, Mode=OneWay}" VerticalAlignment="Top" Margin="0,1,0,0"
                                                               Command="{Binding DataContext.ToggleTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                               CommandParameter="{Binding}"/>
-                                                    <TextBlock x:Name="Label" Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="19"/>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock x:Name="Label" Text="{Binding Display}" TextWrapping="Wrap" LineHeight="19"/>
+                                                        <TextBlock x:Name="Due" Text="{Binding DueLabel}" Style="{StaticResource Caption}" Margin="0,1,0,0"
+                                                                   Visibility="{Binding HasDue, Converter={StaticResource Visible}}"/>
+                                                    </StackPanel>
                                                     <Button Grid.Column="2" x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Sil" Opacity="0" Padding="5"
                                                             Command="{Binding DataContext.RemoveTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}">
@@ -316,6 +320,9 @@
                                                     <DataTrigger Binding="{Binding IsDone}" Value="True">
                                                         <Setter TargetName="Label" Property="Foreground" Value="{StaticResource FaintBrush}"/>
                                                         <Setter TargetName="Label" Property="TextDecorations" Value="Strikethrough"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsUrgent}" Value="True">
+                                                        <Setter TargetName="Due" Property="Foreground" Value="{StaticResource AccentBrush}"/>
                                                     </DataTrigger>
                                                     <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
                                                         <Setter TargetName="Remove" Property="Opacity" Value="1"/>
