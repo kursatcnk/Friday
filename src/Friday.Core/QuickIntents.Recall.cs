@@ -15,6 +15,16 @@ public static partial class QuickIntents
             }
         }
 
+        if (NextActionQuestion().IsMatch(sentence))
+        {
+            return Command("ne_yapayim");
+        }
+
+        if (ReceiptRequest().IsMatch(sentence))
+        {
+            return Command("fis");
+        }
+
         if (WeeklyReportRequest().IsMatch(sentence))
         {
             return Command("haftalik_rapor");
@@ -62,6 +72,12 @@ public static partial class QuickIntents
     // "kira hakkında ne kaydetmiştim", "doktor ile ilgili ne not almıştım"
     [GeneratedRegex(@"^(?<q>.+?) (?:hakkında|ile ilgili|konusunda) (?:ne (?:kaydetmiştim|yazmıştım|not almıştım|demiştim|kaydettim)|neler (?:kaydetmişim|yazmışım)|kayıtlarımda ne var)$")]
     private static partial Regex SearchAbout();
+
+    [GeneratedRegex(@"^(?:şimdi |şu an |peki )?ne yap(?:ayım|malıyım|sam|sam iyi olur)$|^sırada ne var$|^(?:bir )?öneri(?:n)? (?:var mı|ne|ver)$|^(?:bir )?öneri ver$|^neyle başlayayım$|^nereden başlayayım$")]
+    private static partial Regex NextActionQuestion();
+
+    [GeneratedRegex(@"^(?:panodaki|kopyaladığım|bu) (?:fişi|faturayı|fiş görselini) (?:harcamaya|harcamalara|harcamalarıma) (?:ekle|kaydet|işle)$|^fişi (?:harcamaya |harcamalara )?(?:kaydet|ekle|işle)$|^panodaki fişi (?:kaydet|işle|oku)$")]
+    private static partial Regex ReceiptRequest();
 
     [GeneratedRegex(@"^haftalık rapor(?:u|umu)? (?:kaydet|hazırla|çıkar|oluştur|dosyaya kaydet)$|^haftamı (?:dosyaya )?(?:kaydet|raporla)$|^bu haftanın raporunu (?:kaydet|hazırla|çıkar)$")]
     private static partial Regex WeeklyReportRequest();

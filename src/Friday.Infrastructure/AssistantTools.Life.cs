@@ -242,6 +242,13 @@ public sealed partial class AssistantTools
             text += MonthComparison(book, items, now);
         }
 
+        // Ay sonu tahmini: şimdiye kadarki günlük ortalamayla.
+        if (period is "" or "ay" && now.Day >= 5 && now.Day < DateTime.DaysInMonth(now.Year, now.Month))
+        {
+            var projected = Math.Round(total / now.Day * DateTime.DaysInMonth(now.Year, now.Month) / 50) * 50;
+            text += $" Bu gidişle ay sonunda yaklaşık {ExpenseBook.Spoken(projected)} olur" + (book.MonthlyBudget > 0 && projected > book.MonthlyBudget ? ", bütçeyi aşar." : ".");
+        }
+
         if (period is "" or "ay" && book.MonthlyBudget > 0)
         {
             var left = book.MonthlyBudget - total;

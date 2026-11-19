@@ -49,6 +49,7 @@ public static class ToolRouter
         (["okuma listesi", "sonra oku", "sayfa", "makale", "site", "link"], ["sonra_oku", "sayfayi_oku", "web_sitesi_ac", "web_ara"]),
         (["kopyala", "pano", "görsel", "resim"], ["pano_gorseli", "ekran_metni"]),
         (["yokken", "bildirim", "kaçırd"], ["kacirdiklarim"]),
+        (["ne yap", "başlayayım", "öneri", "sıkıldım", "canım sıkıl"], ["ne_yapayim", "gun_plani"]),
         (["araştır", "detaylı"], ["arastirma_raporu"]),
         (["linkedin", "github", "google"], ["web_ara", "web_sitesi_ac"])
     ];

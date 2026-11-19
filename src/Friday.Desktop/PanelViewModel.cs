@@ -222,6 +222,7 @@ public sealed partial class PanelViewModel : ObservableObject
         "Yağmur sesi aç",
         "Yapılacaklarım neler?",
         "Günümü planla",
+        "Şimdi ne yapayım?",
         "İnternetim nasıl?",
         "Bu ay ne kadar harcadım?",
         "Alışkanlıklarım nasıl gidiyor?",
