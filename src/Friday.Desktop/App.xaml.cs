@@ -391,6 +391,7 @@ public sealed partial class App : Application, IDisposable
         tools.SettingsChanged += (_, _) => Ui(() =>
         {
             panel.ReloadRoutines();
+            panel.ReloadSnippets();
             panel.ShowGoal(rhythm.Today, rhythm.History(60));
             RegisterRoutineKeys();
         });

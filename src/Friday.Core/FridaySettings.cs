@@ -23,6 +23,12 @@ public sealed class FridaySettings
     /// <summary>Başka bir uygulama mikrofonu kullanınca (görüşme) rahatsız etme açılır, uyandırma kelimesi duraklar.</summary>
     public bool MeetingQuiet { get; set; } = true;
 
+    /// <summary>Akşam 21.30–23.00 arası bir kez "Günün nasıl geçti?" diye sorulur, cevap günlüğe yazılır.</summary>
+    public bool JournalPrompt { get; set; } = true;
+
+    /// <summary>Metin kısaltmaları: ad → metin ("imza" → "Saygılarımla, …"); "imzamı yaz" deyince açık pencereye yazılır.</summary>
+    public Dictionary<string, string> Snippets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Ortam seslerinin (yağmur, beyaz gürültü…) ses düzeyi, 0–1.</summary>
     public double AmbientVolume { get; set; } = 0.25;
 

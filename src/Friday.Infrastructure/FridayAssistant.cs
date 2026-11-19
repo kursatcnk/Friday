@@ -877,8 +877,12 @@ public sealed class FridayAssistant : IDisposable
         }
 
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
+        // "Günün nasıl geçti?" gibi serbest cevap bekleyen bir soru varsa söz ona gider; açıkça bir komutsa komut çalışır.
+        var answering = _tools.AwaitsAnswer && QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false };
         var command = _tools.InChecklist
             ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
+            : answering
+            ? new QuickCommand("serbest_cevap", new Dictionary<string, string> { ["metin"] = text })
             : _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
             ? new QuickCommand("onay", new Dictionary<string, string> { ["cevap"] = QuickIntents.IsYes(text) ? "evet" : "hayir" })
             : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
@@ -1526,6 +1530,14 @@ public sealed class FridayAssistant : IDisposable
             if (!Muted && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
             {
                 Announce([new CoachStep(eve)], listenAfter: true);
+                return;
+            }
+
+            // Gün sonu günlük sorusu: 21.30–23.00 arası, bilgisayar başındayken, günde bir kez.
+            if (!Muted && (now.Hour == 22 || (now.Hour == 21 && now.Minute >= 30)) && !_rhythm.Snapshot().IsAway && !FullScreenDetector.IsBusy()
+                && _tools.JournalQuestion(now) is { } journal)
+            {
+                Announce([new CoachStep(journal)], listenAfter: true);
                 return;
             }
 

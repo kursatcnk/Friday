@@ -118,6 +118,31 @@ public sealed partial class PanelViewModel
     private bool _meetingQuiet = true;
 
     [ObservableProperty]
+    private bool _journalPrompt = true;
+
+    /// <summary>Kısaltmalar, her satırda "ad: metin"; metindeki satır sonları \n ile yazılır.</summary>
+    [ObservableProperty]
+    private string _snippetsText = "";
+
+    /// <summary>Kısaltmalar sesle değişti; ayarlardaki kutu tazelenir.</summary>
+    public void ReloadSnippets() => SnippetsText = string.Join("\n", _settings.Snippets.Select(pair => $"{pair.Key}: {pair.Value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal)}"));
+
+    private Dictionary<string, string> ParseSnippets()
+    {
+        var snippets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in SnippetsText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var colon = line.IndexOf(':', StringComparison.Ordinal);
+            if (colon > 0 && line[(colon + 1)..].Trim() is { Length: > 0 } text)
+            {
+                snippets[line[..colon].Trim().ToLower(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))] = text.Replace("\\n", "\n", StringComparison.Ordinal);
+            }
+        }
+
+        return snippets;
+    }
+
+    [ObservableProperty]
     private bool _ambientLow;
 
     [ObservableProperty]
@@ -433,6 +458,8 @@ public sealed partial class PanelViewModel
         _settings.OllamaModel = BrainSmart && _actions.SmartModelInstalled ? FridaySettings.SmartTextModel : FridaySettings.FastTextModel;
         _settings.HabitSuggestions = HabitSuggestionsEnabled;
         _settings.MeetingQuiet = MeetingQuiet;
+        _settings.JournalPrompt = JournalPrompt;
+        _settings.Snippets = ParseSnippets();
         _settings.AmbientVolume = AmbientLow ? 0.12 : AmbientHigh ? 0.45 : 0.25;
 
         var notes = new List<string>();
@@ -539,6 +566,8 @@ public sealed partial class PanelViewModel
         BrainFast = !BrainSmart;
         HabitSuggestionsEnabled = _settings.HabitSuggestions;
         MeetingQuiet = _settings.MeetingQuiet;
+        JournalPrompt = _settings.JournalPrompt;
+        ReloadSnippets();
         AmbientLow = _settings.AmbientVolume < 0.18;
         AmbientHigh = _settings.AmbientVolume > 0.35;
         AmbientMedium = !AmbientLow && !AmbientHigh;

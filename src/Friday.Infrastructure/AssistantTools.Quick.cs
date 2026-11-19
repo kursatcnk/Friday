@@ -103,6 +103,9 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "kisaltma" => SnippetCommand(Arg("islem"), Arg("ad"), Arg("metin")),
+                "serbest_cevap" => AnswerPending(Arg("metin")),
+                "gunluk_sorusu" => new QuickReply(JournalQuestion(DateTime.Now, force: true) ?? "Günlük şu an hazır değil."),
                 "harcama" => ExpenseCommand(Arg("islem"), Arg("tutar"), Arg("aciklama"), Arg("donem"), Arg("kategori")),
                 _ => null
             };

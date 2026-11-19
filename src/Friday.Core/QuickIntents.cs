@@ -46,6 +46,11 @@ public static partial class QuickIntents
             return paste;
         }
 
+        if (SnippetDefinition(text) is { } snippet)
+        {
+            return Command("kisaltma", ("islem", "ekle"), ("ad", snippet.Name), ("metin", snippet.Text));
+        }
+
         if (CustomCommand(text) is { } custom)
         {
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
@@ -80,6 +85,7 @@ public static partial class QuickIntents
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
             ?? Life(sentence)
+            ?? Snippets(sentence)
             ?? Todo(sentence)
             ?? RecurringReminder(sentence)
             ?? Ambient(sentence)
@@ -101,6 +107,7 @@ public static partial class QuickIntents
             ?? Countdown(text)
             ?? Rhythm(sentence)
             ?? Routine(sentence, routines ?? [])
+            ?? SnippetUse(sentence)
             ?? HabitDone(sentence)
             ?? TodoDone(sentence)
             ?? CloseApp(sentence)
