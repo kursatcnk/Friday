@@ -251,6 +251,20 @@ public static class AgentPlan
         return DocumentWords.Any(word => text.Contains(word, StringComparison.Ordinal));
     }
 
+    private static readonly string[] Unable =
+    [
+        "aracım yok", "aracım bulunmuyor", "araca sahip değilim", "yapamıyorum", "yapamam", "erişimim yok", "erişemiyorum",
+        "imkanım yok", "imkânım yok", "yeteneğim yok", "desteklemiyorum", "bunu yapacak bir", "erişim iznim yok", "kontrol edemiyorum",
+        "göremiyorum", "açamıyorum", "kuramıyorum", "ayarlayamıyorum"
+    ];
+
+    /// <summary>Model cevabının ilk cümlesi bir araç eksikliğinden yakınıyor mu ("bunu yapacak bir aracım yok")?</summary>
+    public static bool SoundsUnable(string sentence)
+    {
+        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return Unable.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
+    }
+
     public static bool IsMultiStep(string question)
     {
         var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";

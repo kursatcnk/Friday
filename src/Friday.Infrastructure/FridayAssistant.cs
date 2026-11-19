@@ -1095,6 +1095,8 @@ public sealed class FridayAssistant : IDisposable
             FridayLog.Info("Ajan modu: çok adımlı istek");
         }
 
+        var widened = false;
+
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
@@ -1117,7 +1119,9 @@ public sealed class FridayAssistant : IDisposable
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
             // Araç tanımları her soruda baştan işlenir (~4.100 belirteç, ~1,1 sn); soruya göre gereken alt küme gönderilir.
-            var tools = round < maxRounds ? _tools.DefinitionsFor(question, multiStep, RecentTools()) : [];
+            var tools = round < maxRounds ? (widened ? _tools.Definitions : _tools.DefinitionsFor(question, multiStep, RecentTools())) : [];
+            var replyStart = reply.Length;
+            var unable = false;
             // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
             // kadar ekliyordu. Kesin bilgi isteyen sorularda düşünme kalır: yoksa model aracı atlayıp sayı uydurabiliyor.
             // Küçük model düşünmeden aracı çağırmak yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
@@ -1142,11 +1146,34 @@ public sealed class FridayAssistant : IDisposable
 
                 content.Append(delta.Content);
                 reply.Append(delta.Content);
-                Show(reply.ToString());
                 foreach (var sentence in chunker.Push(delta.Content))
                 {
+                    // Seçilen araçlar yetmediyse model "bunu yapamıyorum" der: cümle okunmaz, tur bütün araçlarla yinelenir.
+                    if (!widened && !multiStep && tools.Count > 0 && tools.Count < _tools.Definitions.Count && AgentPlan.SoundsUnable(sentence))
+                    {
+                        unable = true;
+                        break;
+                    }
+
                     SayUnlessFiller(sentence);
                 }
+
+                if (unable)
+                {
+                    break;
+                }
+
+                Show(reply.ToString());
+            }
+
+            if (unable)
+            {
+                FridayLog.Info("Seçilen araçlar yetmedi; tur bütün araçlarla yineleniyor");
+                widened = true;
+                reply.Length = replyStart;
+                Show(reply.ToString());
+                round--;
+                continue;
             }
 
             if (chunker.Flush() is { } rest)

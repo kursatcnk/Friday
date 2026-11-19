@@ -66,6 +66,14 @@ public sealed class ToolBudgetTests : IDisposable
     [InlineData("İstanbul'un nüfusu ne kadar?", true)]
     public void ThinksOnlyForFactualQuestions(string question, bool factual) => Assert.Equal(factual, AgentPlan.IsFactual(question));
 
+    [Theory]
+    [InlineData("Üzgünüm, bunu yapacak bir aracım yok.", true)]
+    [InlineData("Maalesef uygulamaların sesini ayarlayamıyorum.", true)]
+    [InlineData("Ekranını göremiyorum.", true)]
+    [InlineData("Gökkuşağı ışığın kırılmasıyla oluşur.", false)]
+    [InlineData("Tamam, hatırlatmayı kurdum.", false)]
+    public void NoticesWhenTheModelLacksATool(string sentence, bool unable) => Assert.Equal(unable, AgentPlan.SoundsUnable(sentence));
+
     [Fact]
     public void KeepsRecentToolsAndSendsEverythingForMultiStepTasks()
     {
