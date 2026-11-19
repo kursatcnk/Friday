@@ -237,6 +237,11 @@ public sealed partial class AssistantTools
         var groups = items.GroupBy(item => item.Category).Select(group => (group.Key, Sum: group.Sum(item => item.Amount))).OrderByDescending(group => group.Sum).ToList();
         var top = TurkishGrammar.Join([.. groups.Take(3).Select(group => $"{group.Key.ToLower(Turkish)} {ExpenseBook.Spoken(group.Sum)}")]);
         var text = $"{label} toplam {ExpenseBook.Spoken(total)} harcadın; en çok {top}.";
+        if (period is "" or "ay")
+        {
+            text += MonthComparison(book, items, now);
+        }
+
         if (period is "" or "ay" && book.MonthlyBudget > 0)
         {
             var left = book.MonthlyBudget - total;
@@ -247,6 +252,34 @@ public sealed partial class AssistantTools
         }
 
         return new QuickReply(text);
+    }
+
+    /// <summary>Bu ayın şimdiye kadarki harcaması, geçen ayın aynı günlerine göre: " Geçen ayın aynı dönemine göre yüzde 20 fazla; en çok yeme-içme arttı."</summary>
+    internal static string MonthComparison(ExpenseBook book, IReadOnlyList<Expense> thisMonth, DateTime now)
+    {
+        var lastStart = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+        var lastEnd = lastStart.AddDays(Math.Min(now.Day, DateTime.DaysInMonth(lastStart.Year, lastStart.Month))).Add(now.TimeOfDay);
+        var last = book.Between(lastStart, lastEnd);
+        var before = last.Sum(item => item.Amount);
+        var after = thisMonth.Sum(item => item.Amount);
+        if (before <= 0 || after <= 0)
+        {
+            return "";
+        }
+
+        var change = (after - before) / before * 100;
+        if (Math.Abs(change) < 10)
+        {
+            return " Geçen ayın aynı dönemiyle hemen hemen aynı.";
+        }
+
+        var rise = thisMonth.GroupBy(item => item.Category)
+            .Select(group => (Category: group.Key, Delta: group.Sum(item => item.Amount) - last.Where(item => item.Category == group.Key).Sum(item => item.Amount)))
+            .OrderByDescending(item => item.Delta)
+            .FirstOrDefault();
+        return change > 0
+            ? $" Geçen ayın aynı dönemine göre yüzde {Math.Round(change)} fazla" + (rise.Delta > 0 ? $"; en çok {rise.Category.ToLower(Turkish)} arttı." : ".")
+            : $" Geçen ayın aynı dönemine göre yüzde {Math.Round(-change)} az, güzel gidiyor.";
     }
 
     private void ShowExpenseCard(ExpenseBook book, string period, IReadOnlyList<Expense>? items, DateTime now)

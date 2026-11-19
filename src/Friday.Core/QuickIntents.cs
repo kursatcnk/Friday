@@ -93,6 +93,7 @@ public static partial class QuickIntents
             ?? Snippets(sentence)
             ?? Practice(sentence)
             ?? Bills(sentence)
+            ?? Alerts(sentence)
             ?? Todo(sentence)
             ?? RecurringReminder(sentence)
             ?? Ambient(sentence)

@@ -103,6 +103,8 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "doviz_alarmi" => await RateAlertCommandAsync(Arg("islem"), Arg("birim"), Arg("deger"), Arg("yon")).ConfigureAwait(false),
+                "uyku_saati" => BedTimeCommand(Arg("islem"), Arg("saat")),
                 "sabit_gider" => BillCommand(Arg("islem"), Arg("ad"), Arg("tutar"), Arg("gun")),
                 "sure_siniri" => LimitCommand(Arg("islem"), Arg("ad"), Arg("dakika")),
                 "gun_plani" => await DayPlanAsync(cancellationToken).ConfigureAwait(false),
@@ -488,6 +490,8 @@ public sealed partial class AssistantTools
         {
             parts.Add(todos.Open.Count == 1 ? $"Bekleyen bir işin var: {todos.Open[0].Text}." : $"{todos.Open.Count} bekleyen işin var; ilki {todos.Open[0].Text}.");
         }
+
+        StaleTodoMorning(parts, DateTime.Now);
 
         if (Lists?.Items("okuma listesi").Count is > 0 and var reading)
         {

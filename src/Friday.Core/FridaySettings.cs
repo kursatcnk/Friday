@@ -38,6 +38,12 @@ public sealed class FridaySettings
     /// <summary>15 dakikadan uzun bir görüşme bitince "not almak ister misin?" diye sorulur.</summary>
     public bool MeetingNotes { get; set; } = true;
 
+    /// <summary>Kur alarmları: "dolar 45 lirayı geçince haber ver".</summary>
+    public List<RateAlert> RateAlerts { get; set; } = [];
+
+    /// <summary>Uyku saati ("23:30"); boşsa hatırlatma yok.</summary>
+    public string BedTime { get; set; } = "";
+
     /// <summary>Ortam seslerinin (yağmur, beyaz gürültü…) ses düzeyi, 0–1.</summary>
     public double AmbientVolume { get; set; } = 0.25;
 

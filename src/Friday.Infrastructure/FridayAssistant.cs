@@ -1532,6 +1532,20 @@ public sealed class FridayAssistant : IDisposable
                 }
             }
 
+            // Kur alarmı: kullanıcının kurduğu bir uyarı; rahatsız etme açıkken de söylenir (görüşmedeyse sonra okunur).
+            if (await _tools.RateAlertCheckAsync(now, CancellationToken.None).ConfigureAwait(false) is { } rate)
+            {
+                Announce(rate);
+                return;
+            }
+
+            // Uyku saati: yarım saat önce ve yarım saat geç kalınca birer kez (bilgisayar başındaysa).
+            if (!Muted && !_rhythm.Snapshot().IsAway && _tools.BedTimeNudge(now) is { } bed)
+            {
+                Announce(bed);
+                return;
+            }
+
             // 20-20-20: 20 dakika aralıksız ekran başında, odakta değilken, tam ekran yokken.
             if (_settings.EyeBreaks && !Muted && !FullScreenDetector.IsBusy())
             {
