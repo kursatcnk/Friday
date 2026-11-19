@@ -103,6 +103,7 @@ public sealed partial class AssistantTools
                 "uygulama_kapat" => CloseAppCommand(Arg("ad")),
                 "aliskanlik" => HabitCommand(Arg("islem"), Arg("ad")),
                 "ozel_gunler" => SpecialDaysCommand(),
+                "haftalik_rapor" => WeeklyReportFile(),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),
                 "kacirdiklarim" => MissedAnnouncements(),
                 "kelime_cevir" => await VocabularyTranslateAsync(Arg("islem"), Arg("kelime"), cancellationToken).ConfigureAwait(false),

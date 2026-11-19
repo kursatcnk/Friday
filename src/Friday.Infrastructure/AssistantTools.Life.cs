@@ -386,6 +386,12 @@ public sealed partial class AssistantTools
                 : $"Alışkanlıklardan {TurkishGrammar.Join([.. pending.Select(habit => habit.Name.ToLower(Turkish))])} henüz işaretlenmedi; yaptıysan söyle, işaretleyeyim.");
         }
 
+        if (Todos is { } todos && todos.Open.Where(item => item.Due == today.AddDays(1)).Select(item => item.Text.ToLower(Turkish)).ToList() is { Count: > 0 } dueTomorrow)
+        {
+            rows.Add(new CardRow("Yarın son gün", $"{dueTomorrow.Count}"));
+            parts.Add($"Yarın son günü olan: {TurkishGrammar.Join(dueTomorrow)}.");
+        }
+
         if (Expenses is { } expenses)
         {
             var (from, to, _) = ExpenseBook.Period("bugun", now);

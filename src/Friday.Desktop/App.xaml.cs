@@ -470,6 +470,27 @@ public sealed partial class App : Application, IDisposable
         panel.ShowHabits(habitBook.Habits, DateOnly.FromDateTime(DateTime.Now));
         expenses.Changed += (_, _) => Ui(() => panel.ShowSpending(expenses, DateTime.Now));
         panel.ShowSpending(expenses, DateTime.Now);
+
+        // Günün planı kartı: işler, alışkanlıklar, hatırlatmalar ya da takvim değişince ve 5 dakikada bir yeniden kurulur.
+        void ShowPlan()
+        {
+            var now = DateTime.Now;
+            var fixedItems = tools.Calendar.Cached(now, now.Date.AddDays(1)).Where(item => !item.AllDay).Select(item => new FixedItem(item.Start, item.End, item.Title))
+                .Concat(reminders.Upcoming.Where(item => item.Trigger is null && item.Due.Date == now.Date && item.Due > now)
+                    .Select(item => new FixedItem(item.Due, item.Due.AddMinutes(15), item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Hatırlatma")));
+            var plan = DayPlanner.Plan(now, fixedItems, todos.Open.Select(item => item.Text), habitBook.Pending(DateOnly.FromDateTime(now)).Select(habit => habit.Name),
+                now.Hour >= 21 ? Math.Min(24, now.Hour + 2) : 22);
+            panel.ShowPlan(plan, now);
+        }
+
+        todos.Changed += (_, _) => Ui(ShowPlan);
+        habitBook.Changed += (_, _) => Ui(ShowPlan);
+        reminders.Changed += (_, _) => Ui(ShowPlan);
+        tools.Calendar.Changed += (_, _) => Ui(ShowPlan);
+        ShowPlan();
+        var planClock = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
+        planClock.Tick += (_, _) => ShowPlan();
+        planClock.Start();
         vocabulary.Changed += (_, _) => Ui(() => panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started));
         panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started);
         ShowToday();

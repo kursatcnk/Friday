@@ -27,6 +27,7 @@ public sealed partial class PanelViewModel
     [
         ("greeting", "Selam ve hava"),
         ("upcoming", "Yaklaşanlar"),
+        ("plan", "Günün planı"),
         ("rhythm", "Ritim"),
         ("todos", "Yapılacaklar"),
         ("habits", "Alışkanlıklar"),

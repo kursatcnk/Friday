@@ -12,6 +12,9 @@ public sealed record HabitDay(bool Done, bool IsToday, string Tip);
 /// <summary>"Bugün" ekranındaki alışkanlık satırı.</summary>
 public sealed record HabitView(string Name, string Streak, bool IsDoneToday, IReadOnlyList<HabitDay> Week);
 
+/// <summary>Günün planı kartında bir blok: saat aralığı, başlık, türü (Focus, Event, Habit, Meal) ve şu an mı.</summary>
+public sealed record PlanRow(string Time, string Title, string Kind, bool IsNow);
+
 /// <summary>Harcama kartında bir kategori: adı, tutarı ve en büyüğe göre doluluğu (0–1).</summary>
 public sealed record SpendingRow(string Label, string Value, double Fraction);
 
@@ -58,6 +61,35 @@ public sealed partial class PanelViewModel
 
     [ObservableProperty]
     private string _billsText = "";
+
+    public ObservableCollection<PlanRow> PlanRows { get; } = [];
+
+    [ObservableProperty]
+    private string _planSummary = "";
+
+    [ObservableProperty]
+    private bool _hasPlan;
+
+    public void ShowPlan(IReadOnlyList<PlanBlock> blocks, DateTime now)
+    {
+        PlanRows.Clear();
+        var visible = blocks.Where(block => block.Kind != PlanKind.Break && block.End > now).Take(7).ToList();
+        HasPlan = visible.Any(block => block.Kind is PlanKind.Focus or PlanKind.Habit);
+        if (!HasPlan)
+        {
+            PlanSummary = "";
+            return;
+        }
+
+        foreach (var block in visible)
+        {
+            var title = block.Kind == PlanKind.Focus ? $"Odak: {block.Title}" : block.Title;
+            PlanRows.Add(new PlanRow($"{block.Start:HH:mm}–{block.End:HH:mm}", title, block.Kind.ToString(), block.Start <= now && now < block.End));
+        }
+
+        var focus = blocks.Count(block => block.Kind == PlanKind.Focus);
+        PlanSummary = focus > 0 ? $"{focus} odak bloğu" : "";
+    }
 
     public void ShowHabits(IReadOnlyList<DailyHabit> habits, DateOnly today)
     {

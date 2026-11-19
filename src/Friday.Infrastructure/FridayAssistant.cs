@@ -1581,6 +1581,13 @@ public sealed class FridayAssistant : IDisposable
                 return;
             }
 
+            // Son tarih: yarın teslim edilecek işler akşam 18.00–21.30 arası bir kez söylenir.
+            if (!Muted && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.DeadlineNudge(now) is { } deadline)
+            {
+                Announce(deadline);
+                return;
+            }
+
             // Seri koruma: 20.00–21.30 arası, serisi olan bir alışkanlık bugün yapılmadıysa bir kez hatırlatılır.
             if (!Muted && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.StreakNudge(now) is { } nudge)
             {

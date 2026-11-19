@@ -15,6 +15,11 @@ public static partial class QuickIntents
             }
         }
 
+        if (WeeklyReportRequest().IsMatch(sentence))
+        {
+            return Command("haftalik_rapor");
+        }
+
         if (MissedQuestion().IsMatch(sentence))
         {
             return Command("kacirdiklarim");
@@ -57,6 +62,9 @@ public static partial class QuickIntents
     // "kira hakkında ne kaydetmiştim", "doktor ile ilgili ne not almıştım"
     [GeneratedRegex(@"^(?<q>.+?) (?:hakkında|ile ilgili|konusunda) (?:ne (?:kaydetmiştim|yazmıştım|not almıştım|demiştim|kaydettim)|neler (?:kaydetmişim|yazmışım)|kayıtlarımda ne var)$")]
     private static partial Regex SearchAbout();
+
+    [GeneratedRegex(@"^haftalık rapor(?:u|umu)? (?:kaydet|hazırla|çıkar|oluştur|dosyaya kaydet)$|^haftamı (?:dosyaya )?(?:kaydet|raporla)$|^bu haftanın raporunu (?:kaydet|hazırla|çıkar)$")]
+    private static partial Regex WeeklyReportRequest();
 
     [GeneratedRegex(@"^(?:ben )?yokken ne (?:dedin|oldu|söyledin)$|^(?:kaçırdıklarım|kaçırdığım bildirimler|son bildirimler|son bildirimlerim)(?: neler| ne)?$|^(?:az önce|demin) ne (?:dedin|söyledin)(?: kendiliğinden)?$|^son hatırlatmalar(?:ı)? (?:neydi|ne idi|tekrar et)$")]
     private static partial Regex MissedQuestion();
