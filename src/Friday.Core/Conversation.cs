@@ -26,7 +26,10 @@ public sealed class ConversationMemory
 {
     private const int MaxMessages = 16;
 
+    private const int MaxEarlier = 10;
+
     private readonly List<ChatMessage> _messages = [];
+    private readonly List<string> _earlier = [];
     private readonly TimeProvider _clock;
     private DateTimeOffset _lastActivity;
 
@@ -39,6 +42,12 @@ public sealed class ConversationMemory
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
 
+    /// <summary>
+    /// Uzun sohbette kırpılan eski turların kısa özeti ("Bu sohbette daha önce: S: … | C: …"); kırpılan yoksa null. Model
+    /// konuşmanın başını (konu, isimler, verilen kararlar) unutmasın diye ilk mesaja eklenir; dil modeli kullanılmaz.
+    /// </summary>
+    public string? Summary => _earlier.Count == 0 ? null : "[Bu sohbette daha önce: " + string.Join(" | ", _earlier) + "]";
+
     /// <summary>Bu kadar konuşulmazsa sohbet biter (ayarlardan değişebilir).</summary>
     public TimeSpan Expiry { get; set; }
 
@@ -50,6 +59,7 @@ public sealed class ConversationMemory
         if (expired)
         {
             _messages.Clear();
+            _earlier.Clear();
         }
 
         _lastActivity = _clock.GetUtcNow();
@@ -63,6 +73,7 @@ public sealed class ConversationMemory
     public void Load(IEnumerable<ConversationTurn> turns, int maxTurns = 6)
     {
         _messages.Clear();
+        _earlier.Clear();
         foreach (var turn in turns.TakeLast(maxTurns))
         {
             _messages.Add(new ChatMessage(ChatRole.User, turn.User));
@@ -89,7 +100,42 @@ public sealed class ConversationMemory
             cut++;
         }
 
+        foreach (var dropped in _messages.Take(cut))
+        {
+            if (dropped.Role == ChatRole.User)
+            {
+                Remember("S: " + Short(dropped.Content, 90));
+            }
+            else if (dropped.Role == ChatRole.Assistant && dropped.ToolCalls.Count == 0 && dropped.Content.Trim().Length > 0)
+            {
+                Remember("C: " + Short(FirstSentence(dropped.Content), 110));
+            }
+        }
+
         _messages.RemoveRange(0, cut);
+    }
+
+    private void Remember(string line)
+    {
+        _earlier.Add(line);
+        if (_earlier.Count > MaxEarlier)
+        {
+            _earlier.RemoveAt(0);
+        }
+    }
+
+    /// <summary>Mesajın kendisi; sona eklenen [Bağlam …], [Durum …] satırları özete girmez.</summary>
+    private static string Short(string text, int length)
+    {
+        var bracket = text.IndexOf("\n[", StringComparison.Ordinal);
+        var plain = string.Join(' ', (bracket >= 0 ? text[..bracket] : text).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return plain.Length > length ? plain[..length].TrimEnd() + "…" : plain;
+    }
+
+    private static string FirstSentence(string text)
+    {
+        var end = text.IndexOfAny(['.', '!', '?']);
+        return end > 0 ? text[..(end + 1)] : text;
     }
 
     /// <summary>
@@ -108,5 +154,9 @@ public sealed class ConversationMemory
         }
     }
 
-    public void Clear() => _messages.Clear();
+    public void Clear()
+    {
+        _messages.Clear();
+        _earlier.Clear();
+    }
 }

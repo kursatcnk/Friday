@@ -1109,6 +1109,11 @@ public sealed class FridayAssistant : IDisposable
                 new(ChatRole.System, SystemPrompt.Build(_settings, _longTermMemory.Items, DateTime.Now) + (multiStep ? "\n" + AgentPlan.Instruction : "") + (documents is null ? "" : "\n" + documents))
             };
             messages.AddRange(_memory.Messages);
+            // Kırpılan eski turların özeti ilk mesajın başına eklenir (talimat ve araçlar değişmez, önbellekte kalır).
+            if (_memory.Summary is { } earlier && messages.FindIndex(message => message.Role == ChatRole.User) is var firstUser and >= 0)
+            {
+                messages[firstUser] = messages[firstUser] with { Content = earlier + "\n" + messages[firstUser].Content };
+            }
             if (recalled.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
             {
                 messages[lastUser] = messages[lastUser] with { Content = messages[lastUser].Content + recalled };
