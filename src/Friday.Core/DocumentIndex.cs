@@ -221,8 +221,9 @@ public static class AgentPlan
 
     private static readonly string[] FactWords =
     [
-        " kaç", "ne kadar", "neydi", "nedir", "hangi", "ne zaman", "kim ", "kimdi", "nerede", "kaçta", "tarih", "belge", "dosya",
-        "sözleşme", "rapor", "fatura", "takvim", "hatırlat", "toplantı", "fiyat", "kur"
+        " kaç", "ne kadar", "neydi", "nedir", "hangi", "ne zaman", "kim ", "kim?", "kimdi", "kimdir", "nerede", "kaçta", "tarih", "belge", "dosya",
+        "sözleşme", "rapor", "fatura", "takvim", "hatırlat", "toplantı", "fiyat", "kur", "nüfus", "uzunluğu", "yüksekliği", "yüzde",
+        "skor", "maç", "sonuç", "puan", "dolar", "euro"
     ];
 
     /// <summary>
@@ -233,7 +234,8 @@ public static class AgentPlan
     public static bool IsFactual(string question)
     {
         var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";
-        return text.Contains('?', StringComparison.Ordinal) || FactWords.Any(word => text.Contains(word, StringComparison.Ordinal));
+        // Yalnızca soru işareti yetmez: "neden", "nasıl" gibi açıklama sorularında düşünme ~5 sn ekliyor, cevabı iyileştirmiyordu.
+        return FactWords.Any(word => text.Contains(word, StringComparison.Ordinal));
     }
 
     private static readonly string[] DocumentWords =

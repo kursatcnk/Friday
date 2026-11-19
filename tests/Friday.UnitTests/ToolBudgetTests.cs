@@ -57,6 +57,15 @@ public sealed class ToolBudgetTests : IDisposable
         Assert.True(names.Count < 30, $"{names.Count}");
     }
 
+    [Theory]
+    [InlineData("Gökkuşağı neden kavisli görünür?", false)]
+    [InlineData("Bana kısa bir fıkra anlatır mısın?", false)]
+    [InlineData("Ağrı Dağı kaç metre?", true)]
+    [InlineData("Marie Curie kimdir?", true)]
+    [InlineData("Dünkü maçın sonucu ne oldu?", true)]
+    [InlineData("İstanbul'un nüfusu ne kadar?", true)]
+    public void ThinksOnlyForFactualQuestions(string question, bool factual) => Assert.Equal(factual, AgentPlan.IsFactual(question));
+
     [Fact]
     public void KeepsRecentToolsAndSendsEverythingForMultiStepTasks()
     {

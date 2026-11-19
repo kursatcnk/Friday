@@ -469,6 +469,7 @@ public sealed class FridayAssistant : IDisposable
             }
 
             await _chat.WarmUpAsync(settings.OllamaModel, cancellationToken).ConfigureAwait(false);
+            await PrimeAsync(settings.OllamaModel).ConfigureAwait(false);
             _loadedModel = settings.OllamaModel;
             FridayLog.Info($"Dil modeli hazır ({clock.Elapsed.TotalSeconds:0.0} sn)");
             lock (_gate)
@@ -488,6 +489,21 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
+    /// <summary>Sistem talimatını ve çekirdek araçları modelin önbelleğine işletir; başarısız olursa yalnızca günlüğe yazılır.</summary>
+    private async Task PrimeAsync(string model)
+    {
+        try
+        {
+            var clock = Stopwatch.StartNew();
+            await _chat.PrimeAsync(model, SystemPrompt.Build(_settings, _longTermMemory.Items, DateTime.Now), _tools.DefinitionsFor("", false), CancellationToken.None).ConfigureAwait(false);
+            FridayLog.Info($"Dil modeli önbelleği hazırlandı ({clock.Elapsed.TotalSeconds:0.0} sn)");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            FridayLog.Warn($"Önbellek hazırlanamadı: {exception.Message}");
+        }
+    }
+
     /// <summary>Sohbet modeli Hızlı ↔ Akıllı arasında değişti.</summary>
     private async Task SwitchBrainAsync(string previous, string next)
     {
@@ -502,6 +518,7 @@ public sealed class FridayAssistant : IDisposable
             await _ollama.EnsureRunningAsync(_settings.OllamaPort, CancellationToken.None).ConfigureAwait(false);
             await _ollama.EnsureTextModelAsync(next, _settings.TextModelSource(), CancellationToken.None).ConfigureAwait(false);
             await _chat.WarmUpAsync(next, CancellationToken.None).ConfigureAwait(false);
+            await PrimeAsync(next).ConfigureAwait(false);
             _loadedModel = next;
             FridayLog.Info($"Sohbet modeli {next} oldu ({clock.Elapsed.TotalSeconds:0.0} sn)");
             lock (_gate)

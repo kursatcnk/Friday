@@ -52,6 +52,19 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
     }
 
     /// <summary>
+    /// Sistem talimatı ve çekirdek araçlar modele önceden işletilir (1 belirteç üretilir). Ollama aynı öneki önbellekte
+    /// tuttuğu için ilk gerçek soruda yalnızca kullanıcının cümlesi işlenir: ölçümde ~1 sn yerine ~0,1 sn.
+    /// </summary>
+    public async Task PrimeAsync(string model, string system, JsonArray tools, CancellationToken cancellationToken)
+    {
+        var body = BuildRequest(model, [new ChatMessage(ChatRole.System, system)], tools, KeepAlive, think: false);
+        body["stream"] = false;
+        body["options"]!["num_predict"] = 1;
+        using var response = await http.PostAsJsonAsync(new Uri(server.BaseAddress, "api/chat"), body, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
     /// Akışsız tek bir istek: pano işlemleri ve ekran yorumlama gibi ara işler için. Görseller JPEG/PNG baytları
     /// olarak verilir; Gemma 4 bunları yerel olarak "görür".
     /// </summary>
