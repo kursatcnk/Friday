@@ -106,6 +106,7 @@ public sealed partial class AssistantTools
                 "haftalik_rapor" => WeeklyReportFile(),
                 "ne_yapayim" => NextAction(),
                 "geri_al" => UndoCommand(Arg("islem")),
+                "duzeltme" => CorrectionCommand(Arg("islem")),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),

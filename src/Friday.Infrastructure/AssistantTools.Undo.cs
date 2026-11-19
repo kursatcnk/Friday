@@ -9,6 +9,30 @@ public sealed partial class AssistantTools
     /// <summary>Friday'in kayıt değişiklikleri; her istek FridayAssistant'ta <see cref="UndoLog.Begin"/> ile açılır.</summary>
     public UndoLog Changes { get; } = new();
 
+    /// <summary>Hızlı yolun yanlış anladığı ve artık dil modeline giden sözler.</summary>
+    public CorrectionBook? Corrections { get; set; }
+
+    private QuickReply CorrectionCommand(string action)
+    {
+        if (Corrections is not { } book)
+        {
+            return new QuickReply("Düzeltme defteri açık değil.");
+        }
+
+        if (action == "sifirla")
+        {
+            var count = book.Clear();
+            return new QuickReply(count == 0
+                ? "Öğrendiğim bir düzeltme yok."
+                : $"{count} düzeltmeyi unuttum; o sözler yine hızlı komut olarak çalışacak.");
+        }
+
+        var phrases = book.Phrases;
+        return new QuickReply(phrases.Count == 0
+            ? "Henüz bir düzeltme öğrenmedim. Bir komutu yanlış anlarsam \"yanlış anladın\" de; geri alır, bir daha o sözü komut sanmam."
+            : $"Komut sanmamayı öğrendiğim {phrases.Count} söz var: " + string.Join(", ", phrases.TakeLast(5).Reverse().Select(phrase => $"\"{phrase}\"")) + ".");
+    }
+
     private QuickReply UndoCommand(string action) => new(action switch
     {
         "geri_getir" => RedoLast(),

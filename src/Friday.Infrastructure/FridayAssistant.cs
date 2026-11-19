@@ -72,6 +72,12 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Son söylenen cevap ("tekrar et" için).</summary>
     private string _lastReply = "";
 
+    /// <summary>"Yanlış anladın" bu kadar süre içinde son isteğe uygulanır.</summary>
+    private static readonly TimeSpan CorrectionWindow = TimeSpan.FromMinutes(3);
+
+    /// <summary>Son istek: söz, hızlı yolda çalıştıysa aracı, cevap ve kayıtlarda yaptığı değişiklik.</summary>
+    private LastTurn? _lastTurn;
+
     /// <summary>Alışkanlık önerilerini 5 dk'da bir yoklar.</summary>
     private Timer? _habitTimer;
 
@@ -273,6 +279,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.Workspaces = new WorkspaceStore(Path.Combine(paths.Data, "workspaces.json"));
         _tools.Lists = new ListStore(Path.Combine(paths.Data, "lists.json"));
         _tools.Journal = new JournalStore(Path.Combine(paths.Data, "journal"));
+        _tools.Corrections = new CorrectionBook(Path.Combine(paths.Data, "corrections.json"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -789,7 +796,7 @@ public sealed class FridayAssistant : IDisposable
     {
         var text = await _whisper.TranscribeAsync(audio, cancellationToken).ConfigureAwait(false);
         var complete = text.Length > 0
-            && (QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is { Tentative: false } || text.TrimEnd().EndsWith('?'));
+            && (Quick(text) is { Tentative: false } || text.TrimEnd().EndsWith('?'));
         return (text, complete);
     }
 
@@ -878,6 +885,47 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
+    /// <summary>Hızlı yol; kullanıcının "yanlış anladın" dediği sözler bir kalıba uysa da komut sayılmaz.</summary>
+    private QuickCommand? Quick(string text) =>
+        _tools.Corrections?.Contains(text) == true ? null : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
+
+    /// <summary>
+    /// "Yanlış anladın": son isteğin kayıt değişiklikleri geri alınır; hızlı yol yanlış anladıysa o söz bir daha komut
+    /// sanılmaz. Kullanıcı asıl istediğini söylediyse o ("yanlış anladın, yarın dokuzda hatırlat"), söylemediyse önceki
+    /// istek dil modeline ne yanlış yapıldığıyla birlikte yeniden sorulur.
+    /// </summary>
+    private (string Text, QuickCommand? Command, string Note) Reconsider(LastTurn last, string text, string meant)
+    {
+        _lastTurn = null;
+        IReadOnlyList<string> undone = last.Entry is { } entry && _tools.Changes.Entries is [.., var newest] && ReferenceEquals(newest, entry)
+            && _tools.Changes.Undo() is { } outcome ? outcome.Restored : [];
+        if (last.QuickTool is { } tool && !CorrectionBook.Unlearnable.Contains(tool) && _tools.Corrections?.Add(last.Text) == true)
+        {
+            FridayLog.Info($"Düzeltme öğrenildi: \"{last.Text}\" ({tool}) artık dil modeline gidiyor.");
+        }
+
+        if (undone.Count > 0)
+        {
+            Say($"Tamam, {TurkishGrammar.Join(undone)} için yaptığımı geri aldım.");
+        }
+
+        var undoneNote = undone.Count > 0 ? $" Friday o isteğin {TurkishGrammar.Join(undone)} değişikliğini geri aldı." : "";
+        if (meant.Length > 0)
+        {
+            return (meant, Quick(meant), $"\n[Kullanıcı önceki isteğini (\"{last.Text}\") yanlış anladığımı söyledi; asıl istediği bu.{undoneNote}]");
+        }
+
+        if (last.QuickTool is not null)
+        {
+            var wrong = last.Reply.Length > 160 ? last.Reply[..160] + "…" : last.Reply;
+            return (last.Text, null, $"\n[Bu isteği az önce yanlış anlayıp şöyle cevap vermiştim: \"{wrong}\". Kullanıcı yanlış anladığımı söyledi; isteği yeniden değerlendir, emin değilsen ne demek istediğini kısaca sor.{undoneNote}]");
+        }
+
+        return (text, null, undoneNote.Length > 0 ? $"\n[{undoneNote.Trim()}]" : "");
+    }
+
+    private sealed record LastTurn(string Text, string? QuickTool, string Reply, UndoEntry? Entry, DateTime At);
+
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
     public async Task AskAsync(string text, CancellationToken cancellationToken)
     {
@@ -902,14 +950,23 @@ public sealed class FridayAssistant : IDisposable
         // "Şimdi değil", "hayır" gibi sözler de soruya gider (yoksa "şimdi değil" mola ertelemesi sanılır).
         var answering = _tools.AwaitsAnswer
             && (_tools.AnswerTakesPriority || QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
-                || QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) is not { Tentative: false });
+                || Quick(text) is not { Tentative: false });
         var command = _tools.InChecklist
             ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
             : answering
             ? new QuickCommand("serbest_cevap", new Dictionary<string, string> { ["metin"] = text })
             : _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
             ? new QuickCommand("onay", new Dictionary<string, string> { ["cevap"] = QuickIntents.IsYes(text) ? "evet" : "hayir" })
-            : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
+            : Quick(text);
+
+        // "Yanlış anladın": son isteğin kayıt değişiklikleri geri alınır, istek yeniden değerlendirilir (bkz. Reconsider).
+        var heard = text;
+        var correction = "";
+        if (!answering && !_tools.InChecklist && command is null or { Tentative: true }
+            && CorrectionBook.Meant(text) is { } meant && _lastTurn is { } last && DateTime.Now - last.At < CorrectionWindow)
+        {
+            (text, command, correction) = Reconsider(last, text, meant);
+        }
         if (command is { Tool: "sohbet" })
         {
             ChatCommand(command.Arguments.TryGetValue("islem", out var action) ? action : "yeni");
@@ -958,22 +1015,24 @@ public sealed class FridayAssistant : IDisposable
             return;
         }
 
-        UserSaid?.Invoke(this, text);
+        UserSaid?.Invoke(this, heard);
         Report(AssistantState.Thinking, "Düşünüyor…");
         _tools.LastUserText = text;
         _tools.ActiveWindow = _activeWindow;
         _shown = "";
         var chatAtStart = _chats.CurrentId;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
-        _memory.Add(new ChatMessage(ChatRole.User, text + context));
+        _memory.Add(new ChatMessage(ChatRole.User, text + context + correction));
         string? reply;
+        string? quickTool;
         // Bu isteğin kayıtlarda yaptığı her değişiklik tek kayıt olur; "geri al" hepsini birlikte döndürür.
-        using var changes = _tools.Changes.Begin(text);
+        var changes = _tools.Changes.Begin(text);
         try
         {
             reply = command is { } quick
                 ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
                 : null;
+            quickTool = reply is null ? null : command?.Tool;
             if (reply is null)
             {
                 // Ollama bir sebeple kapandıysa (çökme, elle kapatma) sessizce yeniden başlatılır; soru boşa gitmez.
@@ -985,17 +1044,22 @@ public sealed class FridayAssistant : IDisposable
         catch (OperationCanceledException) when (_settings.KeepHistory && _chats.CurrentId == chatAtStart)
         {
             // Söz kesildi ya da Friday kapandı: soru kaybolmasın, o ana kadarki cevapla birlikte sohbete yazılır.
-            _chats.Append(text, _shown.Length > 0 ? _shown.TrimEnd() + " …" : "(yarıda kesildi)");
+            _chats.Append(heard, _shown.Length > 0 ? _shown.TrimEnd() + " …" : "(yarıda kesildi)");
             throw;
         }
+        finally
+        {
+            changes.Dispose();
+        }
 
+        _lastTurn = new LastTurn(text, quickTool, reply, changes.Entry, DateTime.Now);
         _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {
-            _chats.Append(text, reply);
+            _chats.Append(heard, reply);
         }
 
-        TurnFinished?.Invoke(this, new TurnResult(text, reply));
+        TurnFinished?.Invoke(this, new TurnResult(heard, reply));
         Interlocked.Exchange(ref _turnStart, 0);
 
         if (reply.Length > 0)

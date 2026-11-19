@@ -9,7 +9,15 @@ public static partial class QuickIntents
         UndoRequest().IsMatch(sentence) ? Command("geri_al", ("islem", "geri_al"))
         : RedoRequest().IsMatch(sentence) ? Command("geri_al", ("islem", "geri_getir"))
         : ChangesQuestion().IsMatch(sentence) ? Command("geri_al", ("islem", "liste"))
+        : CorrectionsReset().IsMatch(sentence) ? Command("duzeltme", ("islem", "sifirla"))
+        : CorrectionsList().IsMatch(sentence) ? Command("duzeltme", ("islem", "listele"))
         : null;
+
+    [GeneratedRegex(@"^(?:öğrendiğin |bütün )?düzeltmeleri (?:unut|sıfırla|sil|temizle)$")]
+    private static partial Regex CorrectionsReset();
+
+    [GeneratedRegex(@"^(?:öğrendiğin )?düzeltmeler(?:in)? (?:neler|ne)$|^(?:öğrendiğin )?düzeltmeleri (?:say|söyle|göster)$|^hangi sözleri komut sanmıyorsun$")]
+    private static partial Regex CorrectionsList();
 
     [GeneratedRegex(@"^(?:(?:hayır|yanlış oldu|yanlışlıkla oldu|vazgeçtim|dur),? )?(?:(?:son |az önce |demin |az önceki |deminki )?(?:yaptığını|yaptığın şeyi|yaptığın değişikliği|son işlemi|son değişikliği|eklediğini|kaydettiğini|değiştirdiğini|sildiğini|onu|bunu|şunu|hepsini) )?geri (?:al|alır mısın|alsana|alabilir misin)$")]
     private static partial Regex UndoRequest();
