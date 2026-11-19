@@ -262,6 +262,7 @@ public sealed class FridayAssistant : IDisposable
         };
         _tools.QuietControl = SetQuiet;
         _tools.Announcements = Announced;
+        _tools.MeetingApp = () => _meeting;
         _tools.PomodoroControl = Pomodoro;
         _rhythm.FocusInsight = FocusInsight;
         _rhythm.Changed += (_, _) => FollowFocusSound();
@@ -1096,7 +1097,8 @@ public sealed class FridayAssistant : IDisposable
 
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
-        var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))));
+        var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
+            + _tools.Situation(DateTime.Now);
 
         for (var round = 0; round <= maxRounds; round++)
         {

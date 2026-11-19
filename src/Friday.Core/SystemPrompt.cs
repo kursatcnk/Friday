@@ -76,7 +76,7 @@ public static class SystemPrompt
 
         // Yalnızca tarih: dakika yazılsaydı talimat her dakika değişir ve Ollama'nın ~2000 belirteçlik önbelleği
         // boşa giderdi (~0,6 sn). Saat sorulursa saat_ve_tarih aracı kullanılır.
-        prompt.Append(CultureInfo.InvariantCulture, $"Bugün: {now.ToString("d MMMM yyyy dddd", Turkish)}. Saati söylemen gerekirse saat_ve_tarih aracını kullan.");
+        prompt.Append(CultureInfo.InvariantCulture, $"Bugün: {now.ToString("d MMMM yyyy dddd", Turkish)}. Mesajın sonundaki [Durum: …] satırı o anki saati, açık işleri, sıradaki hatırlatmayı ve odak durumunu gösterir: saat için araç çağırma, buna bak; yalnızca soruyla ilgiliyse kullan, kendiliğinden sayma.");
         return prompt.ToString();
     }
 
