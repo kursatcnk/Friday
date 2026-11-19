@@ -45,6 +45,9 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Metin kısaltmaları** | "İmza kısaltması: Saygılarımla, …" ya da bir metni kopyalayıp "panodakini adres olarak kaydet"; sonra "imzamı yaz", "adresimi yapıştır" deyince açık pencereye yazılır. Ayarlardan da düzenlenir. |
 | **Gün sonu sorusu** | Akşam 21.30–23.00 arası bir kez "Günün nasıl geçti?" diye sorar; cevabı günlüğe yazar, söz ettiğin alışkanlıkları işaretler. "Şimdi değil" demen yeter; "günümü yazalım" ile istediğin an. |
 | **Ayarlarda arama** | Ayarlar sayfasının üstündeki kutuya "ses", "görüşme", "yedek" yaz; yalnızca eşleşen kartlar kalır. |
+| **Şimdi ne yapayım?** | Geciken ve bugün teslim işlere, uzun süredir mola verilmemesine, ödeme gününe, serisi bozulacak alışkanlığa, gün planına ve bekleyen kelimelere bakıp tek bir öneri verir. Dil modeli kullanmaz. |
+| **Haftalık hedefli alışkanlıklar** | "Haftada 3 kez spor alışkanlığı ekle": seri hafta hafta sayılır, kartta "bu hafta 2/3" görünür; yalnızca o hafta hedefe yetişmek için gün kalmadıysa hatırlatır. |
+| **Fişten harcama ve ay sonu tahmini** | Fişin ekran alıntısını kopyala, "panodaki fişi harcamaya ekle" de: toplam ve mağaza yerel görme modeliyle okunur. Aylık özet bu gidişle ay sonunda ne kadar harcanacağını ve bütçenin aşılıp aşılmayacağını söyler. |
 | **Son tarihli işler** | "Yapılacaklara ekle: cumaya kadar raporu bitir", "yarın bankaya git", "acil: faturayı öde". İşler son tarihe ve öneme göre sıralanır; kartta "Bugün", "Yarın", "Gecikti" rozeti görünür. Sabah son günü gelenler, akşam yarın teslim edilecekler söylenir. |
 | **Günün planı kartı** | Bugün ekranında takvim, işler ve alışkanlıklar saat saat; şu anki blok vurgulanır, 5 dakikada bir ve her değişiklikte yenilenir. |
 | **Her yerde arama** | "Her yerde kira ara", "doktor hakkında ne kaydetmiştim": notlar, günlük, işler, listeler, hafıza, harcamalar, sabit giderler, alışkanlıklar, kısaltmalar ve sohbetler bir arada taranır. |
@@ -190,6 +193,12 @@ Günlük komutların çoğu kalıptır ve dil modeline hiç gitmez: saat ve tari
 | "Dolar kaç lira?" | 9 sn'ye kadar | 0,2–0,5 sn |
 | "Bana kısa bir espri yap." | 2,3 sn | 0,3 sn (model hazırken) |
 | "Yarın 9'da doktoru hatırlat" · "345 çarpı 12" · "yılbaşına kaç gün kaldı" | modele gidiyordu | 0,0–0,1 sn |
+
+### Dil modeline giden istek (v0.14)
+
+- **Araç yönlendirme:** 76 aracın tanımı ~4.100 belirteç ediyor ve her yeni soruda baştan işleniyordu (12B modelde ~1,1 sn, 8192'lik bağlamın yarısı). Artık her soruya 14 araçlık sabit bir çekirdek, konuya göre ilgili araçlar ve son turlarda kullanılanlar gider; çok adımlı görevlerde hepsi. Çekirdekle istem ~1.470 belirteç ve Ollama'nın önek önbelleği devreye giriyor: ~85 ms.
+- **Önbellek ısıtma:** Model yüklenince sistem talimatı ve çekirdek araçlar bir kez işletilir; günün ilk sorusu da önbellekten başlar.
+- **Düşünme yalnızca gerektiğinde:** Soru işareti tek başına düşünmeyi açmıyor; "kaç", "ne zaman", "kim", "fiyat" gibi kesin bilgi isteyen sorularda açılıyor. Açıklama sorularında ilk cümle ~6,5 sn'den ~0,6–1 sn'ye indi.
 
 ## Bellek ve ekran kartı
 

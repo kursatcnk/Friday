@@ -29,7 +29,7 @@ public sealed partial class PanelViewModel
         "Günümü planla", "İnternetim nasıl", "Bu ay ne kadar harcadım", "Harcamaları Excel'e aktar", "Sabit giderlerim",
         "Alışkanlıklarım nasıl gidiyor", "Kelime çalışalım", "Kaç kelime biliyorum", "Yaklaşan özel günler", "Kısaltmalarım",
         "Panodaki resmi oku", "Hangi uygulamalar ses çıkarıyor", "Süre sınırlarım", "Döviz alarmlarım", "Günümü yazalım",
-        "Haftalık raporu kaydet", "Ben yokken ne dedin", "Ekrandaki yazıyı kopyala", "Panodakini yapılacaklara ekle", "Kopyaladığımı not al"
+        "Haftalık raporu kaydet", "Ben yokken ne dedin", "Şimdi ne yapayım", "Panodaki fişi harcamaya ekle", "Ekrandaki yazıyı kopyala", "Panodakini yapılacaklara ekle", "Kopyaladığımı not al"
     ];
 
     public ObservableCollection<PaletteItem> PaletteResults { get; } = [];
