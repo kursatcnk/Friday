@@ -282,6 +282,35 @@ public sealed partial class AssistantTools(
              ("kategori", "string", "Özet için kategori ya da sözcük, ör. market", false)]),
     ];
 
+    private readonly Dictionary<string, JsonArray> _toolSets = new(StringComparer.Ordinal);
+
+    /// <summary>Soru için gönderilecek araç tanımları (bkz. <see cref="ToolRouter"/>); aynı küme tekrar kurulmaz.</summary>
+    public JsonArray DefinitionsFor(string question, bool everything, IEnumerable<string>? recent = null)
+    {
+        if (ToolRouter.Select(question, everything, recent) is not { } names)
+        {
+            return Definitions;
+        }
+
+        var key = string.Join(',', names.Order(StringComparer.Ordinal));
+        lock (_toolSets)
+        {
+            if (_toolSets.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
+            var subset = new JsonArray([.. Definitions.Where(node => node?["function"]?["name"]?.GetValue<string>() is { } name && names.Contains(name)).Select(node => node!.DeepClone())]);
+            if (_toolSets.Count > 64)
+            {
+                _toolSets.Clear();
+            }
+
+            _toolSets[key] = subset;
+            return subset;
+        }
+    }
+
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
         try

@@ -1089,7 +1089,8 @@ public sealed class FridayAssistant : IDisposable
             var content = new StringBuilder();
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
-            var tools = round < maxRounds ? _tools.Definitions : [];
+            // Araç tanımları her soruda baştan işlenir (~4.100 belirteç, ~1,1 sn); soruya göre gereken alt küme gönderilir.
+            var tools = round < maxRounds ? _tools.DefinitionsFor(question, multiStep, RecentTools()) : [];
             // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
             // kadar ekliyordu. Kesin bilgi isteyen sorularda düşünme kalır: yoksa model aracı atlayıp sayı uydurabiliyor.
             // Küçük model düşünmeden aracı çağırmak yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
@@ -1168,6 +1169,7 @@ public sealed class FridayAssistant : IDisposable
                     Say(Fillers[Random.Shared.Next(Fillers.Length)]);
                 }
 
+                RememberTool(call.Name);
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
                 if (result.Length > 7500)
                 {
@@ -1346,6 +1348,34 @@ public sealed class FridayAssistant : IDisposable
     }
 
     private DateOnly _celebrated;
+
+    private readonly Queue<(DateTime At, string Name)> _recentTools = new();
+
+    /// <summary>Son 10 dakikada kullanılan araçlar ("onu da ekle" gibi devam sorularında yine gönderilir).</summary>
+    private IReadOnlyList<string> RecentTools()
+    {
+        lock (_recentTools)
+        {
+            while (_recentTools.Count > 0 && DateTime.Now - _recentTools.Peek().At > TimeSpan.FromMinutes(10))
+            {
+                _recentTools.Dequeue();
+            }
+
+            return [.. _recentTools.Select(item => item.Name).Distinct()];
+        }
+    }
+
+    private void RememberTool(string name)
+    {
+        lock (_recentTools)
+        {
+            _recentTools.Enqueue((DateTime.Now, name));
+            while (_recentTools.Count > 8)
+            {
+                _recentTools.Dequeue();
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- pomodoro
 
