@@ -63,28 +63,6 @@ public sealed partial class AssistantTools
         }
     }
 
-    /// <summary>Sabah karşılamasına bugün ve yarın ödenecek sabit giderler.</summary>
-    private void BillsMorning(List<string> parts, DateTime now)
-    {
-        if (Expenses is not { } book)
-        {
-            return;
-        }
-
-        var today = DateOnly.FromDateTime(now);
-        var dueToday = book.DueOn(today);
-        if (dueToday.Count > 0)
-        {
-            parts.Add($"Bugün ödeme günü: {TurkishGrammar.Join([.. dueToday.Select(bill => $"{bill.Name.ToLower(Turkish)} {ExpenseBook.Spoken(bill.Amount)}")])}. Ödeyince söyle, harcamalara işlerim.");
-        }
-
-        var dueTomorrow = book.DueOn(today.AddDays(1));
-        if (dueTomorrow.Count > 0)
-        {
-            parts.Add($"Yarın {TurkishGrammar.Join([.. dueTomorrow.Select(bill => bill.Name.ToLower(Turkish))])} ödenecek.");
-        }
-    }
-
     private static string DaySuffix(int day) => (day % 10) switch
     {
         1 or 5 or 8 => "i",

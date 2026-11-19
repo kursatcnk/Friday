@@ -265,7 +265,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Günün planı: takvim, işler ve alışkanlıklar saat saat (dil modelsiz, anında). -->
-                            <Border local:CardFlowPanel.Key="plan" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="plan" Style="{StaticResource Card}" Visibility="{Binding HasPlan, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Günün planı" Style="{StaticResource SectionTitle}"/>
@@ -410,7 +410,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Alışkanlıklar: bugünün işareti, son 7 gün ve seri. -->
-                            <Border local:CardFlowPanel.Key="habits" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="habits" Style="{StaticResource Card}" Visibility="{Binding HasHabits, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Alışkanlıklar" Style="{StaticResource SectionTitle}"/>
@@ -493,7 +493,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Harcamalar: bu ayın toplamı, bütçe ve kategoriler. -->
-                            <Border local:CardFlowPanel.Key="spending" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="spending" Style="{StaticResource Card}" Visibility="{Binding ShowSpendingCard, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Harcamalar" Style="{StaticResource SectionTitle}"/>
@@ -591,7 +591,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Kelime pratiği: bugün bekleyen tekrarlar ve öğrenilenler. -->
-                            <Border local:CardFlowPanel.Key="vocabulary" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="vocabulary" Style="{StaticResource Card}" Visibility="{Binding HasVocabulary, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Kelime pratiği" Style="{StaticResource SectionTitle}"/>

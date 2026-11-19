@@ -46,10 +46,12 @@ public sealed partial class AssistantTools
                 : $"Bugün {habit.Name.ToLower(Turkish)} için hâlâ vakit var."));
         }
 
-        var block = DayPlanner.Plan(now, [], open.Select(item => item.Text), habits.Select(item => item.Name)).FirstOrDefault(item => item.Kind is PlanKind.Focus or PlanKind.Habit);
+        var block = DayPlanner.Plan(now, [], open.Select(item => item.Text), habits.Select(item => item.Name)).FirstOrDefault(item => item.Kind is PlanKind.Focus or PlanKind.Errand or PlanKind.Habit);
         if (block is not null && open.Count > 0)
         {
-            ideas.Add((60, $"\"{block.Title}\" ile başla; 45 dakikalık bir odak bloğu yeter. Hazırsan \"{block.Title.ToLower(Turkish)} işine odaklan\" de."));
+            ideas.Add((60, block.Kind == PlanKind.Errand
+                ? $"\"{block.Title}\" ile başla; kısa bir iş, hemen bitirip listeden düşersin."
+                : $"\"{block.Title}\" ile başla; 45 dakikalık bir odak bloğu yeter. Hazırsan \"{block.Title.ToLower(Turkish)} işine odaklan\" de."));
         }
 
         if (Vocabulary is { Started: true } deck && deck.Stats(today).Waiting is > 0 and var waiting)

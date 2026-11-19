@@ -273,9 +273,16 @@
                         <TextBlock Text="Akıllı yardımcılar" Style="{StaticResource SectionTitle}" Margin="0,0,0,14"/>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HabitSuggestionsEnabled}" Margin="0,0,0,14">
                             <StackPanel>
-                                <TextBlock Text="Alışkanlık önerileri" FontWeight="SemiBold"/>
+                                <TextBlock Text="Rutin ve uygulama önerileri" FontWeight="SemiBold"/>
                                 <TextBlock Style="{StaticResource Hint}"
                                            Text="Birkaç gündür aynı saatlerde açtığın bir rutini ya da uygulamayı o saat gelince önerir: &quot;Genelde bu saatte çalışma modunu açıyorsun, açayım mı?&quot;"/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HabitReminders}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Alışkanlık hatırlatmaları" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="Takip ettiğin bir alışkanlığın serisi bozulmak üzereyse (haftalık hedefte, yetişmek için gün kalmadıysa) akşam 20.00 civarı bir kez söyler."/>
                             </StackPanel>
                         </CheckBox>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding MeetingQuiet}" Margin="0,0,0,14">

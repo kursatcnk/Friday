@@ -38,6 +38,16 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _habitSummary = "";
 
+    /// <summary>Kartlar yalnızca kullanılınca görünür: alışkanlığı, harcaması ya da kelime destesi olmayana boş kart gösterilmez.</summary>
+    [ObservableProperty]
+    private bool _hasHabits;
+
+    [ObservableProperty]
+    private bool _showSpendingCard;
+
+    [ObservableProperty]
+    private bool _hasVocabulary;
+
     [ObservableProperty]
     private string _spendingTotal = "0 TL";
 
@@ -71,8 +81,20 @@ public sealed partial class PanelViewModel
         var parts = new List<string>();
         if (open.Count > 0)
         {
-            var urgent = open.Count(item => item.Due is { } due && due <= today.AddDays(1));
-            parts.Add($"{open.Count} iş" + (urgent > 0 ? $" ({urgent} tanesi acil)" : ""));
+            var late = open.Count(item => item.Due < today);
+            var dueToday = open.Count(item => item.Due == today);
+            var notes = new List<string>();
+            if (late > 0)
+            {
+                notes.Add($"{late} gecikmiş");
+            }
+
+            if (dueToday > 0)
+            {
+                notes.Add($"{dueToday} bugün");
+            }
+
+            parts.Add($"{open.Count} iş" + (notes.Count > 0 ? $" ({string.Join(", ", notes)})" : ""));
         }
 
         if (pending.Count > 0)
@@ -105,7 +127,7 @@ public sealed partial class PanelViewModel
     {
         PlanRows.Clear();
         var visible = blocks.Where(block => block.Kind != PlanKind.Break && block.End > now).Take(7).ToList();
-        HasPlan = visible.Any(block => block.Kind is PlanKind.Focus or PlanKind.Habit);
+        HasPlan = visible.Any(block => block.Kind is PlanKind.Focus or PlanKind.Errand or PlanKind.Habit);
         if (!HasPlan)
         {
             PlanSummary = "";
@@ -138,6 +160,7 @@ public sealed partial class PanelViewModel
             HabitRows.Add(new HabitView(habit.Name, detail, habit.IsDoneOn(today), week));
         }
 
+        HasHabits = habits.Count > 0;
         var done = habits.Count(habit => habit.IsDoneOn(today));
         HabitSummary = habits.Count == 0 ? "" : done == habits.Count ? "Bugün hepsi tamam" : $"Bugün {done}/{habits.Count}";
     }
@@ -167,6 +190,7 @@ public sealed partial class PanelViewModel
         SpendingCaption = $"{now.ToString("MMMM", TurkishCulture)} · {summary.Count} harcama";
         var budget = book.MonthlyBudget;
         HasBudget = budget > 0;
+        ShowSpendingCard = book.Items.Count > 0 || budget > 0 || book.Bills.Count > 0;
         BudgetFraction = budget > 0 ? (double)Math.Min(1, summary.Total / budget) : 0;
         IsOverBudget = budget > 0 && summary.Total > budget;
         BudgetText = budget <= 0
@@ -211,6 +235,7 @@ public sealed partial class PanelViewModel
 
     public void ShowVocabulary(DeckStats stats, bool started)
     {
+        HasVocabulary = started;
         if (!started)
         {
             VocabularyDue = "110";

@@ -146,24 +146,6 @@ public sealed partial class AssistantTools
         return new QuickReply($"Desteye ekledim: {card.Front}, {card.Back}. Sıradaki çalışmada sorarım.");
     }
 
-    /// <summary>Sabah karşılamasına günün kelimesi: öğrenilmekte olan (kutu 1–2) kartlardan, her gün başka biri.</summary>
-    private void WordOfTheDay(List<string> parts, DateTime now)
-    {
-        if (Vocabulary is not { Started: true } deck)
-        {
-            return;
-        }
-
-        var learning = deck.Cards.Where(card => card.Box is >= 1 and <= 3).ToList();
-        if (learning.Count == 0)
-        {
-            return;
-        }
-
-        var card = learning[DateOnly.FromDateTime(now).DayNumber % learning.Count];
-        parts.Add($"Günün kelimesi: {card.Front}, yani {card.Back.Split(',')[0].Trim()}.");
-    }
-
     // ---------- Ekrandaki yazı ve panodan kaydetme ----------
 
     private async Task<QuickReply> ScreenTextAsync(CancellationToken cancellationToken)

@@ -118,6 +118,9 @@ public sealed partial class PanelViewModel
     private bool _meetingQuiet = true;
 
     [ObservableProperty]
+    private bool _habitReminders = true;
+
+    [ObservableProperty]
     private bool _journalPrompt = true;
 
     [ObservableProperty]
@@ -461,6 +464,7 @@ public sealed partial class PanelViewModel
         _settings.OllamaModel = BrainSmart && _actions.SmartModelInstalled ? FridaySettings.SmartTextModel : FridaySettings.FastTextModel;
         _settings.HabitSuggestions = HabitSuggestionsEnabled;
         _settings.MeetingQuiet = MeetingQuiet;
+        _settings.HabitReminders = HabitReminders;
         _settings.JournalPrompt = JournalPrompt;
         _settings.MeetingNotes = MeetingNotes;
         _settings.Snippets = ParseSnippets();
@@ -570,6 +574,7 @@ public sealed partial class PanelViewModel
         BrainFast = !BrainSmart;
         HabitSuggestionsEnabled = _settings.HabitSuggestions;
         MeetingQuiet = _settings.MeetingQuiet;
+        HabitReminders = _settings.HabitReminders;
         JournalPrompt = _settings.JournalPrompt;
         MeetingNotes = _settings.MeetingNotes;
         ReloadSnippets();

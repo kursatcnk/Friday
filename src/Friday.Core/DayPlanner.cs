@@ -16,6 +16,9 @@ public enum PlanKind
     /// <summary>Bugün henüz yapılmamış bir alışkanlık.</summary>
     Habit,
 
+    /// <summary>Kısa bir iş ("süt al", "annemi ara"): odak bloğu gerekmez.</summary>
+    Errand,
+
     /// <summary>Öğle ya da akşam yemeği.</summary>
     Meal
 }
@@ -63,16 +66,25 @@ public static class DayPlanner
 
         var cursor = start;
         var focusCount = 0;
-        foreach (var todo in todos.Where(text => text.Trim().Length > 0).Take(maxFocus))
+        foreach (var todo in todos.Where(text => text.Trim().Length > 0).Take(maxFocus + 3))
         {
-            if (Place(blocks, ref cursor, end, TimeSpan.FromMinutes(focusMinutes), todo.Trim(), PlanKind.Focus) is null)
+            var errand = IsErrand(todo);
+            if (!errand && focusCount >= maxFocus)
+            {
+                continue;
+            }
+
+            if (Place(blocks, ref cursor, end, TimeSpan.FromMinutes(errand ? 15 : focusMinutes), todo.Trim(), errand ? PlanKind.Errand : PlanKind.Focus) is null)
             {
                 break;
             }
 
-            focusCount++;
-            var rest = focusCount % 2 == 0 ? 15 : 10;
-            Place(blocks, ref cursor, end, TimeSpan.FromMinutes(rest), "Mola", PlanKind.Break, mustFollow: true);
+            if (!errand)
+            {
+                focusCount++;
+                var rest = focusCount % 2 == 0 ? 15 : 10;
+                Place(blocks, ref cursor, end, TimeSpan.FromMinutes(rest), "Mola", PlanKind.Break, mustFollow: true);
+            }
         }
 
         // Alışkanlıklar günün ikinci yarısına (17.00 sonrası, ya da şimdiden sonra) konur.
@@ -102,6 +114,14 @@ public static class DayPlanner
             .Select(block => $"{block.Start.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.TimeSuffix(block.Start)} {Spoken(block)}")
             .ToList();
         return TurkishGrammar.Join(important);
+    }
+
+    /// <summary>Türkçede fiil sondadır: "süt al", "annemi ara", "faturayı öde" kısa işlerdir; "raporu bitir" değildir.</summary>
+    public static bool IsErrand(string todo)
+    {
+        var last = todo.Trim().TrimEnd('.', '!').Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.ToLower(Turkish) ?? "";
+        return last is "al" or "ara" or "öde" or "gönder" or "yatır" or "at" or "sor" or "ayarla" or "iade" or "kargola" or "imzala" or "onayla"
+            or "götür" or "getir" or "bırak" or "uğra" or "yenile" or "iptal" or "rezervasyon" or "randevu" or "hatırlat" or "söyle" or "yolla" or "çek";
     }
 
     private static string Spoken(PlanBlock block) => block.Kind switch

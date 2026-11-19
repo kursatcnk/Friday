@@ -113,7 +113,7 @@ public sealed partial class App : Application, IDisposable
         }
 
         // Kısaltma kısayolu: imleçten önceki sözcük bir kısaltmanın adıysa yerine metni yazılır.
-        if (_tools is { } tools && _settings.SnippetHotkey.Length > 0)
+        if (_tools is { } tools && _settings.SnippetHotkey.Length > 0 && _settings.Snippets.Count > 0)
         {
             var expand = new GlobalHotkey(_window, () => _ = tools.ExpandAtCursorAsync(), 0x46FF);
             try

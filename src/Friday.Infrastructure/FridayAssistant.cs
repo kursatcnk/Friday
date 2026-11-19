@@ -1569,6 +1569,17 @@ public sealed class FridayAssistant : IDisposable
     private DateTime _lastEyeBreak = DateTime.Now;
     private DateOnly _weatherWarned;
 
+    private DateTime _lastNudge;
+
+    /// <summary>
+    /// Kendiliğinden yapılan akşam dürtmeleri (son tarih, seri, hava, doğum günü arifesi, günlük sorusu) arasında en az
+    /// 45 dakika olur; hepsi aynı saatte üst üste konuşmaz. Kullanıcının kurduğu uyarılar (kur alarmı, süre sınırı, uyku
+    /// saati, hatırlatmalar) bu sınıra takılmaz.
+    /// </summary>
+    private bool CanNudge(DateTime now) => now - _lastNudge >= TimeSpan.FromMinutes(45);
+
+    private void Nudged(DateTime now) => _lastNudge = now;
+
     private async Task CareTickAsync()
     {
         try
@@ -1622,41 +1633,46 @@ public sealed class FridayAssistant : IDisposable
             }
 
             // Yarın bir doğum günü ya da yıldönümü varsa akşam 19.00–21.30 arası bir kez sorulur.
-            if (!Muted && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
+            if (!Muted && CanNudge(now) && now.Hour is >= 19 and <= 21 && (now.Hour < 21 || now.Minute < 30) && _tools.EveReminder(now) is { } eve)
             {
+                Nudged(now);
                 Announce([new CoachStep(eve)], listenAfter: true);
                 return;
             }
 
             // Son tarih: yarın teslim edilecek işler akşam 18.00–21.30 arası bir kez söylenir.
-            if (!Muted && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.DeadlineNudge(now) is { } deadline)
+            if (!Muted && CanNudge(now) && now.Hour is >= 18 and <= 21 && (now.Hour < 21 || now.Minute < 30) && !_rhythm.Snapshot().IsAway && _tools.DeadlineNudge(now) is { } deadline)
             {
+                Nudged(now);
                 Announce(deadline);
                 return;
             }
 
             // Seri koruma: 20.00–21.30 arası, serisi olan bir alışkanlık bugün yapılmadıysa bir kez hatırlatılır.
-            if (!Muted && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.StreakNudge(now) is { } nudge)
+            if (!Muted && CanNudge(now) && (now.Hour == 20 || (now.Hour == 21 && now.Minute < 30)) && !_rhythm.Snapshot().IsAway && _tools.StreakNudge(now) is { } nudge)
             {
+                Nudged(now);
                 Announce(nudge);
                 return;
             }
 
             // Gün sonu günlük sorusu: 21.30–23.00 arası, bilgisayar başındayken, günde bir kez.
-            if (!Muted && (now.Hour == 22 || (now.Hour == 21 && now.Minute >= 30)) && !_rhythm.Snapshot().IsAway && !FullScreenDetector.IsBusy()
+            if (!Muted && CanNudge(now) && (now.Hour == 22 || (now.Hour == 21 && now.Minute >= 30)) && !_rhythm.Snapshot().IsAway && !FullScreenDetector.IsBusy()
                 && _tools.JournalQuestion(now) is { } journal)
             {
+                Nudged(now);
                 Announce([new CoachStep(journal)], listenAfter: true);
                 return;
             }
 
             // Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.
-            if (_settings.WeatherAlerts && !Muted && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
+            if (_settings.WeatherAlerts && !Muted && CanNudge(now) && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
                 && _weatherWarned != DateOnly.FromDateTime(now))
             {
                 _weatherWarned = DateOnly.FromDateTime(now);
                 if (await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false) is { } alert)
                 {
+                    Nudged(now);
                     Announce(alert);
                 }
             }

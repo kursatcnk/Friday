@@ -55,14 +55,14 @@ public sealed partial class AssistantTools
 
         ShowListCard("Bugünün planı", "", plan.Where(block => block.Kind != PlanKind.Break).Take(MaxCardRows + 2)
             .Select(block => new CardRow($"{block.Start:HH:mm}–{block.End:HH:mm}", block.Kind == PlanKind.Focus ? $"Odak: {block.Title}" : block.Title)));
-        var focus = plan.Where(block => block.Kind is PlanKind.Focus or PlanKind.Habit).ToList();
+        var focus = plan.Where(block => block.Kind is PlanKind.Focus or PlanKind.Errand or PlanKind.Habit).ToList();
         if (focus.Count > 0)
         {
             Ask("Gün planı", _ =>
             {
                 foreach (var block in focus)
                 {
-                    reminders.Add(block.Start, block.Kind == PlanKind.Focus ? $"plana göre şimdi {block.Title.ToLower(Turkish)} zamanı" : $"{block.Title.ToLower(Turkish)} zamanı", DateTime.Now);
+                    reminders.Add(block.Start, block.Kind is PlanKind.Focus or PlanKind.Errand ? $"plana göre şimdi {block.Title.ToLower(Turkish)} zamanı" : $"{block.Title.ToLower(Turkish)} zamanı", DateTime.Now);
                 }
 
                 EnsureReminderClock();

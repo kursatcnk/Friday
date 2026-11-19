@@ -357,7 +357,7 @@ public sealed partial class AssistantTools
     public string? StreakNudge(DateTime now)
     {
         var today = DateOnly.FromDateTime(now);
-        if (!Settings.HabitSuggestions || HabitBook is not { } book || _streakNudged == today)
+        if (!Settings.HabitReminders || HabitBook is not { } book || _streakNudged == today)
         {
             return null;
         }
@@ -423,48 +423,6 @@ public sealed partial class AssistantTools
         }
     }
 
-    /// <summary>Sabah karşılamasına: bugünün alışkanlıkları ve bütçe durumu.</summary>
-    private void LifeMorning(List<string> parts, DateTime now)
-    {
-        var today = DateOnly.FromDateTime(now);
-        if (HabitBook is { } book && book.Habits.Count > 0)
-        {
-            var streaks = book.Habits.Where(habit => !habit.IsWeekly).Select(habit => (habit.Name, Streak: HabitBook.Streak(habit, today))).Where(item => item.Streak >= 3).ToList();
-            parts.Add(streaks.Count > 0
-                ? $"Bugün {book.Habits.Count} alışkanlığın var; {streaks[0].Name.ToLower(Turkish)} serin {streaks[0].Streak} gün, bozma."
-                : $"Bugün takip ettiğin {book.Habits.Count} alışkanlık var.");
-        }
-
-        // Ayın ilk günü: geçen ayın harcama özeti.
-        if (now.Day == 1 && Expenses is { } ledgerBook)
-        {
-            var (from, to, _) = ExpenseBook.Period("gecen_ay", now);
-            var last = ledgerBook.Summary(from, to);
-            if (last.Count > 0)
-            {
-                parts.Add($"Geçen ay toplam {ExpenseBook.Spoken(last.Total)} harcadın; en çok {last.Categories[0].Category.ToLower(Turkish)}, {ExpenseBook.Spoken(last.Categories[0].Amount)}.");
-            }
-        }
-
-        if (Vocabulary is { Started: true } deck && deck.Stats(today).DueToday is > 0 and var due)
-        {
-            parts.Add($"Bugün {due} kelime tekrar bekliyor.");
-        }
-
-        BillsMorning(parts, now);
-        WordOfTheDay(parts, now);
-
-        if (Expenses is { MonthlyBudget: > 0 } expenses)
-        {
-            var spent = MonthTotal(expenses, now);
-            if (spent > expenses.MonthlyBudget * 0.8m)
-            {
-                parts.Add(spent > expenses.MonthlyBudget
-                    ? $"Bu ay bütçeyi {ExpenseBook.Spoken(spent - expenses.MonthlyBudget)} aştın."
-                    : $"Bu ay bütçende {ExpenseBook.Spoken(expenses.MonthlyBudget - spent)} kaldı.");
-            }
-        }
-    }
 }
 
 /// <summary>Küçük metin yardımcıları.</summary>

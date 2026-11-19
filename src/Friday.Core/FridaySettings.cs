@@ -23,6 +23,9 @@ public sealed class FridaySettings
     /// <summary>Başka bir uygulama mikrofonu kullanınca (görüşme) rahatsız etme açılır, uyandırma kelimesi duraklar.</summary>
     public bool MeetingQuiet { get; set; } = true;
 
+    /// <summary>Takip edilen alışkanlığın serisi (ya da haftalık hedefi) tehlikedeyse akşam bir kez hatırlatılır.</summary>
+    public bool HabitReminders { get; set; } = true;
+
     /// <summary>Akşam 21.30–23.00 arası bir kez "Günün nasıl geçti?" diye sorulur, cevap günlüğe yazılır.</summary>
     public bool JournalPrompt { get; set; } = true;
 
