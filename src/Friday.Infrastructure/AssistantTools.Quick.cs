@@ -465,6 +465,25 @@ public sealed partial class AssistantTools
             }
         }
 
+        // Günün işi: bekleyen işler, okuma listesi, odak hedefi ve seri.
+        if (Todos is { } todos && todos.Open.Count > 0)
+        {
+            parts.Add(todos.Open.Count == 1 ? $"Bekleyen bir işin var: {todos.Open[0].Text}." : $"{todos.Open.Count} bekleyen işin var; ilki {todos.Open[0].Text}.");
+        }
+
+        if (Lists?.Items("okuma listesi").Count is > 0 and var reading)
+        {
+            parts.Add($"Okuma listende {reading} sayfa bekliyor.");
+        }
+
+        if (Rhythm is { } rhythm && Settings.FocusGoalMinutes > 0)
+        {
+            var streak = RhythmGoal.Streak(rhythm.History(30), Settings.FocusGoalMinutes);
+            parts.Add(streak > 1
+                ? $"{streak} gündür odak hedefini tutturuyorsun; bugünkü hedef {TurkishGrammar.Duration(Settings.FocusGoalMinutes)}."
+                : $"Bugünkü odak hedefin {TurkishGrammar.Duration(Settings.FocusGoalMinutes)}.");
+        }
+
         return string.Join(" ", parts);
     }
 

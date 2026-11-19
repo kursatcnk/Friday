@@ -730,5 +730,37 @@
                 <local:SettingsPage x:Name="SettingsView" Visibility="{Binding IsSettings, Converter={StaticResource Visible}}"/>
             </Grid>
         </Grid>
+
+        <!-- ================= Komut paleti (Ctrl+K) ================= -->
+        <Grid Grid.ColumnSpan="2" Visibility="{Binding IsPaletteOpen, Converter={StaticResource Visible}}" Background="#99000000" MouseDown="OnPaletteBackdrop">
+            <Border Style="{StaticResource Card}" Width="640" VerticalAlignment="Top" Margin="0,90,0,0" Padding="14" MouseDown="OnPaletteCard">
+                <StackPanel>
+                    <Grid Margin="4,0,4,10">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="14" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                        <TextBox x:Name="PaletteBox" Margin="26,0,0,0" FontSize="15" BorderThickness="0" Background="Transparent"
+                                 Text="{Binding PaletteQuery, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="OnPaletteKey"/>
+                    </Grid>
+                    <ListBox ItemsSource="{Binding PaletteResults}" SelectedItem="{Binding SelectedPaletteItem}" Background="Transparent" BorderThickness="0"
+                             MaxHeight="420" ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="OnPaletteClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="2,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource AccentBrush}"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Style="{StaticResource Caption}" Margin="4,8,4,0" Text="↑ ↓ seç · Enter çalıştır · Esc kapat · eşleşme yoksa Friday'e sorulur"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

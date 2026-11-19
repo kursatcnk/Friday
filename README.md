@@ -35,6 +35,16 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Odak özeti** | Odak oturumu bitince o sürede en çok hangi uygulamaların açık olduğu söylenir; dikkat dağıtan sitelerin payı büyükse nazikçe belirtilir (ekran süresi açıkken). |
 | **Günlük odak hedefi ve seri** | Ritim ekranında günlük odak hedefi (1–5 saat) ilerleme çubuğuyla görünür; kaç gündür üst üste tutturduğun sayılır, hedefe ulaşınca Friday kutlar. Sesle: "odak hedefim 3 saat", "hedefime ne kadar kaldı". |
 | **Odakta ses ve canlı odak paneli** | Odak başlayınca seçtiğin ortam sesi (yağmur, beyaz/kahverengi gürültü, dalga) açılır, bitince kapanır. Odak sürerken Ritim ekranı o odakta hangi uygulamada ne kadar kaldığını gösterir. İstediğin süreyle odak: "40 dk odak". |
+| **Pomodoro serisi** | "4 pomodoro yap": 25 dk odak + 5 dk mola turları ritim koçunda sayılır, son turdan sonra uzun mola önerilir. "Pomodoroyu durdur". |
+| **20-20-20 göz molası** | Ritim ekranından açılır: 20 dakika aralıksız ekrandaysan (odakta değilken) 20 saniye uzağa bakmanı hatırlatır. |
+| **E-posta taslağı** | "Ahmet'e toplantıyı ertelediğimizi kibarca yazan bir e-posta hazırla": metni Friday yazar, varsayılan e-posta uygulamasında taslak olarak açar ve panoya kopyalar. Göndermek senin elinde. |
+| **Sesli kontrol listeleri** | "Seyahat listesine pasaport, şarj aleti ekle", sonra "seyahat listesini kontrol et": Friday her maddeyi sorar, "tamam" ya da "yok" dersin, sonunda eksikleri söyler; bu sırada dinlemeye devam eder. |
+| **Ruh hali** | "Ruh halim 7", "bugün kendimi yorgun hissediyorum": günlüğe yazılır, haftalık özette ortalaması söylenir. |
+| **Temizlik** | "Geçici dosyaları temizle", "biraz yer aç": bir günden eski geçici dosyaların ve geri dönüşüm kutusunun boyutunu söyler, "evet" deyince temizler. |
+| **Akşam hava uyarısı** | Akşam 20.00 civarı yarın yağmur, aşırı sıcak ya da don bekleniyorsa bir kez söyler. |
+| **Haftalık otomatik yedek** | Haftada bir verilerin yedeği Friday'in diskindeki `Friday-yedekler` klasörüne alınır, son 4 yedek kalır. |
+| **Komut paleti (Ctrl+K)** | Sayfalar, rutinler, sohbetler, notlar, yapılacaklar, hafıza ve sık komutlar tek kutuda aranır; Enter ile çalışır, eşleşme yoksa yazdığın şey Friday'e sorulur. |
+| **Daha dolu sabah karşılaması** | Hava ve takvime ek olarak bekleyen işler, okuma listesi ve bugünkü odak hedefi ile serin. |
 | **Rahatsız etme** | "1 saat rahatsız etme", "yarım saat sessiz ol", tepsi menüsü ya da başlıktaki rozet. Mola ve alışkanlık önerileri, odak hatırlatması ve sabah selamı susar; kurduğun hatırlatmalar yine gelir. |
 | **Görünüm ve kısayollar** | Ayarlar › Görünüm: vurgu rengi (anında uygulanır) ve arayüz boyutu. Ctrl+1…7 sayfalar arasında geçer, Esc düzenlemeyi kapatır. Tepsi menüsünden rutinler tek tıkla çalışır. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
@@ -92,7 +102,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 53 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 58 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼

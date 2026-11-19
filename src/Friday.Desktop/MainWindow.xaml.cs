@@ -43,9 +43,19 @@ public sealed partial class MainWindow : Window, IDisposable
             return;
         }
 
-        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key is >= Key.D1 and <= Key.D7)
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.K)
+        {
+            model.OpenPalette();
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key is >= Key.D1 and <= Key.D7)
         {
             model.ShowPage(e.Key - Key.D0);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && model.IsPaletteOpen)
+        {
+            model.IsPaletteOpen = false;
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && model.IsCustomizingHome)
