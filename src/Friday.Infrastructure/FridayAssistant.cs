@@ -259,6 +259,7 @@ public sealed class FridayAssistant : IDisposable
             }
         };
         _tools.QuietControl = SetQuiet;
+        _tools.PomodoroControl = Pomodoro;
         _rhythm.FocusInsight = FocusInsight;
         _rhythm.Changed += (_, _) => FollowFocusSound();
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
@@ -285,6 +286,8 @@ public sealed class FridayAssistant : IDisposable
         UpdateActivity();
         UpdateDocuments();
         UpdateRemote();
+        _careTimer ??= new Timer(_ => _ = CareTickAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+        _ = AutoBackupAsync();
         if (_settings.OllamaModel != _loadedModel && _brainReady.IsCompleted)
         {
             // Akıl değişti (Hızlı ↔ Akıllı): eski model GPU'dan çıkar, yenisi arkada hazırlanır.
@@ -690,7 +693,7 @@ public sealed class FridayAssistant : IDisposable
                     return;
                 }
 
-                if (_settings.FollowUpSeconds <= 0 || stopListening.IsCancellationRequested || _endConversation)
+                if ((_settings.FollowUpSeconds <= 0 && !_tools.InChecklist) || stopListening.IsCancellationRequested || _endConversation)
                 {
                     _endConversation = false;
                     return;
@@ -718,7 +721,7 @@ public sealed class FridayAssistant : IDisposable
         Report(AssistantState.Listening, (prompt ?? (followUp ? "Devam edebilirsin…" : "Dinliyorum…")) + device);
         AudioCues.PlayListening();
         var opened = Stopwatch.StartNew();
-        var timeout = wait ?? (followUp ? TimeSpan.FromSeconds(_settings.FollowUpSeconds) : FirstListenTimeout);
+        var timeout = wait ?? (followUp ? TimeSpan.FromSeconds(Math.Max(_settings.FollowUpSeconds, _tools.InChecklist ? 12 : 0)) : FirstListenTimeout);
         var recording = await _microphone.RecordAsync(_settings, timeout, stopListening, cancellationToken, _wakeDevice, SpeculateAsync)
             .ConfigureAwait(false);
         var audio = recording.Audio;
@@ -872,7 +875,9 @@ public sealed class FridayAssistant : IDisposable
         }
 
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
-        var command = _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
+        var command = _tools.InChecklist
+            ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
+            : _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
             ? new QuickCommand("onay", new Dictionary<string, string> { ["cevap"] = QuickIntents.IsYes(text) ? "evet" : "hayir" })
             : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
         if (command is { Tool: "sohbet" })
@@ -1325,6 +1330,156 @@ public sealed class FridayAssistant : IDisposable
 
     private DateOnly _celebrated;
 
+    // ---------------------------------------------------------------- pomodoro
+
+    private CancellationTokenSource? _pomodoro;
+
+    /// <summary>Pomodoro serisi: 25 dk odak (ritim koçunda sayılır), 5 dk mola; son turdan sonra uzun mola önerisi. 0 durdurur.</summary>
+    private string Pomodoro(int count)
+    {
+        _pomodoro?.Cancel();
+        _pomodoro = null;
+        if (count <= 0)
+        {
+            _tools.Rhythm?.EndFocus();
+            return "Pomodoro serisini durdurdum.";
+        }
+
+        if (_tools.Rhythm is not { } rhythm)
+        {
+            return "Pomodoro için ritim koçunun açık olması gerekiyor (Ayarlar › Ritim).";
+        }
+
+        var source = _pomodoro = new CancellationTokenSource();
+        rhythm.StartFocus(25);
+        _ = RunPomodoroAsync(rhythm, count, source.Token);
+        return $"{count} pomodoro başladı: 25 dakika odak, 5 dakika mola. İlk tur şimdi.";
+    }
+
+    private async Task RunPomodoroAsync(RhythmCoach rhythm, int count, CancellationToken cancellationToken)
+    {
+        try
+        {
+            for (var round = 1; round <= count; round++)
+            {
+                if (round > 1)
+                {
+                    rhythm.StartFocus(25);
+                    Announce($"Pomodoro {round}/{count}: 25 dakika odak, başla.");
+                }
+
+                // Odak bitişini ritim koçu kendisi söyler (odak özeti ve hedefle birlikte).
+                await Task.Delay(TimeSpan.FromMinutes(25) + TimeSpan.FromSeconds(8), cancellationToken).ConfigureAwait(false);
+                if (round == count)
+                {
+                    break;
+                }
+
+                rhythm.StartBreak();
+                Announce("5 dakika mola: kalk, biraz esne, su iç.");
+                await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken).ConfigureAwait(false);
+                rhythm.EndBreak();
+            }
+
+            Announce($"{count} pomodoro tamam, harika iş! Şimdi 15 dakikalık uzun bir molayı hak ettin.");
+        }
+        catch (OperationCanceledException)
+        {
+            // Durduruldu.
+        }
+    }
+
+    // ---------------------------------------------------------------- dakikalık bakım: göz molası, hava uyarısı
+
+    private Timer? _careTimer;
+    private DateTime _lastEyeBreak = DateTime.Now;
+    private DateOnly _weatherWarned;
+
+    private async Task CareTickAsync()
+    {
+        try
+        {
+            var now = DateTime.Now;
+            lock (_gate)
+            {
+                if (State is not AssistantState.Idle)
+                {
+                    return;
+                }
+            }
+
+            // 20-20-20: 20 dakika aralıksız ekran başında, odakta değilken, tam ekran yokken.
+            if (_settings.EyeBreaks && !Muted && !FullScreenDetector.IsBusy())
+            {
+                var snapshot = _rhythm.Snapshot();
+                var stretch = snapshot.StretchStart is { } start ? now - start : TimeSpan.Zero;
+                var inFocus = snapshot.FocusEnd is { } end && end > now;
+                if (stretch < TimeSpan.FromMinutes(2))
+                {
+                    _lastEyeBreak = now;
+                }
+                else if (!inFocus && now - _lastEyeBreak >= TimeSpan.FromMinutes(20))
+                {
+                    _lastEyeBreak = now;
+                    Announce("Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
+                    return;
+                }
+            }
+
+            // Akşam hava uyarısı: 20.00–21.30 arası, günde bir kez.
+            if (_settings.WeatherAlerts && !Muted && now.Hour is 20 or 21 && (now.Hour < 21 || now.Minute < 30)
+                && _weatherWarned != DateOnly.FromDateTime(now))
+            {
+                _weatherWarned = DateOnly.FromDateTime(now);
+                if (await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false) is { } alert)
+                {
+                    Announce(alert);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or IOException)
+        {
+            FridayLog.Warn($"Bakım: {exception.Message}");
+        }
+    }
+
+    // ---------------------------------------------------------------- haftalık yedek
+
+    /// <summary>Açılıştan 10 dk sonra: son yedek 7 günden eskiyse D:\\Friday-yedekler'e yeni yedek; son 4'ü kalır.</summary>
+    private async Task AutoBackupAsync()
+    {
+        if (!_settings.AutoBackup)
+        {
+            return;
+        }
+
+        await Task.Delay(TimeSpan.FromMinutes(10)).ConfigureAwait(false);
+        try
+        {
+            var folder = Path.Combine(Path.GetPathRoot(_paths.Home)!, "Friday-yedekler");
+            Directory.CreateDirectory(folder);
+            var backups = new DirectoryInfo(folder).GetFiles("friday-yedek-*.zip").OrderByDescending(file => file.LastWriteTime).ToList();
+            if (backups.Count > 0 && DateTime.Now - backups[0].LastWriteTime < TimeSpan.FromDays(7))
+            {
+                return;
+            }
+
+            var zip = Path.Combine(folder, $"friday-yedek-{DateTime.Now:yyyy-MM-dd-HHmm}.zip");
+            var files = await Task.Run(() => DataMaintenance.CreateBackup(_paths.Data, zip)).ConfigureAwait(false);
+            foreach (var old in backups.Skip(3))
+            {
+                old.Delete();
+            }
+
+            _ledger.Record(DataFlow.Local, "Yedek", $"Haftalık yedek alındı: {Path.GetFileName(zip)} ({files} dosya)");
+            FridayLog.Info($"Haftalık yedek: {zip} ({files} dosya)");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            FridayLog.Warn($"Haftalık yedek alınamadı: {exception.Message}");
+        }
+    }
+
     private DateTime? _soundFocus;
 
     /// <summary>Odak başlayınca seçilen ortam sesi açılır, bitince (Friday açtıysa) kapanır.</summary>
@@ -1680,6 +1835,8 @@ public sealed class FridayAssistant : IDisposable
         _habitTimer?.Dispose();
         _routineTimer?.Dispose();
         _activity?.Dispose();
+        _careTimer?.Dispose();
+        _pomodoro?.Cancel();
         _tools.Documents?.Dispose();
         _remote?.Dispose();
         _announcement?.Cancel();

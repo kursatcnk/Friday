@@ -84,6 +84,11 @@ public sealed partial class AssistantTools
             }
         }
 
+        if (Journal is { } journal && JournalStore.MoodAverage(journal.Between(now.Date.AddDays(-6), now)) is { } mood)
+        {
+            parts.Add(string.Create(CultureInfo.GetCultureInfo("tr-TR"), $"Ruh hali ortalaman 10 üzerinden {mood:0.#}."));
+        }
+
         var chats = history.List().Count(chat => chat.Updated >= now.AddDays(-7));
         if (chats > 0)
         {

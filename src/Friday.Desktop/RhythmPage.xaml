@@ -61,6 +61,8 @@
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım" Content="25 dk odak"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="50 dakika odaklanacağım" Content="50 dk odak"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="90 dakika odaklanacağım" Content="90 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="4 pomodoro yap" Content="4 pomodoro"
+                                    ToolTip="25 dk odak + 5 dk mola, dört tur"/>
                             <Border Margin="4" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SurfaceRaisedBrush}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBox Text="{Binding CustomFocusMinutes, UpdateSourceTrigger=PropertyChanged}" Width="44" BorderThickness="0" Background="Transparent"
@@ -128,6 +130,12 @@
                         <TextBlock Text="{Binding StreakText}" Style="{StaticResource Body}" Margin="0,6,0,14" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left"/>
                         <TextBlock Text="Odakta ses" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
                         <ListBox Style="{StaticResource RhythmPills}" ItemsSource="{Binding FocusSoundOptions}" SelectedItem="{Binding SelectedFocusSound}" MaxWidth="300" HorizontalAlignment="Left"/>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding EyeBreaks}" Margin="0,12,0,0" MaxWidth="300" HorizontalAlignment="Left">
+                            <StackPanel>
+                                <TextBlock Text="20-20-20 göz molası" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="20 dakika aralıksız ekrandaysan 20 saniye uzağa bakmanı hatırlatır."/>
+                            </StackPanel>
+                        </CheckBox>
                     </StackPanel>
                 </Grid>
             </Border>

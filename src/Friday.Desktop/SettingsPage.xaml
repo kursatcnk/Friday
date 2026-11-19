@@ -293,6 +293,18 @@
                                 <TextBlock Style="{StaticResource Hint}" Text="Odak oturumundayken YouTube, Netflix, Instagram gibi bir sitede kalırsan Friday bir kez, nazikçe hatırlatır."/>
                             </StackPanel>
                         </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding WeatherAlerts}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Akşam hava uyarısı" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Akşam 20.00 civarı, yarın yağmur, çok sıcak ya da don bekleniyorsa bir kez söyler."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoBackup}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Haftalık otomatik yedek" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Haftada bir verilerin (ayarlar, hafıza, sohbetler, hatırlatmalar) yedeği Friday'in diskindeki Friday-yedekler klasörüne alınır; son 4 yedek kalır."/>
+                            </StackPanel>
+                        </CheckBox>
                     </StackPanel>
                             </Border>
                         </StackPanel>

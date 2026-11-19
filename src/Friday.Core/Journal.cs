@@ -54,6 +54,19 @@ public sealed class JournalStore(string folder)
         return entries;
     }
 
+    /// <summary>"Ruh hali: 7/10" yazılarının ortalaması; yoksa null.</summary>
+    public static double? MoodAverage(IReadOnlyList<(DateTime When, string Text)> entries)
+    {
+        var scores = entries.Select(entry => entry.Text.StartsWith("Ruh hali: ", StringComparison.Ordinal)
+                && int.TryParse(entry.Text.AsSpan(10, Math.Min(2, entry.Text.Length - 10)).TrimEnd('/'), NumberStyles.Integer, CultureInfo.InvariantCulture, out var score)
+                ? score
+                : (int?)null)
+            .Where(score => score is >= 1 and <= 10)
+            .Select(score => score!.Value)
+            .ToList();
+        return scores.Count == 0 ? null : scores.Average();
+    }
+
     /// <summary>"Bugün: 09:30 sunum iyi geçti; 18:10 …"</summary>
     public static string Describe(IReadOnlyList<(DateTime When, string Text)> entries, DateTime now)
     {

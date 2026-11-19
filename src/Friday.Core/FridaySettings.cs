@@ -110,6 +110,15 @@ public sealed class FridaySettings
     /// <summary>Günlük odak hedefi (dakika); Ritim ekranında ilerleme ve seri olarak görünür.</summary>
     public int FocusGoalMinutes { get; set; } = 120;
 
+    /// <summary>Akşam 20.00 civarı, yarın yağmur ya da aşırı sıcak/soğuk bekleniyorsa haber ver.</summary>
+    public bool WeatherAlerts { get; set; } = true;
+
+    /// <summary>20-20-20 göz molası: 20 dakika aralıksız ekran başında kalınca "20 saniye uzağa bak".</summary>
+    public bool EyeBreaks { get; set; }
+
+    /// <summary>Haftada bir verilerin yedeği (D:\\Friday-yedekler, son 4 yedek kalır).</summary>
+    public bool AutoBackup { get; set; } = true;
+
     /// <summary>Odak oturumunda çalan ortam sesi (yagmur, beyaz, kahverengi, dalga); boşsa sessiz.</summary>
     public string FocusSound { get; set; } = "";
 

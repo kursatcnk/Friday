@@ -48,6 +48,12 @@ public sealed partial class PanelViewModel
     private bool _documentMemory = true;
 
     [ObservableProperty]
+    private bool _weatherAlerts = true;
+
+    [ObservableProperty]
+    private bool _autoBackup = true;
+
+    [ObservableProperty]
     private string _documentFoldersText = "";
 
     [ObservableProperty]
@@ -410,6 +416,8 @@ public sealed partial class PanelViewModel
         _settings.AccentColor = Accents.FirstOrDefault(accent => accent.Name == SelectedAccent).Color ?? "#FF8A5B";
         _settings.UiScale = ScaleValue(SelectedScale);
         _settings.DocumentMemory = DocumentMemory;
+        _settings.WeatherAlerts = WeatherAlerts;
+        _settings.AutoBackup = AutoBackup;
         var folders = DocumentFoldersText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         _settings.DocumentFolders = folders.SequenceEqual(Friday.Infrastructure.DocumentLibrary.DefaultFolders(), StringComparer.OrdinalIgnoreCase) ? [] : folders;
         _settings.RemoteAccess = RemoteAccessEnabled;
@@ -505,6 +513,8 @@ public sealed partial class PanelViewModel
         SelectedScale = ScaleName(_settings.UiScale);
         LoadHome();
         DocumentMemory = _settings.DocumentMemory;
+        WeatherAlerts = _settings.WeatherAlerts;
+        AutoBackup = _settings.AutoBackup;
         DocumentFoldersText = string.Join("\n", _settings.DocumentFolders.Count > 0 ? _settings.DocumentFolders : Friday.Infrastructure.DocumentLibrary.DefaultFolders());
         RemoteAccessEnabled = _settings.RemoteAccess;
         UpdateRemoteAddress();

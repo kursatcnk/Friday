@@ -156,6 +156,20 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private bool _showRhythmHelp;
 
+    [ObservableProperty]
+    private bool _eyeBreaks;
+
+    partial void OnEyeBreaksChanged(bool value)
+    {
+        if (_loadingGoal || _settings.EyeBreaks == value)
+        {
+            return;
+        }
+
+        _settings.EyeBreaks = value;
+        _actions.Persist(_settings);
+    }
+
     public IReadOnlyList<string> GoalOptions { get; } = ["1 saat", "2 saat", "3 saat", "4 saat", "5 saat"];
 
     public IReadOnlyList<string> FocusSoundOptions { get; } = ["Sessiz", "Yağmur", "Beyaz gürültü", "Kahverengi gürültü", "Dalga"];
@@ -182,6 +196,7 @@ public sealed partial class PanelViewModel
             "dalga" => "Dalga",
             _ => "Sessiz"
         };
+        EyeBreaks = _settings.EyeBreaks;
         _loadingGoal = false;
         GoalFraction = Math.Clamp(today.FocusMinutes / goal, 0, 1);
         GoalText = $"{RhythmText.Compact(today.FocusMinutes)} / {RhythmText.Compact(goal)} odak · %{Math.Min(100, Math.Round(100 * today.FocusMinutes / goal)):0}";

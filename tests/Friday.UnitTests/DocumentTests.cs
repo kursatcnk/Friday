@@ -326,3 +326,55 @@ public class RhythmGoalTests
     public void AsksForProgress() => Assert.Equal("odak_hedefi", QuickIntents.Match("hedefime ne kadar kaldı")?.Tool);
 }
 
+public class DeepFeatureTests
+{
+    [Theory]
+    [InlineData("4 pomodoro yap", "baslat", "4")]
+    [InlineData("pomodoro serisi başlat", "baslat", "4")]
+    [InlineData("iki pomodoro yapalım", "baslat", "2")]
+    [InlineData("pomodoroyu durdur", "durdur", null)]
+    public void RecognisesPomodoro(string sentence, string action, string? count)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("pomodoro", command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+        if (count is not null)
+        {
+            Assert.Equal(count, command.Arguments["adet"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("ruh halim 7", "7")]
+    [InlineData("bugün kendimi yorgun hissediyorum", "4")]
+    [InlineData("ruh halim çok iyi", "9")]
+    public void RecognisesMood(string sentence, string score)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("ruh_hali", command?.Tool);
+        Assert.Equal(score, command!.Arguments["puan"]);
+    }
+
+    [Theory]
+    [InlineData("geçici dosyaları temizle")]
+    [InlineData("geri dönüşüm kutusunu boşalt")]
+    [InlineData("biraz yer aç")]
+    public void RecognisesCleanup(string sentence) => Assert.Equal("temizlik", QuickIntents.Match(sentence)?.Tool);
+
+    [Fact]
+    public void RecognisesChecklists()
+    {
+        var command = QuickIntents.Match("seyahat listesini kontrol et");
+        Assert.Equal("kontrol_listesi", command?.Tool);
+        Assert.Equal("seyahat", command!.Arguments["ad"]);
+    }
+
+    [Fact]
+    public void MoodAverageReadsJournalLines()
+    {
+        var now = new DateTime(2026, 11, 19, 20, 0, 0);
+        Assert.Equal(6, JournalStore.MoodAverage([(now, "Ruh hali: 8/10"), (now, "Ruh hali: 4/10 (yorgun)"), (now, "Koşuya çıktım")]));
+        Assert.Null(JournalStore.MoodAverage([(now, "Koşuya çıktım")]));
+    }
+}
+
