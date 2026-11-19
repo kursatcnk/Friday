@@ -139,6 +139,8 @@ public class PracticeIntentTests
     [InlineData("tarayıcı", "chrome", true)]
     [InlineData("tarayıcı", "Spotify", false)]
     [InlineData("discord", "Spotify", false)]
+    [InlineData("youtube", "chrome", true)]
+    [InlineData("netflix", "msedge", true)]
     public void MatchesAudioApps(string spoken, string process, bool match) => Assert.Equal(match, AppAudio.Match(spoken)(process));
 }
 

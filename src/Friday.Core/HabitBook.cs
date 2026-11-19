@@ -293,8 +293,16 @@ public sealed class HabitBook
             return common >= Math.Max(3, shorter - 3);
         }
 
+        // Çok sözcüklü alışkanlıkta yalnızca fiilin tutması yetmez: "Kitap okumak" varken "haberleri okudum" kitabı
+        // işaretlememeli. Türkçede fiil sondadır; ondan önceki sözcüklerden (işin adı) biri de geçmeli.
+        static int Score(List<string> name, List<string> said)
+        {
+            var matched = name.Where(word => said.Any(other => Same(word, other))).ToList();
+            return name.Count > 1 && matched.Count > 0 && matched.All(word => word == name[^1]) ? 0 : matched.Count;
+        }
+
         return _habits
-            .Select(habit => (habit, score: Words(habit.Name).Count(word => said.Any(other => Same(word, other)))))
+            .Select(habit => (habit, score: Score(Words(habit.Name), said)))
             .Where(item => item.score > 0)
             .OrderByDescending(item => item.score)
             .Select(item => item.habit)

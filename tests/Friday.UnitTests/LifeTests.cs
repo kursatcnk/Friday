@@ -66,7 +66,9 @@ public class HabitBookTests
 
         Assert.Equal("Spor", book.Find("spora")?.Name);
         Assert.Equal("Kitap okumak", book.Find("kitabımı")?.Name);
-        Assert.Equal("Kitap okumak", book.Find("okudum")?.Name);
+        Assert.Equal("Kitap okumak", book.Find("kitap okudum")?.Name);
+        // Yalnızca fiil tutuyorsa başka bir şey okunmuştur.
+        Assert.Null(book.Find("haberleri okudum"));
         Assert.Equal("Meditasyon", book.Find("meditasyonu")?.Name);
         Assert.Equal("İlaç içmek", book.Find("ilacımı")?.Name);
         Assert.Null(book.Find("bulaşık"));

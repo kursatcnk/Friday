@@ -56,7 +56,8 @@ public static class AppAudio
     public static Func<string, bool> Match(string spoken)
     {
         var wanted = AssistantTools.Simplify(spoken);
-        if (wanted is "tarayici" or "tarayicinin" or "internet")
+        // YouTube, Netflix gibi siteler tarayıcının içinde çalar; sesleri tarayıcınınkidir.
+        if (wanted is "tarayici" or "tarayicinin" or "internet" or "youtube" or "netflix" or "twitch" or "kick" or "disney" or "primevideo" or "blutv" or "exxen")
         {
             return name => Browsers.Contains(AssistantTools.Simplify(name));
         }
