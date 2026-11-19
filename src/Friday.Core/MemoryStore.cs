@@ -14,7 +14,8 @@ public sealed record MemoryItem(string Id, string Text, DateTimeOffset Created, 
 /// </summary>
 public sealed partial class MemoryStore
 {
-    private const int MaxItems = 500;
+    /// <summary>Hafıza soruya göre arandığı için büyük olabilir (eskiden en yeni 80'i görülürdü).</summary>
+    private const int MaxItems = 2000;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
     private static readonly JsonSerializerOptions Options = new()
     {

@@ -1094,6 +1094,10 @@ public sealed class FridayAssistant : IDisposable
             FridayLog.Info("Ajan modu: çok adımlı istek");
         }
 
+        // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
+        var memories = _longTermMemory.Items;
+        var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))));
+
         for (var round = 0; round <= maxRounds; round++)
         {
             var messages = new List<ChatMessage>
@@ -1101,6 +1105,10 @@ public sealed class FridayAssistant : IDisposable
                 new(ChatRole.System, SystemPrompt.Build(_settings, _longTermMemory.Items, DateTime.Now) + (multiStep ? "\n" + AgentPlan.Instruction : "") + (documents is null ? "" : "\n" + documents))
             };
             messages.AddRange(_memory.Messages);
+            if (recalled.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
+            {
+                messages[lastUser] = messages[lastUser] with { Content = messages[lastUser].Content + recalled };
+            }
 
             var chunker = new SentenceChunker();
             var content = new StringBuilder();

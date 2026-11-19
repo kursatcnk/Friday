@@ -6,7 +6,6 @@ namespace Friday.Core;
 /// <summary>Dil modelinin her soruda aldığı talimat: kişilik, kurallar, uzun süreli hafıza ve rutinler.</summary>
 public static class SystemPrompt
 {
-    private const int MaxMemories = 80;
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
 
     public static string Build(FridaySettings settings, IReadOnlyList<MemoryItem> memories, DateTime now)
@@ -51,15 +50,11 @@ public static class SystemPrompt
 
         if (memories.Count > 0)
         {
-            // Hafıza başka yapay zekâlardan aktarılınca yüzlerce bilgiye çıkabilir; talimatı kısa ve hızlı tutmak için
-            // yaklaşan tarihli bilgiler ve en yeni 80 bilgi verilir.
+            // Talimatta yalnızca yaklaşan tarihli bilgiler ve en yeni birkaç bilgi durur; soruyla ilgili diğerleri bütün
+            // hafızada aranıp soruya eklenir (bkz. MemoryRecall). Talimat kısa kalır ve önbellekten işlenir.
             var today = DateOnly.FromDateTime(now);
-            var chosen = memories.Where(memory => MemoryDates.Countdown(memory.Text, today) is not null)
-                .Concat(memories.Reverse())
-                .Distinct()
-                .Take(MaxMemories)
-                .ToHashSet();
-            prompt.AppendLine("Kullanıcı hakkında hatırladıkların (gerektiğinde kullan, sorulmadıkça hepsini sayma):");
+            var chosen = MemoryRecall.PinnedItems(memories, today);
+            prompt.AppendLine("Kullanıcı hakkında hatırladıkların (gerektiğinde kullan, sorulmadıkça hepsini sayma). Soruyla ilgili başka bilgiler mesajın sonundaki [Hafızadan …] satırında gelir:");
             foreach (var memory in memories.Where(chosen.Contains))
             {
                 var countdown = MemoryDates.Countdown(memory.Text, today) is { } left ? $" · {left.ToLower(Turkish)}" : "";
