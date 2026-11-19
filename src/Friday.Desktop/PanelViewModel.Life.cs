@@ -56,6 +56,9 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private bool _isOverBudget;
 
+    [ObservableProperty]
+    private string _billsText = "";
+
     public void ShowHabits(IReadOnlyList<DailyHabit> habits, DateOnly today)
     {
         HabitRows.Clear();
@@ -107,6 +110,13 @@ public sealed partial class PanelViewModel
             : summary.Total <= budget
                 ? $"Bütçe {ExpenseBook.Money(budget)} · {ExpenseBook.Money(budget - summary.Total)} kaldı"
                 : $"Bütçe {ExpenseBook.Money(budget)} · {ExpenseBook.Money(summary.Total - budget)} aşıldı";
+
+        var today = DateOnly.FromDateTime(now);
+        var bills = book.Bills;
+        var unpaid = bills.Where(bill => !bill.IsPaid(today) && bill.DueIn(today.Year, today.Month) >= today).OrderBy(bill => bill.Day).FirstOrDefault();
+        BillsText = bills.Count == 0
+            ? ""
+            : $"Sabit giderler {ExpenseBook.Money(bills.Sum(bill => bill.Amount))}/ay" + (unpaid is null ? "" : $" · sıradaki {unpaid.Name} ({unpaid.Day}.)");
 
         SpendingRows.Clear();
         var largest = summary.Categories.Count > 0 ? summary.Categories[0].Amount : 1;

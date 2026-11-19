@@ -32,6 +32,12 @@ public sealed class FridaySettings
     /// <summary>Yazarken kısaltmayı genişleten kısayol: kısaltmanın adını yaz, bu tuşlara bas.</summary>
     public string SnippetHotkey { get; set; } = "Ctrl+Alt+K";
 
+    /// <summary>Günlük uygulama süresi sınırları: ekran süresindeki ad → dakika ("YouTube" → 60).</summary>
+    public Dictionary<string, int> AppLimits { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>15 dakikadan uzun bir görüşme bitince "not almak ister misin?" diye sorulur.</summary>
+    public bool MeetingNotes { get; set; } = true;
+
     /// <summary>Ortam seslerinin (yağmur, beyaz gürültü…) ses düzeyi, 0–1.</summary>
     public double AmbientVolume { get; set; } = 0.25;
 

@@ -120,6 +120,9 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private bool _journalPrompt = true;
 
+    [ObservableProperty]
+    private bool _meetingNotes = true;
+
     /// <summary>Kısaltmalar, her satırda "ad: metin"; metindeki satır sonları \n ile yazılır.</summary>
     [ObservableProperty]
     private string _snippetsText = "";
@@ -459,6 +462,7 @@ public sealed partial class PanelViewModel
         _settings.HabitSuggestions = HabitSuggestionsEnabled;
         _settings.MeetingQuiet = MeetingQuiet;
         _settings.JournalPrompt = JournalPrompt;
+        _settings.MeetingNotes = MeetingNotes;
         _settings.Snippets = ParseSnippets();
         _settings.AmbientVolume = AmbientLow ? 0.12 : AmbientHigh ? 0.45 : 0.25;
 
@@ -567,6 +571,7 @@ public sealed partial class PanelViewModel
         HabitSuggestionsEnabled = _settings.HabitSuggestions;
         MeetingQuiet = _settings.MeetingQuiet;
         JournalPrompt = _settings.JournalPrompt;
+        MeetingNotes = _settings.MeetingNotes;
         ReloadSnippets();
         AmbientLow = _settings.AmbientVolume < 0.18;
         AmbientHigh = _settings.AmbientVolume > 0.35;

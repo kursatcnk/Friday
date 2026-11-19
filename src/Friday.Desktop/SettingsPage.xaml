@@ -285,6 +285,13 @@
                                            Text="Teams, Zoom, Meet gibi bir uygulama mikrofonu kullanınca Friday kendiliğinden konuşmaz, &quot;Hey Friday&quot;ı dinlemeyi bırakır, hatırlatmaları görüşme bitince okur. Ses dinlenmez; yalnızca Windows'un mikrofonu kimin kullandığı kaydına bakılır."/>
                             </StackPanel>
                         </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding MeetingNotes}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Görüşmeden sonra not sorusu" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="15 dakikadan uzun bir görüşme bitince &quot;Not almak istediğin bir şey var mı?&quot; diye sorar; söylediğini görüşmenin adı ve saatiyle notlarına ekler."/>
+                            </StackPanel>
+                        </CheckBox>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding JournalPrompt}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="Gün sonu günlük sorusu" FontWeight="SemiBold"/>

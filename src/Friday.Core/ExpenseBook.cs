@@ -8,6 +8,15 @@ namespace Friday.Core;
 /// <summary>Bir harcama: ne zaman, ne kadar (TL), hangi kategoride, ne için.</summary>
 public sealed record Expense(string Id, DateTime When, decimal Amount, string Category, string Note);
 
+/// <summary>Her ay ödenen sabit gider (kira, fatura, abonelik): adı, tutarı, ayın kaçında ödendiği ve en son ödendiği ay ("2026-11").</summary>
+public sealed record RecurringBill(string Name, decimal Amount, int Day, string? PaidMonth = null)
+{
+    /// <summary>Bu ayın ödeme günü; ay kısaysa ayın son günü.</summary>
+    public DateOnly DueIn(int year, int month) => new(year, month, Math.Min(Day, DateTime.DaysInMonth(year, month)));
+
+    public bool IsPaid(DateOnly day) => PaidMonth == day.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+}
+
 /// <summary>Bir dönemin harcama özeti: toplam ve kategoriler (büyükten küçüğe).</summary>
 public sealed record ExpenseSummary(decimal Total, int Count, IReadOnlyList<(string Category, decimal Amount)> Categories);
 
@@ -73,6 +82,87 @@ public sealed class ExpenseBook
                 Save();
             }
         }
+    }
+
+    public IReadOnlyList<RecurringBill> Bills
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _data.Bills.OrderBy(bill => bill.Day)];
+            }
+        }
+    }
+
+    /// <summary>Sabit gider ekler; aynı adda varsa tutarı ve günü güncellenir.</summary>
+    public RecurringBill AddBill(string name, decimal amount, int day)
+    {
+        var clean = TurkishGrammar.Capitalize(name.Trim());
+        var bill = new RecurringBill(clean, Math.Round(amount, 2), Math.Clamp(day, 1, 31));
+        lock (_gate)
+        {
+            _data.Bills.RemoveAll(item => Simple(item.Name) == Simple(clean));
+            _data.Bills.Add(bill);
+            Save();
+        }
+
+        return bill;
+    }
+
+    public bool RemoveBill(string name)
+    {
+        lock (_gate)
+        {
+            if (FindBillLocked(name) is not { } bill)
+            {
+                return false;
+            }
+
+            _data.Bills.Remove(bill);
+            Save();
+            return true;
+        }
+    }
+
+    /// <summary>"kirayı", "netflix aboneliğini" → kayıtlı sabit gider; yoksa null.</summary>
+    public RecurringBill? FindBill(string spoken)
+    {
+        lock (_gate)
+        {
+            return FindBillLocked(spoken);
+        }
+    }
+
+    /// <summary>Sabit gider bu ay ödendi: harcama olarak eklenir. Zaten ödendiyse null.</summary>
+    public Expense? PayBill(string name, DateTime when)
+    {
+        RecurringBill bill;
+        lock (_gate)
+        {
+            if (FindBillLocked(name) is not { } found || found.IsPaid(DateOnly.FromDateTime(when)))
+            {
+                return null;
+            }
+
+            bill = found with { PaidMonth = when.ToString("yyyy-MM", CultureInfo.InvariantCulture) };
+            _data.Bills[_data.Bills.IndexOf(found)] = bill;
+        }
+
+        var category = KnownCategory(bill.Name) ?? "Faturalar";
+        return Add(bill.Amount, bill.Name, when, category);
+    }
+
+    /// <summary>Verilen günde ödenmesi gereken ve bu ay henüz ödenmemiş sabit giderler.</summary>
+    public IReadOnlyList<RecurringBill> DueOn(DateOnly day) =>
+        [.. Bills.Where(bill => bill.DueIn(day.Year, day.Month) == day && !bill.IsPaid(day))];
+
+    private RecurringBill? FindBillLocked(string spoken)
+    {
+        var wanted = Simple(spoken).Replace(" ", "", StringComparison.Ordinal);
+        return _data.Bills.FirstOrDefault(bill => Simple(bill.Name).Replace(" ", "", StringComparison.Ordinal) is var key && key.Length >= 3
+            && (wanted == key || (wanted.StartsWith(key, StringComparison.Ordinal) && wanted.Length - key.Length <= 12)
+                || (key.Length >= 4 && wanted.Contains(key, StringComparison.Ordinal))));
     }
 
     public IReadOnlyList<Expense> Items
@@ -276,5 +366,7 @@ public sealed class ExpenseBook
         public decimal MonthlyBudget { get; set; }
 
         public List<Expense> Items { get; set; } = [];
+
+        public List<RecurringBill> Bills { get; set; } = [];
     }
 }

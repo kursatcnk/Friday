@@ -462,6 +462,17 @@
                                         </Grid>
                                         <TextBlock Text="{Binding BudgetText}" Style="{StaticResource Caption}" Margin="0,5,0,0"/>
                                     </StackPanel>
+                                    <TextBlock Text="{Binding BillsText}" Margin="0,4,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding BillsText}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                     <TextBlock Style="{StaticResource Body}" FontSize="12" Margin="0,6,0,0" Visibility="{Binding HasSpending, Converter={StaticResource Hidden}}"
                                                Text="&quot;Kahveye 80 lira harcadım&quot; de, kaydedeyim. &quot;Aylık bütçem 15 bin lira&quot; dersen bütçeyi de takip ederim."/>
                                     <ItemsControl ItemsSource="{Binding SpendingRows}" Margin="0,10,0,0">

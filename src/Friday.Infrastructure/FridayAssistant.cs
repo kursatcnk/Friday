@@ -256,7 +256,8 @@ public sealed class FridayAssistant : IDisposable
         {
             if (!Muted)
             {
-                Announce(script);
+                // Odak bir işe bağlıysa sonunda "bitirdin mi?" diye sorulur; cevap için mikrofon açılır.
+                Announce(script, listenAfter: _tools.FocusQuestionPending);
             }
         };
         _tools.QuietControl = SetQuiet;
@@ -1333,6 +1334,11 @@ public sealed class FridayAssistant : IDisposable
             parts.Add($"Bugünkü {TurkishGrammar.Duration(_settings.FocusGoalMinutes)}lik odak hedefine ulaştın, tebrikler!{(streak > 1 ? $" {streak} gündür üst üste." : "")}");
         }
 
+        if (_tools.FocusTaskQuestion() is { } question)
+        {
+            parts.Add(question);
+        }
+
         return parts.Count == 0 ? null : string.Join(" ", parts);
     }
 
@@ -1436,9 +1442,12 @@ public sealed class FridayAssistant : IDisposable
         }
     }
 
+    private DateTime _meetingStart;
+
     private void StartMeeting(string app)
     {
         _meeting = app;
+        _meetingStart = DateTime.Now;
         if (!Muted)
         {
             _quietUntil = DateTime.Now.AddHours(8);
@@ -1483,11 +1492,24 @@ public sealed class FridayAssistant : IDisposable
             _meetingHeld.Clear();
         }
 
+        var script = new List<CoachStep>();
         if (held.Length > 0)
         {
-            Announce(held.Length == 1
+            script.Add(new CoachStep(held.Length == 1
                 ? $"Görüşme sırasında bir hatırlatma geldi: {held[0]}"
-                : $"Görüşme sırasında {held.Length} hatırlatma geldi. {string.Join(" ", held)}");
+                : $"Görüşme sırasında {held.Length} hatırlatma geldi. {string.Join(" ", held)}"));
+        }
+
+        // Uzun bir görüşmeden sonra not almak isteyip istemediği sorulur; cevap notlara yazılır.
+        var question = Muted || app is null ? null : _tools.MeetingNoteQuestion(app, _meetingStart, DateTime.Now);
+        if (question is not null)
+        {
+            script.Add(new CoachStep(question));
+        }
+
+        if (script.Count > 0)
+        {
+            Announce(script, listenAfter: question is not null);
         }
     }
 
@@ -1526,6 +1548,13 @@ public sealed class FridayAssistant : IDisposable
                     Announce("Göz molası: 20 saniye boyunca uzağa, en az 6 metre öteye bak.");
                     return;
                 }
+            }
+
+            // Günlük süre sınırı dolan uygulama varsa bir kez söylenir.
+            if (!Muted && _tools.AppLimitAlert(now) is { } limit)
+            {
+                Announce(limit);
+                return;
             }
 
             // Yarın bir doğum günü ya da yıldönümü varsa akşam 19.00–21.30 arası bir kez sorulur.

@@ -393,6 +393,8 @@ public sealed partial class AssistantTools
             parts.Add($"Bugün {due} kelime tekrar bekliyor.");
         }
 
+        BillsMorning(parts, now);
+
         if (Expenses is { MonthlyBudget: > 0 } expenses)
         {
             var spent = MonthTotal(expenses, now);
