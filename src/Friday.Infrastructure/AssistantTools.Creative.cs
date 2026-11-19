@@ -12,6 +12,28 @@ public sealed partial class AssistantTools
     /// <summary>Sesli günlük; asistan kurulurken verilir.</summary>
     public JournalStore? Journal { get; set; }
 
+    /// <summary>Odak hedefini ayarlar ya da bugünkü ilerlemeyi ve seriyi söyler.</summary>
+    private string FocusGoal(string minutes)
+    {
+        if (int.TryParse(minutes, out var value) && value >= 10)
+        {
+            Settings.FocusGoalMinutes = Math.Min(value, 600);
+            SaveSettings?.Invoke(Settings);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+            return $"Tamam, günlük odak hedefin {TurkishGrammar.Duration(Settings.FocusGoalMinutes)}.";
+        }
+
+        if (Rhythm is not { } rhythm)
+        {
+            return "Ritim koçu kapalı; Ayarlar › Ritim'den açabilirsin.";
+        }
+
+        return RhythmGoal.Describe(rhythm.Today.FocusMinutes, Settings.FocusGoalMinutes, RhythmGoal.Streak(rhythm.History(60), Settings.FocusGoalMinutes));
+    }
+
+    /// <summary>Odak sesi: tür verilirse ortam sesini başlatır, null ise kapatır.</summary>
+    public void SetFocusSound(string? kind) => _ = kind is null ? AmbientCommand("kapat", "", "") : AmbientCommand("ac", kind, "");
+
     /// <summary>"Bunu sonra okuyacağım": öndeki tarayıcı sekmesinin başlığı ve adresi okuma listesine.</summary>
     private string ReadLater(string action)
     {

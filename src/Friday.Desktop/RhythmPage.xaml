@@ -3,6 +3,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Friday.Desktop">
     <UserControl.Resources>
+        <Style x:Key="RhythmPills" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="-3,0,0,0"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource PillItem}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="StatTile" TargetType="Border" BasedOn="{StaticResource Card}">
             <Setter Property="Margin" Value="6,0"/>
             <Setter Property="Padding" Value="16,14"/>
@@ -14,7 +28,7 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="36,4,24,24">
-        <StackPanel Margin="0,0,12,0" MaxWidth="880" HorizontalAlignment="Left">
+        <StackPanel Margin="0,0,12,0" MaxWidth="1180" HorizontalAlignment="Stretch">
 
             <!-- ================= Şu an: büyük halka ve canlı sayaç ================= -->
             <Border Style="{StaticResource Card}" Padding="28,24" Margin="0,0,0,14">
@@ -47,6 +61,13 @@
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım" Content="25 dk odak"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="50 dakika odaklanacağım" Content="50 dk odak"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="90 dakika odaklanacağım" Content="90 dk odak"/>
+                            <Border Margin="4" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SurfaceRaisedBrush}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Text="{Binding CustomFocusMinutes, UpdateSourceTrigger=PropertyChanged}" Width="44" BorderThickness="0" Background="Transparent"
+                                             VerticalAlignment="Center" HorizontalContentAlignment="Center" ToolTip="Dakika (5–240)"/>
+                                    <Button Style="{StaticResource GhostButton}" BorderThickness="0" Content="dk odak" Command="{Binding StartCustomFocusCommand}" Padding="4,8,12,8"/>
+                                </StackPanel>
+                            </Border>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="30 dakika ertele"
                                     Content="Öneriyi 30 dk ertele" Visibility="{Binding CanSnooze, Converter={StaticResource Visible}}"/>
                         </WrapPanel>
@@ -63,12 +84,50 @@
                             <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding EnableRhythmCommand}" Padding="16,9" Content="Ritim koçunu aç"/>
                         </WrapPanel>
 
+                        <TextBlock Text="{Binding FocusApps}" Style="{StaticResource Body}" Margin="0,12,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding FocusApps, Converter={StaticResource TextVisible}}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                             <TextBlock Text="{Binding RhythmRule}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
                             <Button Style="{StaticResource IconButton}" Padding="5" Margin="6,0,0,0" ToolTip="Ritim ayarları" Command="{Binding GoToCommand}" CommandParameter="settings">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" FontSize="10"/>
                             </Button>
                         </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ================= Hedef, seri ve odak sesi ================= -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="28"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Günlük odak hedefi" Style="{StaticResource SectionTitle}"/>
+                        <TextBlock Text="{Binding GoalText}" Style="{StaticResource Body}" Margin="0,6,0,10"/>
+                        <Grid Height="10" Margin="0,0,0,10">
+                            <Border CornerRadius="5" Background="{StaticResource LineBrush}"/>
+                            <Border CornerRadius="5" HorizontalAlignment="Left" Background="{StaticResource AccentBrush}">
+                                <Border.Width>
+                                    <MultiBinding Converter="{StaticResource Fraction}">
+                                        <Binding Path="GoalFraction"/>
+                                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                    </MultiBinding>
+                                </Border.Width>
+                            </Border>
+                        </Grid>
+                        <ListBox Style="{StaticResource RhythmPills}" ItemsSource="{Binding GoalOptions}" SelectedItem="{Binding SelectedGoal}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" MinWidth="230">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="16" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Seri" Style="{StaticResource SectionTitle}"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding StreakText}" Style="{StaticResource Body}" Margin="0,6,0,14" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Odakta ses" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                        <ListBox Style="{StaticResource RhythmPills}" ItemsSource="{Binding FocusSoundOptions}" SelectedItem="{Binding SelectedFocusSound}" MaxWidth="300" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -170,7 +229,24 @@
             <!-- ================= Nasıl çalışır ================= -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
-                    <TextBlock Text="Nasıl çalışır?" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                    <Grid>
+                        <TextBlock Text="Nasıl çalışır?" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Padding="10,5" Command="{Binding ToggleRhythmHelpCommand}">
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Göster"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ShowRhythmHelp}" Value="True">
+                                                <Setter Property="Text" Value="Gizle"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                    </Grid>
+                    <StackPanel Visibility="{Binding ShowRhythmHelp, Converter={StaticResource Visible}}" Margin="0,8,0,0">
                     <UniformGrid Columns="3" Margin="-8,0">
                         <StackPanel Margin="8,0">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="18" Foreground="{StaticResource SpeakingBrush}" HorizontalAlignment="Left"/>
@@ -192,7 +268,8 @@
                         </StackPanel>
                     </UniformGrid>
                     <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="{StaticResource FaintBrush}" Margin="0,16,0,0" TextWrapping="Wrap"
-                               Text="Sesle: &quot;Mola ver&quot;, &quot;25 dakika odaklanacağım&quot;, &quot;Moladan döndüm&quot;, &quot;Nerede kalmıştım?&quot;, &quot;Bugün ne kadar çalıştım?&quot;, &quot;Bu hafta nasıl geçti?&quot;"/>
+                               Text="Sesle: &quot;Mola ver&quot;, &quot;25 dakika odaklanacağım&quot;, &quot;Moladan döndüm&quot;, &quot;Nerede kalmıştım?&quot;, &quot;Bugün ne kadar çalıştım?&quot;, &quot;Bu hafta nasıl geçti?&quot;, &quot;Odak hedefim 3 saat&quot;, &quot;Hedefime ne kadar kaldı?&quot;"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>

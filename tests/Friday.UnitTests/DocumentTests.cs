@@ -293,3 +293,36 @@ public class CreativeFeatureTests
     }
 }
 
+public class RhythmGoalTests
+{
+    private static RhythmDay Day(int offset, double focus) => new() { Date = new DateOnly(2026, 11, 19).AddDays(offset), FocusMinutes = focus };
+
+    [Fact]
+    public void StreakCountsConsecutiveDaysAndKeepsTodayOpen()
+    {
+        Assert.Equal(3, RhythmGoal.Streak([Day(-4, 10), Day(-3, 130), Day(-2, 125), Day(-1, 200), Day(0, 30)], 120));
+        Assert.Equal(4, RhythmGoal.Streak([Day(-3, 130), Day(-2, 125), Day(-1, 200), Day(0, 121)], 120));
+        Assert.Equal(0, RhythmGoal.Streak([Day(-1, 50), Day(0, 30)], 120));
+    }
+
+    [Fact]
+    public void DescribesProgress()
+    {
+        Assert.Equal("Bugün 45 dakika odaklandın; 2 saatlik hedefe 1 saat 15 dakika kaldı. 3 gündür üst üste hedefini tutturuyorsun.", RhythmGoal.Describe(45, 120, 3));
+        Assert.StartsWith("Bugünkü 2 saatlik odak hedefini tamamladın", RhythmGoal.Describe(130, 120, 1));
+    }
+
+    [Theory]
+    [InlineData("odak hedefim 3 saat", "180")]
+    [InlineData("bugünkü odak hedefimi 90 dakika yap", "90")]
+    public void SetsTheGoalByVoice(string sentence, string minutes)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("odak_hedefi", command?.Tool);
+        Assert.Equal(minutes, command!.Arguments["dakika"]);
+    }
+
+    [Fact]
+    public void AsksForProgress() => Assert.Equal("odak_hedefi", QuickIntents.Match("hedefime ne kadar kaldı")?.Tool);
+}
+

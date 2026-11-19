@@ -25,6 +25,17 @@ public static partial class QuickIntents
             return Command("sonra_oku", ("islem", "ac"));
         }
 
+        if (FocusGoalSet().Match(sentence) is { Success: true } goal && ParseNumber(goal.Groups["n"].Value) is { } amount)
+        {
+            var minutes = goal.Groups["u"].Value == "saat" ? amount * 60 : amount;
+            return Command("odak_hedefi", ("dakika", Math.Round(minutes).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        if (FocusGoalStatus().IsMatch(sentence))
+        {
+            return Command("odak_hedefi");
+        }
+
         if (SaveSongRequest().IsMatch(sentence))
         {
             return Command("sarki_kaydet");
@@ -48,6 +59,12 @@ public static partial class QuickIntents
 
         return null;
     }
+
+    [GeneratedRegex(@"^(?:bugünkü |günlük )?odak hedef(?:im|imi) (?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>saat|dakika)(?: yap| olsun| olarak ayarla)?$")]
+    private static partial Regex FocusGoalSet();
+
+    [GeneratedRegex(@"^(?:bugünkü |günlük )?(?:odak )?hedefim ne durumda$|^hedefime ne kadar kaldı$|^odak serim(?: kaç gün)?$")]
+    private static partial Regex FocusGoalStatus();
 
     [GeneratedRegex(@"^(?:bunu|bu sayfayı|bu siteyi|bu yazıyı|bu makaleyi) (?:sonra okuyacağım|sonra oku|sonra okumak için kaydet|sonraya kaydet|okuma listeme ekle|okuma listesine ekle)$")]
     private static partial Regex ReadLaterSave();

@@ -260,6 +260,7 @@ public sealed class FridayAssistant : IDisposable
         };
         _tools.QuietControl = SetQuiet;
         _rhythm.FocusInsight = FocusInsight;
+        _rhythm.Changed += (_, _) => FollowFocusSound();
         _rhythm.MorningGreeting += (_, _) => _ = GreetAsync();
         _tools.TimerElapsed += (_, message) => Announce(message);
         _tools.CaptureFolder = Path.Combine(paths.Data, "captures");
@@ -1293,22 +1294,54 @@ public sealed class FridayAssistant : IDisposable
     /// </summary>
     private string? FocusInsight(TimeSpan length)
     {
-        if (_tools.Activity is not { } activity || length < TimeSpan.FromMinutes(5))
+        var parts = new List<string>();
+        if (_tools.Activity is { } activity && length >= TimeSpan.FromMinutes(5))
         {
-            return null;
+            var apps = activity.Since(DateTime.Now - length);
+            var total = apps.Sum(item => item.Seconds);
+            if (total >= 120)
+            {
+                var top = string.Join(" ve ", apps.Take(2).Select(item => $"{item.App} ({ScreenTimeLog.Spoken(item.Seconds)})"));
+                parts.Add($"Bu sürede en çok {top} açıktı.");
+                var distraction = apps.Where(item => ScreenTimeLog.IsDistraction(item.App)).Sum(item => item.Seconds);
+                if (distraction > total / 5)
+                {
+                    parts.Add($"{ScreenTimeLog.Spoken(distraction)} dikkat dağıtan sitelerde geçti; bir dahakine onları kapatmayı deneyebilirsin.");
+                }
+            }
         }
 
-        var apps = activity.Since(DateTime.Now - length);
-        var total = apps.Sum(item => item.Seconds);
-        if (total < 120)
+        // Günlük hedef bugün ilk kez tamamlandıysa kutlanır.
+        if (_tools.Rhythm is { } rhythm && rhythm.Today.FocusMinutes >= _settings.FocusGoalMinutes
+            && _celebrated != DateOnly.FromDateTime(DateTime.Now))
         {
-            return null;
+            _celebrated = DateOnly.FromDateTime(DateTime.Now);
+            var streak = RhythmGoal.Streak(rhythm.History(60), _settings.FocusGoalMinutes);
+            parts.Add($"Bugünkü {TurkishGrammar.Duration(_settings.FocusGoalMinutes)}lik odak hedefine ulaştın, tebrikler!{(streak > 1 ? $" {streak} gündür üst üste." : "")}");
         }
 
-        var top = string.Join(" ve ", apps.Take(2).Select(item => $"{item.App} ({ScreenTimeLog.Spoken(item.Seconds)})"));
-        var distraction = apps.Where(item => ScreenTimeLog.IsDistraction(item.App)).Sum(item => item.Seconds);
-        return $"Bu sürede en çok {top} açıktı."
-               + (distraction > total / 5 ? $" {ScreenTimeLog.Spoken(distraction)} dikkat dağıtan sitelerde geçti; bir dahakine onları kapatmayı deneyebilirsin." : "");
+        return parts.Count == 0 ? null : string.Join(" ", parts);
+    }
+
+    private DateOnly _celebrated;
+
+    private DateTime? _soundFocus;
+
+    /// <summary>Odak başlayınca seçilen ortam sesi açılır, bitince (Friday açtıysa) kapanır.</summary>
+    private void FollowFocusSound()
+    {
+        var snapshot = _rhythm.Snapshot();
+        var active = snapshot.FocusStart is not null && snapshot.FocusEnd is { } end && end > DateTime.Now;
+        if (active && _soundFocus != snapshot.FocusStart && _settings.FocusSound.Length > 0)
+        {
+            _soundFocus = snapshot.FocusStart;
+            _tools.SetFocusSound(_settings.FocusSound);
+        }
+        else if (!active && _soundFocus is not null)
+        {
+            _soundFocus = null;
+            _tools.SetFocusSound(null);
+        }
     }
 
     /// <summary>Kullanıcı bilgisayara döndü: "dönünce" hatırlatmaları ve rutinleri (en fazla saatte bir).</summary>

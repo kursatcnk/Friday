@@ -107,6 +107,12 @@ public sealed class FridaySettings
     /// <summary>Odak oturumunda YouTube, Netflix, Instagram gibi bir sitede kalınca Friday nazikçe hatırlatır.</summary>
     public bool FocusGuard { get; set; } = true;
 
+    /// <summary>Günlük odak hedefi (dakika); Ritim ekranında ilerleme ve seri olarak görünür.</summary>
+    public int FocusGoalMinutes { get; set; } = 120;
+
+    /// <summary>Odak oturumunda çalan ortam sesi (yagmur, beyaz, kahverengi, dalga); boşsa sessiz.</summary>
+    public string FocusSound { get; set; } = "";
+
     /// <summary>Belge hafızası: seçilen klasörlerdeki belgeler yerelde dizinlenir, sorulara kaynak gösterilerek cevap verilir.</summary>
     public bool DocumentMemory { get; set; } = true;
 

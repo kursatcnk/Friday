@@ -251,6 +251,20 @@ public sealed partial class RhythmCoach : IDisposable
 
     public QuickReply WeekSummary() => new(RhythmCoachLines.Week(Week()));
 
+    /// <summary>Son N gün, eskiden yeniye (son eleman bugün); seri hesabı için.</summary>
+    public IReadOnlyList<RhythmDay> History(int days)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var history = new List<RhythmDay>();
+        for (var offset = Math.Max(1, days) - 1; offset >= 0; offset--)
+        {
+            var date = today.AddDays(-offset);
+            history.Add(offset == 0 ? Today : Load(date) ?? new RhythmDay { Date = date });
+        }
+
+        return history;
+    }
+
     public QuickReply Where()
     {
         lock (_gate)

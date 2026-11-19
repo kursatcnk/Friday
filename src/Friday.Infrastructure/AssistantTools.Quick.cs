@@ -82,6 +82,7 @@ public sealed partial class AssistantTools
                 "haftalik_ozet" => new QuickReply(WeeklyReview()),
                 "sonra_oku" => new QuickReply(ReadLater(Arg("islem"))),
                 "sarki_kaydet" => new QuickReply(await SaveSongAsync().ConfigureAwait(false)),
+                "odak_hedefi" => new QuickReply(FocusGoal(Arg("dakika"))),
                 "disk_analizi" => new QuickReply(await Task.Run(DiskReport, cancellationToken).ConfigureAwait(false)),
                 "gunluk" => new QuickReply(JournalCommand(Arg("islem"), Arg("metin"), Arg("donem"))),
                 "ertele" => Snooze(Arg("dakika")),

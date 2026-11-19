@@ -33,6 +33,8 @@ Friday, Windows için Türkçe konuşan kişisel bir sesli asistan. **"Hey Frida
 | **Disk analizi** | "Diskimde ne yer kaplıyor", "yer açmama yardım et": kullanıcı klasörlerinde en büyük klasörler ve dosyalar (en fazla 20 sn, düşük öncelik). Hiçbir şey silinmez. |
 | **Sesli günlük** | "Günlüğe yaz: sunum çok iyi geçti", "günlüğümü oku", "bu hafta günlüğüme ne yazmışım". Ay ay Markdown dosyalarında (`data\journal`), Not Defteri'yle de açılır. |
 | **Odak özeti** | Odak oturumu bitince o sürede en çok hangi uygulamaların açık olduğu söylenir; dikkat dağıtan sitelerin payı büyükse nazikçe belirtilir (ekran süresi açıkken). |
+| **Günlük odak hedefi ve seri** | Ritim ekranında günlük odak hedefi (1–5 saat) ilerleme çubuğuyla görünür; kaç gündür üst üste tutturduğun sayılır, hedefe ulaşınca Friday kutlar. Sesle: "odak hedefim 3 saat", "hedefime ne kadar kaldı". |
+| **Odakta ses ve canlı odak paneli** | Odak başlayınca seçtiğin ortam sesi (yağmur, beyaz/kahverengi gürültü, dalga) açılır, bitince kapanır. Odak sürerken Ritim ekranı o odakta hangi uygulamada ne kadar kaldığını gösterir. İstediğin süreyle odak: "40 dk odak". |
 | **Rahatsız etme** | "1 saat rahatsız etme", "yarım saat sessiz ol", tepsi menüsü ya da başlıktaki rozet. Mola ve alışkanlık önerileri, odak hatırlatması ve sabah selamı susar; kurduğun hatırlatmalar yine gelir. |
 | **Görünüm ve kısayollar** | Ayarlar › Görünüm: vurgu rengi (anında uygulanır) ve arayüz boyutu. Ctrl+1…7 sayfalar arasında geçer, Esc düzenlemeyi kapatır. Tepsi menüsünden rutinler tek tıkla çalışır. |
 | **Pano geçmişi** | İsteğe bağlı: "kopyaladıklarım", "2. kopyaladığımı yapıştır", "bir önce kopyaladığımı yapıştır". Yalnızca bellekte, son 20 metin. |
@@ -90,7 +92,7 @@ ya da Ctrl+Alt+F ─►  modeller uyuyorsa yüklenmeye başlar (sen konuşurken 
                 Whisper Large v3 Turbo, GPU (Vulkan)          → "yarın ankara'da hava nasıl"
                      │
                      ▼
-                Gemma 4 (Ollama, yerel) + 52 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
+                Gemma 4 (Ollama, yerel) + 53 araç, nöbetçiler, takvim, araştırma raporu, ortam sesleri, alışkanlıklar, görsel kartlar, dikte             → hava_durumu(sehir: "Ankara")
                      │   ▲                                       │
                      │   └──── araç sonucu ◄─────────────────────┘
                      ▼

@@ -375,6 +375,7 @@ public sealed partial class App : Application, IDisposable
         void ShowRhythm()
         {
             panel.ShowRhythm(rhythm.Today, rhythm.Snapshot());
+            panel.ShowGoal(rhythm.Today, rhythm.History(60));
             panel.ShowWeek(rhythm.Week());
         }
 
@@ -384,6 +385,7 @@ public sealed partial class App : Application, IDisposable
         tools.SettingsChanged += (_, _) => Ui(() =>
         {
             panel.ReloadRoutines();
+            panel.ShowGoal(rhythm.Today, rhythm.History(60));
             RegisterRoutineKeys();
         });
         chats.CurrentChanged += (_, _) => Ui(() => panel.ShowChat(chats.CurrentTurns));
@@ -395,6 +397,15 @@ public sealed partial class App : Application, IDisposable
             if (_window is { IsVisible: true, WindowState: not WindowState.Minimized } && (panel.IsRhythm || panel.IsToday))
             {
                 panel.TickRhythm(rhythm.Snapshot());
+                // Odak sürerken Ritim sayfasında, o odakta hangi uygulamada ne kadar kalındığı 5 sn'de bir tazelenir.
+                if (panel.IsRhythm && _screenTimeTicks % 5 == 0)
+                {
+                    var snapshot = rhythm.Snapshot();
+                    panel.FocusApps = snapshot.FocusStart is { } focusStart && snapshot.FocusEnd > DateTime.Now && tools.Activity?.Since(focusStart) is { Count: > 0 } apps
+                        ? "Bu odakta: " + string.Join(" · ", apps.Take(3).Select(item => $"{item.App} {ScreenTimeLog.Compact(item.Seconds)}"))
+                        : "";
+                }
+
                 // Rahatsız etme süresi dolduysa rozet kalkar.
                 if (panel.QuietBadge.Length > 0 && assistant.QuietUntil is null)
                 {

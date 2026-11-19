@@ -138,6 +138,103 @@ public sealed partial class PanelViewModel
         WeekAverage = worked.Count == 0 ? "" : $"Çalıştığın günlerde ortalama {RhythmText.Compact(worked.Average(day => day.ActiveMinutes))}";
     }
 
+    [ObservableProperty]
+    private string _goalText = "";
+
+    [ObservableProperty]
+    private double _goalFraction;
+
+    [ObservableProperty]
+    private string _streakText = "";
+
+    [ObservableProperty]
+    private string _focusApps = "";
+
+    [ObservableProperty]
+    private string _customFocusMinutes = "40";
+
+    [ObservableProperty]
+    private bool _showRhythmHelp;
+
+    public IReadOnlyList<string> GoalOptions { get; } = ["1 saat", "2 saat", "3 saat", "4 saat", "5 saat"];
+
+    public IReadOnlyList<string> FocusSoundOptions { get; } = ["Sessiz", "Yağmur", "Beyaz gürültü", "Kahverengi gürültü", "Dalga"];
+
+    [ObservableProperty]
+    private string _selectedGoal = "2 saat";
+
+    [ObservableProperty]
+    private string _selectedFocusSound = "Sessiz";
+
+    private bool _loadingGoal;
+
+    /// <summary>Hedef ve seri kartı: bugünkü odak, hedefe göre çubuk ve kaç gündür üst üste.</summary>
+    public void ShowGoal(RhythmDay today, IReadOnlyList<RhythmDay> history)
+    {
+        _loadingGoal = true;
+        var goal = Math.Max(10, _settings.FocusGoalMinutes);
+        SelectedGoal = $"{Math.Max(1, (int)Math.Round(goal / 60.0))} saat";
+        SelectedFocusSound = _settings.FocusSound switch
+        {
+            "yagmur" => "Yağmur",
+            "beyaz" => "Beyaz gürültü",
+            "kahverengi" => "Kahverengi gürültü",
+            "dalga" => "Dalga",
+            _ => "Sessiz"
+        };
+        _loadingGoal = false;
+        GoalFraction = Math.Clamp(today.FocusMinutes / goal, 0, 1);
+        GoalText = $"{RhythmText.Compact(today.FocusMinutes)} / {RhythmText.Compact(goal)} odak · %{Math.Min(100, Math.Round(100 * today.FocusMinutes / goal)):0}";
+        var streak = RhythmGoal.Streak(history, goal);
+        StreakText = streak switch
+        {
+            0 => today.FocusMinutes > 0 ? "Bugün hedefi tamamlarsan seri başlar." : "Henüz seri yok; bugün başlat.",
+            1 => "1 gün: seri başladı.",
+            _ => $"{streak} gündür üst üste."
+        };
+    }
+
+    partial void OnSelectedGoalChanged(string value)
+    {
+        if (_loadingGoal || !int.TryParse(value.Split(' ')[0], out var hours))
+        {
+            return;
+        }
+
+        _settings.FocusGoalMinutes = hours * 60;
+        _actions.Persist(_settings);
+    }
+
+    partial void OnSelectedFocusSoundChanged(string value)
+    {
+        if (_loadingGoal)
+        {
+            return;
+        }
+
+        _settings.FocusSound = value switch
+        {
+            "Yağmur" => "yagmur",
+            "Beyaz gürültü" => "beyaz",
+            "Kahverengi gürültü" => "kahverengi",
+            "Dalga" => "dalga",
+            _ => ""
+        };
+        _actions.Persist(_settings);
+    }
+
+    [RelayCommand]
+    private void StartCustomFocus()
+    {
+        if (int.TryParse(CustomFocusMinutes.Trim(), out var minutes) && minutes is >= 5 and <= 240)
+        {
+            _actions.Send($"{minutes} dakika odaklanacağım");
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleRhythmHelp() => ShowRhythmHelp = !ShowRhythmHelp;
+
     [RelayCommand]
     private void EnableRhythm()
     {
