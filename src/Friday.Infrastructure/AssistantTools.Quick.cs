@@ -115,6 +115,7 @@ public sealed partial class AssistantTools
                 "o_gun" => DayRecall(Arg("gun")),
                 "kaldigim_yer" => Resume(),
                 "neden" => WhyCommand(),
+                "en_son" => LastTimeCommand(Arg("konu")),
                 "okunus" => PronounceCommand(Arg("islem"), Arg("kelime"), Arg("okunus")),
                 "ogrendiklerin" => LearnedReport(),
                 "durtme" => NudgeCommand(Arg("islem")),

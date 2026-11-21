@@ -12,10 +12,14 @@ public static partial class QuickIntents
         : StyleQuestion().IsMatch(sentence) ? Command("uslup", ("islem", "durum"))
         : WhereWasI().IsMatch(sentence) ? Command("kaldigim_yer")
         : WhySaid().IsMatch(sentence) ? Command("neden")
+        : LastTimeQuestion().Match(sentence) is { Success: true } last ? Command("en_son", ("konu", last.Groups["x"].Value.Trim()))
         : WhatLearned().IsMatch(sentence) ? Command("ogrendiklerin")
         : ShortcutsReset().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "sifirla"))
         : ShortcutsList().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "listele"))
         : null;
+
+    [GeneratedRegex(@"^(?:en son|son olarak|en son olarak) ne zaman (?<x>.{3,})$|^(?<x>.{3,}?) (?:en son|son olarak) ne zaman(?: \S+)?$")]
+    private static partial Regex LastTimeQuestion();
 
     [GeneratedRegex(@"^(?:bunu |şunu |onu )?(?:neden|niye|niçin) (?:söyledin|hatırlattın|sordun|dedin|haber verdin)$|^(?:neden|niye) bunu (?:söyledin|hatırlattın|sordun)$")]
     private static partial Regex WhySaid();
