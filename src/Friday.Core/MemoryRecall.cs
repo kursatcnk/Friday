@@ -95,7 +95,7 @@ public static class MemoryRecall
     ];
 
     /// <summary>Soru sözcüklerine kavram eşlerini ekler.</summary>
-    private static List<string> Expand(List<string> words)
+    internal static List<string> Expand(List<string> words)
     {
         var expanded = new List<string>(words);
         foreach (var word in words)

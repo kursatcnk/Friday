@@ -10,6 +10,8 @@ public class RoutingCoverageTests
 {
     [Theory]
     [InlineData("geçen haftaki market masraflarım ne kadar tuttu", "harcama")]
+    [InlineData("geçen hafta tatil hakkında ne konuşmuştuk", "gecmis")]
+    [InlineData("bana önerdiğin dizinin adı neydi", "gecmis")]
     [InlineData("kredi kartı ekstremi ne zaman ödenecek", "sabit_gider")]
     [InlineData("sterlin bugün ne alemde", "doviz")]
     [InlineData("kitap okuma serimi bozdum mu", "aliskanlik")]

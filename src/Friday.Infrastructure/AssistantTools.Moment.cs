@@ -78,6 +78,27 @@ public sealed partial class AssistantTools
             $"{record.Source}{(record.Source is "Not" or "Günlük" ? $" ({record.When.ToString("d MMMM", Turkish)})" : "")}: {Short(record.Text.TrimEnd('.'), 160)}")) + "]";
     }
 
+    /// <summary>
+    /// Geçmişe dönen sorularda ("geçen hafta ne önermiştin?") eski sohbetlerdeki ilgili soru-cevaplar (bkz.
+    /// <see cref="ConversationRecall"/>). Sohbetin modelde zaten duran son turları tekrar eklenmez.
+    /// </summary>
+    public string ConversationContext(string question, IReadOnlySet<string> live)
+    {
+        if (!ConversationRecall.RefersToPast(question))
+        {
+            return "";
+        }
+
+        var turns = history.PastTurns().Where(turn => !live.Contains(turn.User)).ToList();
+        var text = ConversationRecall.Context(question, turns, DateTime.Now);
+        if (text.Length > 0)
+        {
+            ledger.Record(DataFlow.Local, "Geçmiş", "Soruya önceki sohbetlerden ilgili konuşma eklendi");
+        }
+
+        return text;
+    }
+
     /// <summary>"Dünkü notunda", "3 gün önceki notunda", "12 Kasım tarihli notunda".</summary>
     private static string When(DateTime when, DateTime now, string place)
     {

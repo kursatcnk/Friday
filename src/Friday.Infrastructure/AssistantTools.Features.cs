@@ -271,8 +271,17 @@ public sealed partial class AssistantTools
     {
         if (query.Trim().Length > 0)
         {
-            var hits = history.Search(query, 8);
             ledger.Record(DataFlow.Local, "Geçmiş", $"Sohbetlerde \"{query.Trim()}\" arandı");
+            // Kökle ve sözcük sırası gözetmeden aranır ("kitap önerisi" → "Bir kitap önerir misin" / "Dune'u öneririm").
+            var found = ConversationRecall.Search(query, history.PastTurns());
+            if (found.Count > 0)
+            {
+                var asked = ConversationRecall.Topic(query);
+                return $"'{query.Trim()}' ile ilgili konuşmalar:\n" + string.Join('\n', found.Select(turn =>
+                    $"{turn.Time.ToString("d MMMM HH:mm", Turkish)} · {turn.Chat} · kullanıcı: {Shorten(turn.User, 160)} | {Settings.AssistantName}: {ConversationRecall.Excerpt(turn.Assistant, asked)}"));
+            }
+
+            var hits = history.Search(query, 8);
             return hits.Count == 0
                 ? $"Geçmiş sohbetlerde '{query.Trim()}' geçmiyor."
                 : $"'{query.Trim()}' geçen sohbetler:\n" + string.Join('\n', hits.Select(hit =>

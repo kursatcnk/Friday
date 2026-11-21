@@ -303,6 +303,17 @@ public sealed partial class ChatStore
         return hits;
     }
 
+    /// <summary>Bütün sohbetlerin bütün turları, sohbet başlığıyla, eskiden yeniye (konuşma hafızası için).</summary>
+    public IReadOnlyList<PastTurn> PastTurns()
+    {
+        lock (_gate)
+        {
+            return [.. _chats.Values
+                .SelectMany(chat => chat.Turns.Select(turn => new PastTurn(turn.Time.LocalDateTime, turn.User, turn.Assistant, chat.Title)))
+                .OrderBy(turn => turn.Time)];
+        }
+    }
+
     /// <summary>Bir günün bütün turları, bütün sohbetlerden, saat sırasıyla ("Bugün ne konuştuk?").</summary>
     public IReadOnlyList<ConversationTurn> Read(DateOnly day)
     {

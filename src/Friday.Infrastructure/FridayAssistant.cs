@@ -1240,6 +1240,7 @@ public sealed class FridayAssistant : IDisposable
         var memories = _longTermMemory.Items;
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
             + _tools.PersonalContext(question)
+            + _tools.ConversationContext(question, _memory.Messages.Where(message => message.Role == ChatRole.User).Select(message => message.Content).ToHashSet(StringComparer.Ordinal))
             + _tools.Situation(DateTime.Now)
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 
