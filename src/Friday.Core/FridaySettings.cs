@@ -32,6 +32,9 @@ public sealed class FridaySettings
     /// <summary>Metin kısaltmaları: ad → metin ("imza" → "Saygılarımla, …"); "imzamı yaz" deyince açık pencereye yazılır.</summary>
     public Dictionary<string, string> Snippets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Kullanıcının "X adını öğren" diyerek öğrettiği adlar; Whisper bunları doğru duysun diye ipucuna yazılır.</summary>
+    public List<string> HearingWords { get; set; } = [];
+
     /// <summary>Yazarken kısaltmayı genişleten kısayol: kısaltmanın adını yaz, bu tuşlara bas.</summary>
     public string SnippetHotkey { get; set; } = "Ctrl+Alt+K";
 

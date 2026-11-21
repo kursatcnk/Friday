@@ -280,6 +280,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.Lists = new ListStore(Path.Combine(paths.Data, "lists.json"));
         _tools.Journal = new JournalStore(Path.Combine(paths.Data, "journal"));
         _tools.Corrections = new CorrectionBook(Path.Combine(paths.Data, "corrections.json"));
+        _tools.HearingChanged += (_, _) => _ = RefreshHearingAsync();
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -433,6 +434,7 @@ public sealed class FridayAssistant : IDisposable
         _speaker.Configure(settings, voice);
         _chat.KeepAlive = $"{Math.Max(1, settings.GpuIdleMinutes)}m";
         _whisper.Configure(_paths.ResolveWhisperModel(settings.WhisperModelPath), settings);
+        await RefreshHearingAsync().ConfigureAwait(false);
 
         // Önce dinlemek ve konuşmak için gerekenler (Whisper, Piper) yüklenir; dil modeli (~5 GB) onlardan sonra diskten
         // okunur. Yavaş bir diskte ikisi aynı anda okunursa ikisi de gecikir.
@@ -1414,7 +1416,12 @@ public sealed class FridayAssistant : IDisposable
 
         _activity.Records = _settings.ScreenTime;
         _tools.Activity = _settings.ScreenTime ? _activity : null;
-        _tools.Tracker = _activity;
+        if (_tools.Tracker is null)
+        {
+            // Sık kullanılan uygulamaların adları da kulağa girsin.
+            _tools.Tracker = _activity;
+            _ = RefreshHearingAsync();
+        }
     }
 
     private ActivityTracker? _activity;
@@ -1762,6 +1769,30 @@ public sealed class FridayAssistant : IDisposable
         return await _tools.TomorrowWeatherAlertAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Whisper ipucunu kullanıcının dünyasındaki adlarla yeniler (bkz. <see cref="HearingVocabulary"/>). İpucu
+    /// değişmediyse hiçbir şey yapılmaz; değiştiyse çözümleyici yeniden kurulup ısındırılır.
+    /// </summary>
+    private async Task RefreshHearingAsync()
+    {
+        try
+        {
+            _hearingAt = DateTime.Now;
+            var prompt = await Task.Run(_tools.HearingPrompt).ConfigureAwait(false);
+            if (!string.Equals(prompt, _whisper.Prompt, StringComparison.Ordinal))
+            {
+                await _whisper.SetPromptAsync(prompt).ConfigureAwait(false);
+                FridayLog.Info($"Kulak güncellendi: {prompt.Length} karakterlik ipucu");
+            }
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or ObjectDisposedException)
+        {
+            FridayLog.Warn($"Kulak güncellenemedi: {exception.Message}");
+        }
+    }
+
+    private DateTime _hearingAt;
+
     private async Task CareTickAsync()
     {
         try
@@ -1773,6 +1804,12 @@ public sealed class FridayAssistant : IDisposable
                 {
                     return;
                 }
+            }
+
+            // Kullanıcı yeni kişilerden, yerlerden bahsettikçe kulak da onlara alışır (20 dakikada bir bakılır).
+            if (now - _hearingAt > TimeSpan.FromMinutes(20))
+            {
+                await RefreshHearingAsync().ConfigureAwait(false);
             }
 
             // Göz molası sayacı: yeni bir oturuşta (2 dakikadan kısa aralıksız kullanım) baştan başlar.

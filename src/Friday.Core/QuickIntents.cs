@@ -89,6 +89,7 @@ public static partial class QuickIntents
             ?? CalendarQuestion(sentence)
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
+            ?? Hearing(sentence)
             ?? Recall(sentence)
             ?? Undo(sentence)
             ?? Life(sentence)

@@ -16,10 +16,46 @@ public sealed class WhisperTranscriber : IDisposable
     private WhisperProcessor? _processor;
     private string _modelPath = "";
     private FridaySettings _settings = new();
+    private string _prompt = "";
 
     public string RuntimeLabel { get; private set; } = "";
 
     public bool IsLoaded => _processor is not null;
+
+    /// <summary>Whisper'a verilen ipucu (bkz. <see cref="HearingVocabulary"/>); boşsa yalnızca asistanın adı.</summary>
+    public string Prompt => _prompt.Length > 0 ? _prompt : $"Merhaba {_settings.AssistantName}.";
+
+    /// <summary>
+    /// İpucunu değiştirir (kullanıcının dünyasındaki adlar). Model yüklüyse çözümleyici hemen yeni ipucuyla kurulur;
+    /// değilse bir sonraki yüklemede kullanılır.
+    /// </summary>
+    public async Task SetPromptAsync(string prompt)
+    {
+        if (string.Equals(prompt, _prompt, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        await _lock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            _prompt = prompt;
+            if (_factory is not null && _processor is not null)
+            {
+                _processor.Dispose();
+                _processor = Build(_factory);
+
+                // Yeni çözümleyicinin ilk çözümlemesi yavaştır (~0,5 sn); kullanıcının ilk sözünde beklenmesin.
+                await foreach (var _ in _processor.ProcessAsync(new float[MicrophoneRecorder.SampleRate / 2]).ConfigureAwait(false))
+                {
+                }
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
 
     public void Configure(string modelPath, FridaySettings settings)
     {
@@ -86,7 +122,10 @@ public sealed class WhisperTranscriber : IDisposable
                 text.Append(segment.Text);
             }
 
-            return TranscriptFilter.Normalize(text.ToString());
+            var heard = TranscriptFilter.Normalize(text.ToString());
+
+            // Sessizlikte ipucunu "duymak" kullanıcının sözü sayılmaz.
+            return HearingVocabulary.IsEcho(heard, Prompt) ? "" : heard;
         }
         finally
         {
@@ -108,15 +147,18 @@ public sealed class WhisperTranscriber : IDisposable
             _ => "CPU"
         };
 
-        _processor = _factory.CreateBuilder()
+        _processor = Build(_factory);
+    }
+
+    private WhisperProcessor Build(WhisperFactory factory) =>
+        factory.CreateBuilder()
             .WithLanguage(string.IsNullOrWhiteSpace(_settings.Language) ? "auto" : _settings.Language)
             .WithNoContext()
             .WithThreads(Math.Clamp(Environment.ProcessorCount / 2, 2, 8))
             .WithBeamSearchSamplingStrategy(strategy => strategy.WithBeamSize(3))
-            // Asistanın adını önceden duyurmak, adın doğru yazılmasını sağlar.
-            .WithPrompt($"Merhaba {_settings.AssistantName}.")
+            // Asistanın adı ve kullanıcının dünyasındaki özel adlar önceden duyurulur; doğru yazılırlar.
+            .WithPrompt(Prompt)
             .Build();
-    }
 
     public void Dispose()
     {
