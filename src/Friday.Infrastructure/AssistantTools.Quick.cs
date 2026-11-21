@@ -109,6 +109,7 @@ public sealed partial class AssistantTools
                 "duzeltme" => CorrectionCommand(Arg("islem")),
                 "aktif_saatler" => ActiveHoursAnswer(),
                 "kulak" => HearingCommand(Arg("islem"), Arg("ad")),
+                "uslup" => StyleCommand(Arg("islem")),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),

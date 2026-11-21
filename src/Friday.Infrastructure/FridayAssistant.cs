@@ -281,6 +281,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.Journal = new JournalStore(Path.Combine(paths.Data, "journal"));
         _tools.Corrections = new CorrectionBook(Path.Combine(paths.Data, "corrections.json"));
         _tools.HearingChanged += (_, _) => _ = RefreshHearingAsync();
+        _tools.Style = new ReplyStyle(Path.Combine(paths.Data, "reply-style.json"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -668,6 +669,12 @@ public sealed class FridayAssistant : IDisposable
 
             if (State is AssistantState.Thinking or AssistantState.Speaking or AssistantState.Listening)
             {
+                // Dil modelinin uzun bir cevabı okunurken söz kesildi: üslup öğrenimi için sayılır.
+                if (State is AssistantState.Speaking && _modelAnswer && _shown.Length >= LongAnswer * 3 / 4)
+                {
+                    _tools.Style?.RecordLongAnswer(interrupted: true);
+                }
+
                 _turn?.Cancel();
                 _stopListening?.Cancel();
                 _speaker.Stop();
@@ -1022,6 +1029,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.LastUserText = text;
         _tools.ActiveWindow = _activeWindow;
         _shown = "";
+        _modelAnswer = false;
         var chatAtStart = _chats.CurrentId;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context + correction));
@@ -1070,9 +1078,22 @@ public sealed class FridayAssistant : IDisposable
         }
 
         await _speaker.WaitUntilDoneAsync(cancellationToken).ConfigureAwait(false);
+
+        // Sonuna kadar dinlenen uzun bir cevap: üslup öğrenimi için "kesilmedi" sayılır.
+        if (quickTool is null && reply.Length >= LongAnswer)
+        {
+            _tools.Style?.RecordLongAnswer(interrupted: false);
+        }
+
         RecordOnlineSpeech();
         Report(AssistantState.Idle, ReadyText);
     }
+
+    /// <summary>Üslup öğreniminde "uzun cevap" sayılan uzunluk (karakter); kabaca üç cümle.</summary>
+    private const int LongAnswer = 200;
+
+    /// <summary>Şu an okunan cevap dil modelinden mi (hızlı komut cevapları üslup öğrenimine girmez).</summary>
+    private volatile bool _modelAnswer;
 
     /// <summary>
     /// Dikte: her konuşma parçası yazıya dökülüp etkin pencereye yazılır ("yeni satır" Enter, "geri al" Ctrl+Z).
@@ -1144,6 +1165,12 @@ public sealed class FridayAssistant : IDisposable
 
     private async Task<string> AnswerAsync(string question, CancellationToken cancellationToken)
     {
+        _modelAnswer = true;
+        if (_tools.Style?.TakeNotice() == true)
+        {
+            Say("Uzun cevaplarımın sözünü sık kestiğini fark ettim; bundan sonra daha kısa konuşacağım.");
+        }
+
         var reply = new StringBuilder();
         var retried = false;
         var filled = false;
@@ -1168,7 +1195,8 @@ public sealed class FridayAssistant : IDisposable
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
-            + _tools.Situation(DateTime.Now);
+            + _tools.Situation(DateTime.Now)
+            + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 
         for (var round = 0; round <= maxRounds; round++)
         {
