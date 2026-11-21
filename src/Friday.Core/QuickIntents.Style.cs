@@ -12,6 +12,15 @@ public static partial class QuickIntents
         : StyleQuestion().IsMatch(sentence) ? Command("uslup", ("islem", "durum"))
         : null;
 
+    /// <summary>"Dün ne yaptım", "geçen salı nasıl geçti": gün anlaşılırsa o günün hikâyesi.</summary>
+    private static QuickCommand? PastDayQuestion(string sentence) =>
+        PastDay().Match(sentence) is { Success: true } match && DayStory.Parse(match.Groups["d"].Value, DateOnly.FromDateTime(DateTime.Now)) is not null
+            ? Command("o_gun", ("gun", match.Groups["d"].Value))
+            : null;
+
+    [GeneratedRegex(@"^(?<d>dün|önceki gün|evvelsi gün|dünden önceki gün|\d{1,3} gün önce|(?:geçen (?:hafta )?)?(?:pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar)|\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık))(?: günü)? (?:ne(?:ler)? yaptım|ne(?:ler)? yapmışım|nasıl geçti|ne(?:yle)? uğraştım|ne yapıyordum|neler oldu|ne yaptığımı (?:söyle|anlat))$")]
+    private static partial Regex PastDay();
+
     // "Daha detaylı anlat" tek seferlik bir istektir (son cevabı aç); kalıcı tercih "konuş", "cevap ver", "bundan sonra" ile söylenir.
     [GeneratedRegex(@"^(?:bundan sonra |artık )?(?:daha kısa konuş|kısa konuş|cevaplarını kısa tut|(?:daha )?kısa cevap(?:lar)? ver|çok uzun konuşuyorsun|lafı uzatma|bu kadar uzun anlatma|az konuş)$")]
     private static partial Regex BriefPlease();

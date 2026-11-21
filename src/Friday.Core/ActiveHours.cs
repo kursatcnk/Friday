@@ -67,6 +67,21 @@ public sealed class ActiveHours
     /// <summary>Günün genelde başladığı saat; yeterli gün yoksa null.</summary>
     public TimeSpan? TypicalStart(DateTime now) => Typical(now, last: false);
 
+    /// <summary>O gün bilgisayar başında olunan ilk ve son an (05.00'te başlayan gün; 25:30 = gece 01.30); kayıt yoksa null.</summary>
+    public (TimeSpan Start, TimeSpan End)? Span(DateOnly day)
+    {
+        if (!_days.TryGetValue(day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), out var slots))
+        {
+            return null;
+        }
+
+        var first = Array.FindIndex(slots, seconds => seconds >= 60);
+        var last = Array.FindLastIndex(slots, seconds => seconds >= 60);
+        return first < 0
+            ? null
+            : (TimeSpan.FromHours(DayStartHour) + TimeSpan.FromMinutes(first * SlotMinutes), TimeSpan.FromHours(DayStartHour) + TimeSpan.FromMinutes((last + 1) * SlotMinutes));
+    }
+
     /// <summary>Akşam hatırlatmalarının dayandığı gün sonu: öğrenilen (18.00–02.00 arasına sıkıştırılmış) ya da 23.00.</summary>
     public TimeSpan DayEnd(DateTime now)
     {

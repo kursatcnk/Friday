@@ -46,6 +46,15 @@ public sealed class ActivityTracker : IDisposable
         }
     }
 
+    /// <summary>O gün bilgisayar başında olunan ilk ve son an (yarım saatlik dilimlerle); kayıt yoksa null.</summary>
+    public (TimeSpan Start, TimeSpan End)? DaySpan(DateOnly day)
+    {
+        lock (_log)
+        {
+            return _hours.Span(day);
+        }
+    }
+
     /// <summary>Öğrenilmiş gün başı ve sonu; yeterli kayıt yoksa null.</summary>
     public (TimeSpan Start, TimeSpan End)? TypicalDay(DateTime now)
     {

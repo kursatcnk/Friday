@@ -52,7 +52,8 @@ public static class ToolRouter
         (["ne yap", "başlayayım", "öneri", "sıkıldım", "canım sıkıl"], ["ne_yapayim", "gun_plani"]),
         (["araştır", "detaylı"], ["arastirma_raporu"]),
         (["linkedin", "github", "google"], ["web_ara", "web_sitesi_ac"]),
-        (["geri al", "geri getir", "yanlışlıkla", "değişiklik", "değiştirdin"], ["geri_al"])
+        (["geri al", "geri getir", "yanlışlıkla", "değişiklik", "değiştirdin"], ["geri_al"]),
+        (["ne yaptım", "neler yaptım", "yapmışım", "nasıl geçti", "ne yapıyordum", "uğraştım"], ["o_gun"])
     ];
 
     /// <summary>Soru için araç adları (çekirdek + konuya göre + son turlarda kullanılanlar); <paramref name="everything"/> ise null (hepsi).</summary>

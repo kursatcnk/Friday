@@ -63,6 +63,15 @@ public sealed class TodoStore : IRestorableStore
         }
     }
 
+    /// <summary>Bu aralıkta tamamlanan işler, tamamlanma sırasıyla.</summary>
+    public IReadOnlyList<TodoItem> CompletedBetween(DateTime from, DateTime to)
+    {
+        lock (_gate)
+        {
+            return [.. _items.Where(item => item.Done >= from && item.Done < to).OrderBy(item => item.Done)];
+        }
+    }
+
     public IReadOnlyList<TodoItem> Visible(DateTime now)
     {
         lock (_gate)
