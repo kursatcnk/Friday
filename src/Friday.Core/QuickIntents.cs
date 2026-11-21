@@ -185,6 +185,7 @@ public static partial class QuickIntents
         var sentences = SentenceBreak().Split(text.Trim()).Where(part => part.Trim().Length > 0).ToArray();
         var sentence = (sentences.Length > 0 ? sentences[^1] : text).Trim().TrimEnd('.', '!', '?', ' ').ToLower(Turkish);
         sentence = Address().Replace(sentence, "");
+        sentence = LeadingConjunction().Replace(sentence, "");
         sentence = Politeness().Replace(" " + sentence, " ");
         sentence = OpenVerbs().Replace(sentence, " aç");
         return Whitespace().Replace(sentence, " ").Trim().TrimEnd(',').Trim();
@@ -546,6 +547,14 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:hey\s+)?friday[,\s]+")]
     private static partial Regex Address();
+
+    /// <summary>
+    /// Baştaki bağlaç: "Spotify'ı aç" dedikten sonra kısa bir duraklamayla gelen "ve sesi kıs" ayrı bir söz olarak
+    /// yazıya dökülür; bağlaç yüzünden hiçbir kalıba uymayıp dil modeline gidiyordu. "Sonra" bilerek yok: cümle başında
+    /// "daha sonra" anlamına da gelir.
+    /// </summary>
+    [GeneratedRegex(@"^(?:ve sonra|ve|bir de|ayrıca|ardından|peki)\s+")]
+    private static partial Regex LeadingConjunction();
 
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]
     private static partial Regex Politeness();

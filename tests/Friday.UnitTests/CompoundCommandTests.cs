@@ -45,6 +45,17 @@ public class CompoundCommandTests
     }
 
     [Theory]
+    // Kısa bir duraklamayla ayrı söz olarak gelen ikinci parça bağlaçla başlar.
+    [InlineData("ve sesi kıs", "medya")]
+    [InlineData("bir de dolar kaç", "doviz")]
+    [InlineData("ayrıca hava nasıl", "hava_durumu")]
+    [InlineData("ve sonra müziği durdur", "medya")]
+    [InlineData("ardından bilgisayarı kilitle", "sistem")]
+    [InlineData("ve yarın 9'da dişçiyi hatırlat", "hatirlatici")]
+    public void ASecondPartSpokenAfterAPauseIsStillACommand(string text, string tool) =>
+        Assert.Equal(tool, QuickIntents.Match(text)?.Tool);
+
+    [Theory]
     [InlineData("hatırlat bana yarın süt ve ekmek almam lazım")]
     [InlineData("not al: toplantı perşembe ve cuma")]
     [InlineData("market listeme süt ve yumurta ekle")]
