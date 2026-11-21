@@ -569,7 +569,14 @@ public sealed class FridayAssistant : IDisposable
         Report(AssistantState.Thinking, "Dil modeli yükleniyor (ilk açılış)…");
         try
         {
-            await _brainReady.WaitAsync(cancellationToken).ConfigureAwait(false);
+            // Yükleme uzarsa sessiz kalmak yerine bir kez söylenir; kullanıcı neden beklediğini bilsin.
+            var ready = _brainReady.WaitAsync(cancellationToken);
+            if (await Task.WhenAny(ready, Task.Delay(1500, cancellationToken)).ConfigureAwait(false) != ready)
+            {
+                Say("Yeni açıldım, aklımı topluyorum; birkaç saniye sürecek.");
+            }
+
+            await ready.ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or IOException or TimeoutException)
         {
