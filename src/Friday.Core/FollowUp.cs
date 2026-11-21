@@ -37,13 +37,30 @@ public static partial class FollowUp
     /// <summary>Devam sözünü son komutun üzerine kurar; kurulamazsa null.</summary>
     public static (string Text, QuickCommand Command)? Resolve(string text, string lastText, QuickCommand last, Func<string, QuickCommand?> match)
     {
-        if (!Tools.Contains(last.Tool) || Shape().Match(text.Trim().TrimEnd('?', '.', '!').Trim()) is not { Success: true } shape)
+        // Whisper "Peki, euro." diye virgül koyuyor, soru işaretini düşürüyor.
+        var plain = string.Join(' ', text.Replace(',', ' ').Trim().TrimEnd('?', '.', '!').Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        if (!Tools.Contains(last.Tool) || Shape().Match(plain) is not { Success: true } shape)
         {
             return null;
         }
 
         var marked = shape.Groups["p"].Success || shape.Groups["d"].Success || shape.Groups["t"].Success || text.TrimEnd().EndsWith('?');
         var value = shape.Groups["v"].Value.Trim();
+        var single = !value.Contains(' ', StringComparison.Ordinal);
+        // "Ya Ankara'da?" çoğu kez yalnızca "Ankara'da" diye yazıya dökülür; tek başına bulunma ekli bir ad zaten devamdır.
+        if (!marked && single && last.Tool is "hava_durumu" or "saat_ve_tarih" && Locative().IsMatch(value))
+        {
+            marked = true;
+        }
+
+        // "Kira da" bitişik "Kirada" diye yazılır: liste ve işlerde tek sözcüğün sonundaki "da/de" bağlaçtır.
+        if (!marked && single && last.Tool is "liste" or "yapilacak" or "yapilacaklar" && value.Length > 4
+            && Fold(value)[^2..] is "da" or "de" or "ta" or "te")
+        {
+            value = value[..^2];
+            marked = true;
+        }
+
         if (!marked || value.Length < 2 || value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > MaxWords)
         {
             return null;
@@ -89,6 +106,12 @@ public static partial class FollowUp
             var word = words[at + length - 1];
             var apostrophe = word.IndexOfAny(Apostrophes);
             var suffix = apostrophe > 0 ? word[(apostrophe + 1)..].ToLower(Turkish) : "";
+            // Whisper cümle başını büyük yazar ("Yumurta da"); eski değer küçük harfliyse ("süt") yenisi de küçük olur.
+            if (char.IsLower(words[at][0]) && char.IsUpper(value[0]) && value.IndexOfAny(Apostrophes) < 0)
+            {
+                value = char.ToLower(value[0], Turkish) + value[1..];
+            }
+
             yield return (Replace(words, at, length, value), false);
             if (suffix is "da" or "de" or "ta" or "te" && value.IndexOfAny(Apostrophes) < 0)
             {
@@ -147,4 +170,8 @@ public static partial class FollowUp
     /// <summary>"peki euro", "ya Ankara'da", "yumurta da", "bir de ekmek", "peynir de ekle", "peki yarın".</summary>
     [GeneratedRegex(@"^(?<p>(?:peki|ya|bir de|ayrıca|o zaman|hani)\s+)?(?<v>.+?)(?<d>\s+(?:da|de|ta|te))?(?<t>\s+(?:ekle|koy|at|yaz|nasıl|kaç|ne kadar|ne durumda|için|olsun))?$", RegexOptions.IgnoreCase)]
     private static partial Regex Shape();
+
+    /// <summary>Kesme işaretiyle bulunma eki almış bir ad: "Ankara'da", "İzmir'de", "Kars'ta".</summary>
+    [GeneratedRegex(@"^\p{Lu}\p{L}+['’](?:da|de|ta|te)$")]
+    private static partial Regex Locative();
 }

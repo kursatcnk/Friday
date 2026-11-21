@@ -186,6 +186,9 @@ public static partial class QuickIntents
         var sentence = (sentences.Length > 0 ? sentences[^1] : text).Trim().TrimEnd('.', '!', '?', ' ').ToLower(Turkish);
         sentence = Address().Replace(sentence, "");
         sentence = LeadingConjunction().Replace(sentence, "");
+        // Whisper'ın sık yanlış yazdıkları (ses ölçümü): "sesi kız" (kıs), "eurokaç" (euro kaç).
+        sentence = MisheardVolume().Replace(sentence, "$1 kıs");
+        sentence = MergedRate().Replace(sentence, "$1 kaç");
         sentence = Politeness().Replace(" " + sentence, " ");
         sentence = OpenVerbs().Replace(sentence, " aç");
         return Whitespace().Replace(sentence, " ").Trim().TrimEnd(',').Trim();
@@ -555,6 +558,12 @@ public static partial class QuickIntents
     /// </summary>
     [GeneratedRegex(@"^(?:ve sonra|ve|bir de|ayrıca|ardından|peki)\s+")]
     private static partial Regex LeadingConjunction();
+
+    [GeneratedRegex(@"\b(sesi|sesini|müziğin sesini|müziği) kız\b")]
+    private static partial Regex MisheardVolume();
+
+    [GeneratedRegex(@"\b(dolar|euro|avro|sterlin|altın|frank|yen)kaç\b")]
+    private static partial Regex MergedRate();
 
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]
     private static partial Regex Politeness();

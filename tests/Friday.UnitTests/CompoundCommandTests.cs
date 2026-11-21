@@ -52,6 +52,9 @@ public class CompoundCommandTests
     [InlineData("ve sonra müziği durdur", "medya")]
     [InlineData("ardından bilgisayarı kilitle", "sistem")]
     [InlineData("ve yarın 9'da dişçiyi hatırlat", "hatirlatici")]
+    // Whisper'ın sık yanlış yazışları.
+    [InlineData("Sesi kız.", "medya")]
+    [InlineData("Bir de eurokaç?", "doviz")]
     public void ASecondPartSpokenAfterAPauseIsStillACommand(string text, string tool) =>
         Assert.Equal(tool, QuickIntents.Match(text)?.Tool);
 

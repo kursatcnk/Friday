@@ -23,6 +23,11 @@ public class FollowUpTests
     [InlineData("yapılacaklarıma fatura öde ekle", "kira da", "yapılacaklarıma kira ekle")]
     [InlineData("yapılacaklarıma fatura öde ekle", "bir de market alışverişi", "yapılacaklarıma market alışverişi ekle")]
     [InlineData("yılbaşına kaç gün kaldı", "peki bayrama", "bayrama kaç gün kaldı")]
+    // Whisper'ın yazışları: virgül, düşen "ya", bitişik "da", cümle başı büyük harf.
+    [InlineData("dolar kaç", "Peki, euro.", "euro kaç")]
+    [InlineData("İstanbul'da hava nasıl", "Ankara'da", "Ankara'da hava nasıl")]
+    [InlineData("yapılacaklarıma fatura öde ekle", "Kirada", "yapılacaklarıma kira ekle")]
+    [InlineData("market listeme süt ekle", "Yumurta da.", "market listeme yumurta ekle")]
     public void BuildsOnTheLastCommand(string last, string text, string expected) => Assert.Equal(expected, Resolve(last, text));
 
     [Theory]
@@ -33,6 +38,7 @@ public class FollowUpTests
     [InlineData("dolar kaç", "teşekkürler")]
     [InlineData("dolar kaç", "neden")]
     [InlineData("dolar kaç", "peki neden yükseliyor")]
+    [InlineData("dolar kaç", "Ankara'da")]
     public void IgnoresWhatIsNotAFollowUp(string last, string text) => Assert.Null(Resolve(last, text));
 
     [Fact]
