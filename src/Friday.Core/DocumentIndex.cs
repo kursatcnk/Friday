@@ -275,6 +275,67 @@ public static class AgentPlan
         return Unable.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
     }
 
+    /// <summary>Bir işi yaptığını ya da yapacağını söyleyen kalıplar ("not ettim", "listene ekledim", "yarın hatırlatırım").</summary>
+    private static readonly string[] Claims =
+    [
+        "ekledim", "kaydettim", "not ettim", "not aldım", "kurdum", "ayarladım", "oluşturdum", "hafızama", "aklıma yazdım",
+        "hatırlatacağım", "hatırlatırım", "haber vereceğim", "haber veririm", "aklımda tut", "unutmayacağım", "uyandıracağım",
+        "uyandırırım", "takip edeceğim", "dürteceğim", "seslenirim", "sesleneceğim", "kaydedeceğim", "ekleyeceğim", "not edeceğim",
+        "kaydediyorum", "ekliyorum", "not ediyorum", "kuruyorum", "hatırlatıyorum", "yazdım bile", "listene attım", "listeye attım",
+        "hatırlayacağım", "bilgilendireceğim", "bilgilendiririm", "uyaracağım", "uyarırım"
+    ];
+
+    /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>
+    private static readonly string[] AskedDone =
+    [
+        "ekledin", "kaydettin", "kurdun", "ayarladın", "not ettin", "not aldın", "hatırlattın", "oluşturdun", "neleri değiştirdin"
+    ];
+
+    /// <summary>
+    /// Model cümlesi bir işi yaptığını ya da yapacağını söylüyor mu? Araç çağrılmadan söylenirse yalandır: not alınmamış,
+    /// hatırlatma kurulmamıştır. Böyle bir cümle okunmadan tutulur ve tur, işi araçla gerçekten yapması istenerek yinelenir.
+    /// </summary>
+    public static bool ClaimsAction(string sentence)
+    {
+        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return Claims.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
+    }
+
+    /// <summary>Kullanıcı yeni bir iş değil, Friday'in önceden yaptığı bir işi mi soruyor? (O zaman "ekledim" doğrudur.)</summary>
+    public static bool AsksWhatWasDone(string question)
+    {
+        var text = question.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return AskedDone.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// İddianın hangi işe denk geldiği: "hafızama kaydettim" hatirla, "not aldım" not, "hatırlatırım" hatirlatici. Ölçümde
+    /// bütün araçlar verilerek yinelenen 11 sahte iddianın çoğunda model yanlış aracı seçti (hafıza yerine arama, not yerine
+    /// pano); iddianın kendi aracı adıyla verilince doğru araç çağrılıyor.
+    /// </summary>
+    private static readonly (string[] Phrases, string Tool)[] ClaimTools =
+    [
+        (["listene", "listeye", "listesine"], "liste"),
+        (["yapılacak", "işlerine", "görevlerine"], "yapilacaklar"),
+        (["not ettim", "not aldım", "not edeceğim", "not ediyorum", "notlarına", "yazdım bile"], "not"),
+        (["hatırlatıcı", "hatırlatırım", "hatırlatacağım", "hatırlatıyorum", "haber vereceğim", "haber veririm", "uyandır", "dürt", "seslen",
+          "uyar", "bilgilendir", "alarm"], "hatirlatici"),
+        (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla")
+    ];
+
+    /// <summary>Bir iddia cümlesinin denk geldiği araçlar, en belirginden başlayarak; tanınmazsa boş.</summary>
+    public static IReadOnlyList<string> ClaimedTools(string text)
+    {
+        var lower = text.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return [.. ClaimTools.Where(item => item.Phrases.Any(phrase => lower.Contains(phrase, StringComparison.Ordinal))).Select(item => item.Tool).Distinct()];
+    }
+
+    /// <summary>Araç çağrılmadan "yaptım" diyen bir cevabın yinelenmesinde soruya eklenen uyarı; iddianın aracı biliniyorsa adıyla.</summary>
+    public static string ClaimNudge(IReadOnlyList<string> tools) =>
+        "\n[Az önce bu isteğe hiçbir araç çağırmadan işi yapmış gibi cevap verdin; iş yapılmadı. "
+        + (tools.Count > 0 ? $"Şimdi {tools[0]} aracını çağırarak işi gerçekten yap." : "Şimdi uygun aracı çağırarak işi gerçekten yap.")
+        + " Uygun bir araç yoksa yapamadığını açıkça söyle.]";
+
     public static bool IsMultiStep(string question)
     {
         var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";

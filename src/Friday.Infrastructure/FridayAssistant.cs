@@ -1235,6 +1235,10 @@ public sealed class FridayAssistant : IDisposable
         }
 
         var widened = false;
+        // Araç çağrılmadan "not ettim" denirse cümle okunmaz; tur bir kez, işi araçla yapması istenerek yinelenir.
+        var claimRetried = false;
+        IReadOnlyList<string> claimed = [];
+        var nudge = "";
 
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
@@ -1256,9 +1260,9 @@ public sealed class FridayAssistant : IDisposable
             {
                 messages[firstUser] = messages[firstUser] with { Content = earlier + "\n" + messages[firstUser].Content };
             }
-            if (recalled.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
+            if (recalled.Length + nudge.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
             {
-                messages[lastUser] = messages[lastUser] with { Content = messages[lastUser].Content + recalled };
+                messages[lastUser] = messages[lastUser] with { Content = messages[lastUser].Content + recalled + nudge };
             }
 
             var chunker = new SentenceChunker();
@@ -1266,9 +1270,12 @@ public sealed class FridayAssistant : IDisposable
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
             // Araç tanımları her soruda baştan işlenir (~4.100 belirteç, ~1,1 sn); soruya göre gereken alt küme gönderilir.
-            var tools = round < maxRounds ? (widened ? _tools.Definitions : _tools.DefinitionsFor(question, multiStep, RecentTools())) : [];
+            var tools = round < maxRounds ? (widened ? _tools.Definitions : _tools.DefinitionsFor(question, multiStep, RecentTools().Concat(claimed))) : [];
             var replyStart = reply.Length;
             var unable = false;
+            var held = false;
+            var guardClaims = !claimRetried && !smallTalk && round < maxRounds && tools.Count > 0 && _turnCalls.Count == 0
+                              && !AgentPlan.AsksWhatWasDone(question);
             // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
             // kadar ekliyordu. Kesin bilgi sorularında da yalnızca sohbette sayılı eski bir cevap varken düşünür; yoksa
             // model o sayıyı tekrarlayabiliyor (bkz. AgentPlan.NeedsThinking). Küçük model düşünmeden aracı çağırmak
@@ -1305,7 +1312,12 @@ public sealed class FridayAssistant : IDisposable
                         break;
                     }
 
-                    SayUnlessFiller(sentence);
+                    // "Not ettim" gibi bir iş iddiası, araç çağrısı gelene kadar okunmaz (bkz. AgentPlan.ClaimsAction).
+                    held |= guardClaims && AgentPlan.ClaimsAction(sentence);
+                    if (!held)
+                    {
+                        SayUnlessFiller(sentence);
+                    }
                 }
 
                 if (unable)
@@ -1313,7 +1325,10 @@ public sealed class FridayAssistant : IDisposable
                     break;
                 }
 
-                Show(reply.ToString());
+                if (!held)
+                {
+                    Show(reply.ToString());
+                }
             }
 
             if (unable)
@@ -1328,7 +1343,28 @@ public sealed class FridayAssistant : IDisposable
 
             if (chunker.Flush() is { } rest)
             {
-                SayUnlessFiller(rest);
+                held |= guardClaims && AgentPlan.ClaimsAction(rest);
+                if (!held)
+                {
+                    SayUnlessFiller(rest);
+                }
+            }
+
+            if (held)
+            {
+                // Tutulan iddia ekrandan da kalkar: ya araç sonucu gelince model doğrusunu söyler ya da tur yinelenir.
+                reply.Length = replyStart;
+                Show(reply.ToString());
+                if (calls.Count == 0)
+                {
+                    FridayLog.Info("Model araç çağırmadan işi yaptım dedi; cümle okunmadı, tur işi araçla yapması istenerek yineleniyor");
+                    // Bütün araçlar verilince model çoğu kez yanlış aracı seçiyordu; iddianın kendi aracı adıyla eklenir.
+                    claimRetried = true;
+                    claimed = AgentPlan.ClaimedTools(content.ToString());
+                    nudge = AgentPlan.ClaimNudge(claimed);
+                    round--;
+                    continue;
+                }
             }
 
             // Model ara sıra yalnızca "düşünüp" ne metin ne araç çağrısı üretiyor; bir kez daha denenir.
@@ -1362,6 +1398,7 @@ public sealed class FridayAssistant : IDisposable
                 return reply.ToString();
             }
 
+            nudge = "";
             foreach (var call in calls)
             {
                 Report(AssistantState.Thinking, (multiStep ? $"{++step}. adım: " : "") + AssistantTools.DescribeActivity(call.Name) + "…");
