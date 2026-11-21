@@ -86,6 +86,9 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Son istek: söz, hızlı yolda çalıştıysa aracı, cevap ve kayıtlarda yaptığı değişiklik.</summary>
     private LastTurn? _lastTurn;
 
+    /// <summary>Son çalışan hızlı komut ve söylenişi; "peki euro?", "yumurta da" gibi devam sözleri bunun üzerine kurulur.</summary>
+    private (string Text, QuickCommand Command, DateTime At)? _lastQuick;
+
     /// <summary>Alışkanlık önerilerini 5 dk'da bir yoklar.</summary>
     private Timer? _habitTimer;
 
@@ -1052,6 +1055,17 @@ public sealed class FridayAssistant : IDisposable
         var compound = !answering && !_tools.InChecklist && correction.Length == 0 && command is not { Tool: "onay" or "kontrol_cevap" }
             ? CompoundCommand.Split(text, command, Quick)
             : null;
+
+        // "Dolar kaç"tan sonra "peki euro?", "market listeme süt ekle"den sonra "yumurta da" (bkz. FollowUp).
+        var spoken = text;
+        if (command is null && compound is null && !answering && !_tools.InChecklist && correction.Length == 0
+            && _lastQuick is { } previous && DateTime.Now - previous.At < FollowUp.Window
+            && FollowUp.Resolve(text, previous.Text, previous.Command, Quick) is { } follow)
+        {
+            FridayLog.Info($"Devam komutu: \"{text}\" → \"{follow.Text}\"");
+            command = follow.Command;
+            spoken = follow.Text;
+        }
         if (command is { Tool: "sohbet" })
         {
             ChatCommand(command.Arguments.TryGetValue("islem", out var action) ? action : "yeni");
@@ -1142,6 +1156,10 @@ public sealed class FridayAssistant : IDisposable
         }
 
         _lastTurn = new LastTurn(text, quickTool, reply, changes.Entry, DateTime.Now);
+        _lastQuick = quickTool is null ? null
+            : compound is [.., var lastPart] ? (lastPart.Text, lastPart.Command, DateTime.Now)
+            : command is { } ran ? (spoken, ran, DateTime.Now)
+            : null;
 
         if (_turnCalls.Count > 0)
         {
