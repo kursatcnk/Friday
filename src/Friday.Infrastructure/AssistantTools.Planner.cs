@@ -92,6 +92,7 @@ public sealed partial class AssistantTools
         var todo = Todos?.Find(task);
         _focusTask = todo?.Text ?? TurkishGrammar.Capitalize(task.Trim());
         _focusAt = DateTime.Now;
+        SaveFocus();
         coach.StartFocus(minutes);
         ledger.Record(DataFlow.Local, "Odak", $"{minutes:0} dk · {_focusTask}");
         // İşe başlarken onunla ilgili not ya da bilgi varsa hatırlatılır ("Dünkü notunda: müşteri mavi tonları istedi.").

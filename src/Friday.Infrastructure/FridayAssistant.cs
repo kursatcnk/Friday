@@ -291,6 +291,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.HearingChanged += (_, _) => _ = RefreshHearingAsync();
         _tools.Style = new ReplyStyle(Path.Combine(paths.Data, "reply-style.json"));
         _tools.Shortcuts = new LearnedShortcuts(Path.Combine(paths.Data, "shortcuts.json"));
+        _tools.FocusFile = Path.Combine(paths.Data, "last-focus.txt");
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
