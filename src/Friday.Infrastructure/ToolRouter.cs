@@ -22,15 +22,15 @@ public static class ToolRouter
     /// <summary>Sözcük kökü → ilgili araçlar. Kökler küçük harfle, sorunun içinde aranır.</summary>
     private static readonly (string[] Stems, string[] Tools)[] Topics =
     [
-        (["harca", "masraf", "lira", " tl", "bütçe", "para", "fatura", "kira", "abonelik", "ödedim", "ödeme", "ekstre", "kredi kartı", "taksit"], ["harcama", "sabit_gider", "doviz"]),
+        (["harca", "masraf", "lira", " tl", "bütçe", "para", "fatura", "kira", "abonelik", "ödedim", "ödeme", "ekstre", "kredi kartı", "taksit", "fiş"], ["harcama", "sabit_gider", "doviz", "fis"]),
         (["dolar", "euro", "avro", "sterlin", "kur", "döviz", "altın"], ["doviz", "doviz_alarmi"]),
         (["alışkanl", "seri", "her gün"], ["aliskanlik"]),
-        (["kelime", "ingilizce", "kart", "deste"], ["kelime"]),
+        (["kelime", "ingilizce", "kart", "deste", "anlamı", "ne demek"], ["kelime", "kelime_cevir"]),
         (["plan", "program", "ne yapayım", "takvim", "ajanda", "toplantı", "etkinlik", "randevu"], ["gun_plani", "takvim"]),
         (["odak", "pomodoro", "mola", "ritim", "nefes", "esneme", "su iç", "çalış"], ["ritim", "pomodoro", "odak_hedefi", "isle_odak"]),
         (["müzik", "şarkı", "parça", "çalan", "spotify", "ses", "video", "youtube", "klip", "izle", "dinle"], ["medya", "uygulama_sesi", "video_ac", "sarki_kaydet"]),
         (["dosya", "klasör", "belge", "pdf", "word", "excel", "sunum", "sözleşme", "kontrat", "poliçe", "dekont", "makbuz", "rapor", "indir"], ["dosya_bul", "dosya_ac", "belgelerde_ara", "belge_oku", "dosya_kaydet"]),
-        (["pencere", "sekme", "masaüstü", "ekran", "tıkla", "yaz"], ["masaustu", "masaustu_kontrol", "pencere", "masa_duzeni", "ekran_suresi", "ekran_metni"]),
+        (["pencere", "sekme", "masaüstü", "masam", "masa düzen", "ekran", "tıkla", "yaz"], ["masaustu", "masaustu_kontrol", "pencere", "masa_duzeni", "ekran_suresi", "ekran_metni"]),
         (["bilgisayar", "sistem", "kilitle", "uyku", "tema", "disk", "temizl", "yavaş", "sıcak", "derece", "işlemci", "bellek", "ekran kartı", "kapat"], ["sistem_durumu", "bilgisayar", "durum_raporu", "temizlik", "disk_analizi", "nobet"]),
         (["internet", "bağlantı", "wi-fi", "wifi", "ping"], ["baglanti", "nobet"]),
         (["haber", "gündem", "ne oldu"], ["haberler"]),
@@ -47,7 +47,7 @@ public static class ToolRouter
         (["sınır", "limit", "en fazla", "en çok yarım"], ["sure_siniri", "ekran_suresi"]),
         (["linguaflow", "çeviri", "altyazı", "canlı çevir"], ["linguaflow"]),
         (["okuma listesi", "sonra oku", "sayfa", "makale", "site", "link"], ["sonra_oku", "sayfayi_oku", "web_sitesi_ac", "web_ara"]),
-        (["kopyala", "pano", "görsel", "resim"], ["pano_gorseli", "ekran_metni"]),
+        (["kopyala", "pano", "görsel", "resim"], ["pano_gorseli", "ekran_metni", "pano_kaydet"]),
         (["yokken", "bildirim", "kaçırd"], ["kacirdiklarim"]),
         (["ne yap", "başlayayım", "öneri", "sıkıldım", "canım sıkıl"], ["ne_yapayim", "gun_plani"]),
         (["araştır", "detaylı"], ["arastirma_raporu"]),
