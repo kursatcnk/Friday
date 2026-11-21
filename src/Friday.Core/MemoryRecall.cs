@@ -30,7 +30,7 @@ public static class MemoryRecall
             return [];
         }
 
-        var asked = Words(question);
+        var asked = Expand(Words(question));
         if (asked.Count == 0)
         {
             return [];
@@ -64,6 +64,53 @@ public static class MemoryRecall
         "nasil", "nerede", "hangi", "kac", "kim", "ne", "mi", "mu", "misin", "musun", "bana", "benim", "beni", "bende", "sen", "seni",
         "neden", "niye", "nicin", "nedeniyle", "var", "yok", "olan", "oldu", "olur", "eder", "ediyor", "yapar", "yapti", "hakkinda", "onerir", "soyle", "anlat", "lutfen"
     };
+
+    /// <summary>
+    /// Aynı şeyin farklı söylenişleri (sadeleşmiş kökler): soru "nerede çalışıyorum", bilgi "İşyerim Maslak'ta" olabilir.
+    /// Ölçümde 20 farklı söyleyişten 3'ü yalnızca bu yüzden bulunamıyordu.
+    /// </summary>
+    private static readonly (string Key, string[] Related)[] Concepts =
+    [
+        ("bilgisayar", ["laptop", "dizustu", "notebook", "masaustu"]),
+        ("laptop", ["bilgisayar", "dizustu"]),
+        ("calis", ["isyeri", "isyerim", "ofis", "sirket", "patron"]),
+        ("isyeri", ["calis", "ofis", "sirket"]),
+        ("ofis", ["isyeri", "calis"]),
+        ("bos", ["hobi", "hobim"]),
+        ("hobi", ["bos", "zevk"]),
+        ("araba", ["arac", "otomobil"]),
+        ("arac", ["araba", "otomobil"]),
+        ("doktor", ["hekim"]),
+        ("hekim", ["doktor"]),
+        ("cocuk", ["kizim", "oglum"]),
+        ("esim", ["karim", "kocam"]),
+        ("karim", ["esim"]),
+        ("kocam", ["esim"]),
+        ("telefon", ["cep", "numara"]),
+        ("spor", ["salon", "fitness", "gym", "kosu"]),
+        ("oturu", ["yasiyor", "yasar", "adres"]),
+        ("yasiyor", ["oturuyor", "adres"]),
+        ("kira", ["ev", "sahibi"]),
+        ("maas", ["ucret", "gelir"])
+    ];
+
+    /// <summary>Soru sözcüklerine kavram eşlerini ekler.</summary>
+    private static List<string> Expand(List<string> words)
+    {
+        var expanded = new List<string>(words);
+        foreach (var word in words)
+        {
+            foreach (var (key, related) in Concepts)
+            {
+                if (Same(word, key) || (word.Length > key.Length && word.StartsWith(key, StringComparison.Ordinal)))
+                {
+                    expanded.AddRange(related.Where(item => !expanded.Contains(item)));
+                }
+            }
+        }
+
+        return expanded;
+    }
 
     /// <summary>Küçük harf, Türkçe harfler sadeleşmiş, 3 harften uzun ve dolgu olmayan sözcükler.</summary>
     internal static List<string> Words(string text) =>
