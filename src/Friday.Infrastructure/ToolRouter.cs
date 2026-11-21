@@ -43,7 +43,7 @@ public static class ToolRouter
         (["hafta"], ["haftalik_ozet", "haftalik_rapor"]),
         (["rahatsız", "sessiz", "sustur"], ["rahatsiz_etme"]),
         (["kısaltma", "imza", "adresim"], ["kisaltma"]),
-        (["doğum", "bayram", "yıldönüm", "özel gün", "kaç gün", "yılbaşı"], ["ozel_gunler", "gun_sayaci"]),
+        (["doğum", "bayram", "yıldönüm", "özel gün", "özel tarih", "önemli tarih", "önemli gün", "kaç gün", "yılbaşı"], ["ozel_gunler", "gun_sayaci"]),
         (["sınır", "limit"], ["sure_siniri", "ekran_suresi"]),
         (["linguaflow", "çeviri", "altyazı", "canlı çevir"], ["linguaflow"]),
         (["okuma listesi", "sonra oku", "sayfa", "makale", "site", "link"], ["sonra_oku", "sayfayi_oku", "web_sitesi_ac", "web_ara"]),

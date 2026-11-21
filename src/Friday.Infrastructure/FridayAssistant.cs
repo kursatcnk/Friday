@@ -72,6 +72,9 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Son söylenen cevap ("tekrar et" için).</summary>
     private string _lastReply = "";
 
+    /// <summary>Bu turda dil modelinin çağırdığı araçlar (kısayol öğrenimi için).</summary>
+    private readonly List<ToolCall> _turnCalls = [];
+
     /// <summary>"Yanlış anladın" bu kadar süre içinde son isteğe uygulanır.</summary>
     private static readonly TimeSpan CorrectionWindow = TimeSpan.FromMinutes(3);
 
@@ -282,6 +285,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.Corrections = new CorrectionBook(Path.Combine(paths.Data, "corrections.json"));
         _tools.HearingChanged += (_, _) => _ = RefreshHearingAsync();
         _tools.Style = new ReplyStyle(Path.Combine(paths.Data, "reply-style.json"));
+        _tools.Shortcuts = new LearnedShortcuts(Path.Combine(paths.Data, "shortcuts.json"));
         _tools.SettingsChanged += (_, _) => ScheduleRoutines();
         _tools.ReportFolder = Path.Combine(paths.Data, "reports");
         _tools.UndoFile = Path.Combine(paths.Data, "downloads-undo.json");
@@ -896,7 +900,9 @@ public sealed class FridayAssistant : IDisposable
 
     /// <summary>Hızlı yol; kullanıcının "yanlış anladın" dediği sözler bir kalıba uysa da komut sayılmaz.</summary>
     private QuickCommand? Quick(string text) =>
-        _tools.Corrections?.Contains(text) == true ? null : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys);
+        _tools.Corrections?.Contains(text) == true
+            ? null
+            : QuickIntents.Match(text, _settings.Routines.Keys, _settings.Triggers.Keys) ?? _tools.Shortcuts?.Find(text);
 
     /// <summary>
     /// "Yanlış anladın": son isteğin kayıt değişiklikleri geri alınır; hızlı yol yanlış anladıysa o söz bir daha komut
@@ -908,6 +914,7 @@ public sealed class FridayAssistant : IDisposable
         _lastTurn = null;
         IReadOnlyList<string> undone = last.Entry is { } entry && _tools.Changes.Entries is [.., var newest] && ReferenceEquals(newest, entry)
             && _tools.Changes.Undo() is { } outcome ? outcome.Restored : [];
+        _tools.Shortcuts?.Forget(last.Text);
         if (last.QuickTool is { } tool && !CorrectionBook.Unlearnable.Contains(tool) && _tools.Corrections?.Add(last.Text) == true)
         {
             FridayLog.Info($"Düzeltme öğrenildi: \"{last.Text}\" ({tool}) artık dil modeline gidiyor.");
@@ -1030,6 +1037,7 @@ public sealed class FridayAssistant : IDisposable
         _tools.ActiveWindow = _activeWindow;
         _shown = "";
         _modelAnswer = false;
+        _turnCalls.Clear();
         var chatAtStart = _chats.CurrentId;
         var context = _activeWindow is { } window ? $"\n[Bağlam: kullanıcı \"{window.Title}\" ({window.Process}) penceresindeydi]" : "";
         _memory.Add(new ChatMessage(ChatRole.User, text + context + correction));
@@ -1063,6 +1071,17 @@ public sealed class FridayAssistant : IDisposable
         }
 
         _lastTurn = new LastTurn(text, quickTool, reply, changes.Entry, DateTime.Now);
+
+        if (_turnCalls.Count > 0)
+        {
+            FridayLog.Info("Araçlar: " + string.Join(", ", _turnCalls.Select(call => call.Name)));
+        }
+
+        // Dil modeli bu söz için tek ve zararsız bir araç çağırdıysa kısayol öğrenimine sayılır (bkz. LearnedShortcuts).
+        if (quickTool is null && correction.Length == 0 && _turnCalls is [var only] && _tools.Shortcuts?.Observe(text, only.Name, only.Arguments) == true)
+        {
+            FridayLog.Info($"Kısayol öğrenildi: \"{text}\" → {only.Name}");
+        }
         _memory.CompactToolResults();
         if (_settings.KeepHistory)
         {
@@ -1325,6 +1344,7 @@ public sealed class FridayAssistant : IDisposable
                 }
 
                 RememberTool(call.Name);
+                _turnCalls.Add(call);
                 var result = await _tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
                 if (result.Length > 7500)
                 {

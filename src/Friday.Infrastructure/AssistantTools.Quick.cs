@@ -111,6 +111,7 @@ public sealed partial class AssistantTools
                 "aktif_saatler" => ActiveHoursAnswer(),
                 "kulak" => HearingCommand(Arg("islem"), Arg("ad")),
                 "uslup" => StyleCommand(Arg("islem")),
+                "kisayol_ogrenimi" => ShortcutCommand(Arg("islem")),
                 "o_gun" => DayRecall(Arg("gun")),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),

@@ -5,6 +5,28 @@ namespace Friday.Infrastructure;
 /// <summary>Cevap uzunluğu tercihi (bkz. <see cref="ReplyStyle"/>).</summary>
 public sealed partial class AssistantTools
 {
+    /// <summary>Kullandıkça öğrenilen kısayollar (bkz. <see cref="LearnedShortcuts"/>); FridayAssistant verir.</summary>
+    public LearnedShortcuts? Shortcuts { get; set; }
+
+    private QuickReply ShortcutCommand(string action)
+    {
+        if (Shortcuts is not { } shortcuts)
+        {
+            return new QuickReply("Kısayol öğrenimi açık değil.");
+        }
+
+        if (action == "sifirla")
+        {
+            var count = shortcuts.Clear();
+            return new QuickReply(count == 0 ? "Öğrendiğim bir kısayol yok." : $"{count} kısayolu unuttum; o sözler yine dil modeline gidecek.");
+        }
+
+        var learned = shortcuts.Learned;
+        return new QuickReply(learned.Count == 0
+            ? "Henüz bir kısayol öğrenmedim. Hızlı komutlarıma uymayan bir sözü iki kez aynı şekilde söyleyip aynı işi yaptırırsan, üçüncüde düşünmeden yaparım."
+            : $"Düşünmeden yaptığım {learned.Count} söz öğrendim: " + string.Join(", ", learned.TakeLast(5).Reverse().Select(item => $"\"{item.Phrase}\"")) + ".");
+    }
+
     /// <summary>Cevap uzunluğu; FridayAssistant verir.</summary>
     public ReplyStyle? Style { get; set; }
 

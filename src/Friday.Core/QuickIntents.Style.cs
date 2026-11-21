@@ -10,7 +10,15 @@ public static partial class QuickIntents
         : DetailPlease().IsMatch(sentence) ? Command("uslup", ("islem", "ayrintili"))
         : NormalPlease().IsMatch(sentence) ? Command("uslup", ("islem", "normal"))
         : StyleQuestion().IsMatch(sentence) ? Command("uslup", ("islem", "durum"))
+        : ShortcutsReset().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "sifirla"))
+        : ShortcutsList().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "listele"))
         : null;
+
+    [GeneratedRegex(@"^(?:öğrendiğin )?kısayolları (?:unut|sıfırla|temizle)$")]
+    private static partial Regex ShortcutsReset();
+
+    [GeneratedRegex(@"^(?:öğrendiğin kısayollar(?:ı)? (?:neler|ne|say|söyle)|hangi kısayolları öğrendin|neleri düşünmeden yapıyorsun)$")]
+    private static partial Regex ShortcutsList();
 
     /// <summary>"Dün ne yaptım", "geçen salı nasıl geçti": gün anlaşılırsa o günün hikâyesi.</summary>
     private static QuickCommand? PastDayQuestion(string sentence) =>
