@@ -90,6 +90,7 @@ public static partial class QuickIntents
             ?? Downloads(sentence)
             ?? DayEnd(sentence)
             ?? Hearing(sentence)
+            ?? Pronounce(sentence)
             ?? Style(sentence)
             ?? PastDayQuestion(sentence)
             ?? Recall(sentence)
