@@ -114,6 +114,8 @@ public sealed partial class AssistantTools
                 "kisayol_ogrenimi" => ShortcutCommand(Arg("islem")),
                 "o_gun" => DayRecall(Arg("gun")),
                 "kaldigim_yer" => Resume(),
+                "neden" => WhyCommand(),
+                "ogrendiklerin" => LearnedReport(),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),

@@ -11,9 +11,17 @@ public static partial class QuickIntents
         : NormalPlease().IsMatch(sentence) ? Command("uslup", ("islem", "normal"))
         : StyleQuestion().IsMatch(sentence) ? Command("uslup", ("islem", "durum"))
         : WhereWasI().IsMatch(sentence) ? Command("kaldigim_yer")
+        : WhySaid().IsMatch(sentence) ? Command("neden")
+        : WhatLearned().IsMatch(sentence) ? Command("ogrendiklerin")
         : ShortcutsReset().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "sifirla"))
         : ShortcutsList().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "listele"))
         : null;
+
+    [GeneratedRegex(@"^(?:bunu |şunu |onu )?(?:neden|niye|niçin) (?:söyledin|hatırlattın|sordun|dedin|haber verdin)$|^(?:neden|niye) bunu (?:söyledin|hatırlattın|sordun)$")]
+    private static partial Regex WhySaid();
+
+    [GeneratedRegex(@"^(?:bu hafta |son zamanlarda |bugüne kadar |benden |benim hakkımda )?(?:neler|ne) öğrendin$|^neler öğrendiğini (?:söyle|anlat)$")]
+    private static partial Regex WhatLearned();
 
     [GeneratedRegex(@"^(?:öğrendiğin )?kısayolları (?:unut|sıfırla|temizle)$")]
     private static partial Regex ShortcutsReset();
