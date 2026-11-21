@@ -73,7 +73,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:indirilenler(?:deki)? )?düzenlemeyi geri al$|^indirilenleri eski haline getir$")]
     private static partial Regex UndoSort();
 
-    [GeneratedRegex(@"^(?:günü kapat|günün özetini (?:çıkar|ver|söyle)|gün sonu(?: özeti| raporu)?|akşam özeti|bugünü özetle)$")]
+    [GeneratedRegex(@"^(?:günü kapat|günün özetini (?:çıkar|ver|söyle)|gün sonu(?: özeti| raporu)?|akşam özeti|bugünü özetle|bugün nasıl geçti|günüm nasıl geçti)$")]
     private static partial Regex DayEndRequest();
 
     [GeneratedRegex(@"^(?:evet|evet evet|tamam|olur|yap|evet yap|evet düzenle|düzenle|tamam yap|onaylıyorum|onayla|aynen|hadi|evet lütfen)$")]

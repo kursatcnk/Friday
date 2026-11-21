@@ -274,6 +274,12 @@ public static partial class QuickIntents
     private static QuickCommand? Timer(string sentence)
     {
         var match = TimerRequest().Match(sentence);
+        if (!match.Success)
+        {
+            // "Çayı demledim, on beş dakika sonra söyle": başta bir açıklama olan zamanlayıcı.
+            match = TimerAfterContext().Match(sentence);
+        }
+
         if (!match.Success || ParseNumber(match.Groups["n"].Value) is not { } amount || amount <= 0)
         {
             return null;
@@ -382,7 +388,9 @@ public static partial class QuickIntents
             }
 
             // "mola", "günaydın" tek başına; "çalışma modunu aç" → "çalışma modu"(nu).
-            if (sentence == name || (opened is not null && (opened == name || (opened.StartsWith(name, StringComparison.Ordinal) && opened.Length - name.Length <= 3))))
+            // "derin çalışma modunu başlat", "akşam kapanışı rutinini aç": adın arkasına gelen "modu/rutini" de kabul edilir.
+            if (sentence == name || (opened is not null && (opened == name || (opened.StartsWith(name, StringComparison.Ordinal)
+                && (opened.Length - name.Length <= 3 || RoutineTail().IsMatch(opened[name.Length..]))))))
             {
                 return Command("rutin", ("ad", routine));
             }
@@ -434,7 +442,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:(?:müziği|şarkıyı|videoyu|müzik|şarkı) )?(?:durdur|duraklat|dursun)$|^(?:müziği|şarkıyı|videoyu|müzik) (?:devam ettir|devam et|aç)$")]
     private static partial Regex Pause();
 
-    [GeneratedRegex(@"^(?:bir )?(?:sonraki|diğer) (?:şarkı|parça)(?:ya geç)?$|^(?:şarkıyı|parçayı) (?:geç|değiştir|atla)$")]
+    [GeneratedRegex(@"^(?:bir )?(?:sonraki|sıradaki|diğer) (?:şarkı|parça)(?:ya geç)?$|^(?:şarkıyı|parçayı) (?:geç|değiştir|atla)$")]
     private static partial Regex Next();
 
     [GeneratedRegex(@"^(?:bir )?önceki (?:şarkı|parça)(?:ya (?:geç|dön))?$")]
@@ -507,20 +515,26 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?<when>(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar) ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
     private static partial Regex ReminderRequest();
 
-    [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$")]
+    [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$|^(?:yarın|bugün)(?: için)? (?:hatırlatman|hatırlatmam|hatırlatıcım|hatırlatmalarım|hatırlatıcılarım) var mı$")]
     private static partial Regex ReminderList();
 
     [GeneratedRegex(@"^(?<x>.+?) hatırlatma(?:sını|yı)? (?:iptal et|sil|kaldır)$")]
     private static partial Regex ReminderCancel();
 
     // "not al: süt al", "şunu not et: yarın bankaya git", "süt almayı not al"
-    [GeneratedRegex(@"^(?:(?:bir )?not (?:al|et|ekle)|şunu not (?:al|et)|not tut)[:,]? (?<x>.+)$|^(?<x>.+?) (?:diye )?not (?:al|et)$")]
+    [GeneratedRegex(@"^(?:(?:bir )?not (?:al|et|ekle)|(?:şunu|bunu) not (?:al|et)|not tut)[:,]? (?<x>.+)$|^(?<x>.+?) (?:diye )?not (?:al|et)$")]
     private static partial Regex NoteTake();
+
+    [GeneratedRegex(@"^.+? (?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>dakika|saniye|saat) sonra (?:bana )?(?:söyle|haber ver|uyar|seslen)$")]
+    private static partial Regex TimerAfterContext();
+
+    [GeneratedRegex(@"^ (?:modu|modunu|moduna|rutini|rutinini|rutinine)$")]
+    private static partial Regex RoutineTail();
 
     [GeneratedRegex(@"^(?:notlarımı (?:oku|söyle|göster)|notlarım (?:neler|ne)|son notum (?:ne|neydi)|notlarım)$")]
     private static partial Regex NoteRead();
 
-    [GeneratedRegex(@"^bu hafta (?:ne kadar (?:çalıştım|odaklandım)|nasıl geçti|kaç mola verdim)$|^haftam nasıl geçti$")]
+    [GeneratedRegex(@"^bu hafta (?:ne kadar (?:çalıştım|odaklandım)|kaç mola verdim)$")]
     private static partial Regex WeekStatus();
 
     // "spotify'ı aç", "not defterini aç", "çalışma modunu aç"

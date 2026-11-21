@@ -75,7 +75,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^her (?:(?<n>\d+|yarım|bir|iki|üç|dört) )?(?<u>dakika|saat)(?:da|ta|te)?(?: başı)?(?: bir)? (?<t>.+?) (?:bana )?hatırlat$")]
     private static partial Regex IntervalReminderRequest();
 
-    [GeneratedRegex(@"^(?:bu haftayı özetle|haftamı özetle|haftalık özet|haftalık rapor|bu hafta neler yaptım|bu hafta nasıl geçti|bu haftanın özeti)$")]
+    [GeneratedRegex(@"^(?:bu haftayı özetle|haftamı özetle|haftalık özet|haftalık rapor|bu hafta neler yaptım|bu hafta nasıl geçti|haftam nasıl geçti|bu haftanın özeti)$")]
     private static partial Regex WeeklyReviewRequest();
 
     [GeneratedRegex(@"^(?:bilgisayara |masaya )?(?:dönünce|döndüğümde|geri gelince|geri geldiğimde|gelince) (?<t>.+?) (?:bana )?hatırlat$")]

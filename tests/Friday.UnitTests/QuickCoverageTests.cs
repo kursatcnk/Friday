@@ -34,6 +34,35 @@ public class QuickCoverageTests
     [InlineData("şimdi ne yapsam", "ne_yapayim")]
     [InlineData("dünkü haberler neler", "haber")]
     [InlineData("bilgisayarı kilitle", "sistem")]
+    [InlineData("akşam sekizde annemi aramamı hatırlat", "hatirlatici")]
+    [InlineData("hatırlatıcılarım neler", "hatirlatici")]
+    [InlineData("yarın için hatırlatman var mı", "hatirlatici")]
+    [InlineData("bunu not et yarın bankaya git", "not")]
+    [InlineData("notlarımı oku", "not")]
+    [InlineData("raporu bitirdim", "yapilacak")]
+    [InlineData("faturayı ödeme işini tamamladım", "yapilacak")]
+    [InlineData("bugün kitap okudum", "aliskanlik")]
+    [InlineData("alışkanlıklarım nasıl gidiyor", "aliskanlik")]
+    [InlineData("taksiye 120 lira verdim", "harcama")]
+    [InlineData("bu ay ne kadar harcadım", "harcama")]
+    [InlineData("beş dakikalık zamanlayıcı kur", "zamanlayici")]
+    [InlineData("çayı demledim on beş dakika sonra söyle", "zamanlayici")]
+    [InlineData("chrome'u aç", "uygulama_ac")]
+    [InlineData("spotify'ı kapat", "uygulama_kapat")]
+    [InlineData("sıradaki şarkı", "medya")]
+    [InlineData("sesi kapat", "medya")]
+    [InlineData("bugün nasıl geçti", "gun_sonu")]
+    [InlineData("haftam nasıl geçti", "haftalik_ozet")]
+    [InlineData("pomodoro başlat", "ritim")]
+    [InlineData("su içtim", "ritim")]
+    [InlineData("istanbul'da hava nasıl", "hava_durumu")]
+    [InlineData("internet bağlantım yavaş mı", "baglanti")]
     public void CatchesCommonPhrasingsWithoutTheModel(string text, string tool) =>
         Assert.Equal(tool, QuickIntents.Match(text)?.Tool);
+
+    [Theory]
+    [InlineData("derin çalışma modunu başlat")]
+    [InlineData("derin çalışmayı başlat")]
+    public void StartsAUserRoutineByName(string text) =>
+        Assert.Equal("rutin", QuickIntents.Match(text, ["derin çalışma", "akşam kapanışı"])?.Tool);
 }
