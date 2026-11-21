@@ -116,6 +116,7 @@ public sealed partial class AssistantTools
                 "kaldigim_yer" => Resume(),
                 "neden" => WhyCommand(),
                 "en_son" => LastTimeCommand(Arg("konu")),
+                "verimlilik" => ProductivityReport(),
                 "okunus" => PronounceCommand(Arg("islem"), Arg("kelime"), Arg("okunus")),
                 "ogrendiklerin" => LearnedReport(),
                 "durtme" => NudgeCommand(Arg("islem")),
