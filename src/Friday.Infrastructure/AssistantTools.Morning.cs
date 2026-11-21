@@ -143,6 +143,14 @@ public sealed partial class AssistantTools
             Add(15, $"Okuma listende {reading} sayfa bekliyor.");
         }
 
+        // Dün yarım kalan iş: son odaklanılan iş dünse ve o günden beri bitirilmediyse güne oradan başlamayı önerir.
+        LoadFocus();
+        if (_focusTask is { Length: > 0 } lastTask && DateOnly.FromDateTime(_focusAt) == today.AddDays(-1)
+            && !(Todos?.CompletedBetween(_focusAt, now) ?? []).Any(item => string.Equals(item.Text, lastTask, StringComparison.OrdinalIgnoreCase)))
+        {
+            Add(45, $"Dün \"{lastTask.ToLower(Turkish)}\" üzerinde çalışıyordun; istersen bugün oradan devam edelim.");
+        }
+
         var chosen = items.OrderByDescending(item => item.Priority).Take(MorningItems).Select(item => item.Text);
         return string.Join(" ", head.Concat(chosen));
     }
