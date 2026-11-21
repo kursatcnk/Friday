@@ -48,6 +48,36 @@ public sealed partial class AssistantTools
     [System.Text.RegularExpressions.GeneratedRegex(@"^Kullanıcı(?:nın)?\s+")]
     private static partial System.Text.RegularExpressions.Regex ThirdPerson();
 
+    /// <summary>
+    /// Soruyla gerçekten ilgili kişisel kayıtlar (notlar, açık işler, hatırlatıcılar, günlük); sorunun yanına eklenir.
+    /// "Müşteri hangi rengi istemişti?" gibi sorular arama aracı beklemeden cevaplanır. Hafıza ayrıca eklendiği için
+    /// burada yoktur; ayırt edici bir eşleşme yoksa boş.
+    /// </summary>
+    public string PersonalContext(string question)
+    {
+        var now = DateTime.Now;
+        var records = new List<PersonalRecord>();
+        records.AddRange(notes.All.Where(note => now - note.Time < TimeSpan.FromDays(120) && !note.Text.StartsWith("Notlarım burada", StringComparison.Ordinal))
+            .Select(note => new PersonalRecord("Not", note.Text, note.Time)));
+        records.AddRange((Todos?.Open ?? []).Select(item => new PersonalRecord("Açık iş", item.Text, item.Created)));
+        records.AddRange(reminders.Upcoming.Where(item => item.Text.Length > 0)
+            .Select(item => new PersonalRecord($"Hatırlatıcı ({TurkishTime.Describe(item.Due, now)})", item.Text, item.Created)));
+        if (Journal is { } journal)
+        {
+            records.AddRange(journal.Between(now.AddDays(-60), now).Select(entry => new PersonalRecord("Günlük", entry.Text, entry.When)));
+        }
+
+        var found = MomentRecall.Ranked(question, records).Take(3).ToList();
+        if (found.Count == 0)
+        {
+            return "";
+        }
+
+        ledger.Record(DataFlow.Local, "Kayıtlar", $"Soruya {found.Count} ilgili kayıt eklendi");
+        return "\n[Kayıtlarından, bu soruyla ilgili olabilir: " + string.Join(" | ", found.Select(record =>
+            $"{record.Source}{(record.Source is "Not" or "Günlük" ? $" ({record.When.ToString("d MMMM", Turkish)})" : "")}: {Short(record.Text.TrimEnd('.'), 160)}")) + "]";
+    }
+
     /// <summary>"Dünkü notunda", "3 gün önceki notunda", "12 Kasım tarihli notunda".</summary>
     private static string When(DateTime when, DateTime now, string place)
     {

@@ -42,4 +42,12 @@ public class MomentRecallTests
         PersonalRecord[] self = [new("İş", "Kira sözleşmesini yenile", Now)];
         Assert.Null(MomentRecall.Related("kira sözleşmesini yenile", self));
     }
+
+    [Fact]
+    public void RanksSeveralRecordsForAQuestion()
+    {
+        var found = MomentRecall.Ranked("müşteri logo için hangi rengi istemişti", Records);
+        Assert.Equal("Müşteri logo için mavi tonları istedi, kırmızı olmasın.", found[0].Text);
+        Assert.Empty(MomentRecall.Ranked("bugün hava nasıl", Records));
+    }
 }

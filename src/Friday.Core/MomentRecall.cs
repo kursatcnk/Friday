@@ -20,12 +20,16 @@ public static class MomentRecall
     };
 
     /// <summary>Konuyla en ilgili kayıt; ayırt edici bir eşleşme yoksa null.</summary>
-    public static PersonalRecord? Related(string subject, IReadOnlyList<PersonalRecord> records)
+    public static PersonalRecord? Related(string subject, IReadOnlyList<PersonalRecord> records) =>
+        Ranked(subject, records) is [var best, ..] ? best : null;
+
+    /// <summary>Konuyla ayırt edici biçimde eşleşen kayıtlar, en ilgiliden başlayarak.</summary>
+    public static IReadOnlyList<PersonalRecord> Ranked(string subject, IReadOnlyList<PersonalRecord> records)
     {
         var asked = MemoryRecall.Words(subject).Where(word => !Actions.Contains(word)).ToList();
         if (asked.Count == 0 || records.Count == 0)
         {
-            return null;
+            return [];
         }
 
         // Konunun kendisi (aynı işin kaydı) ilgili sayılmaz.
@@ -35,7 +39,7 @@ public static class MomentRecall
             .ToList();
         if (candidates.Count == 0)
         {
-            return null;
+            return [];
         }
 
         // Kayıtlarda büyük harfle geçen adlar: konudaki "ahmet" sözcüğü bunlardan biriyse ayırt edicidir.
@@ -48,7 +52,7 @@ public static class MomentRecall
             return count == 0 ? 0 : Math.Log(1 + (candidates.Count / (double)count));
         });
 
-        var best = candidates
+        return [.. candidates
             .Select(item =>
             {
                 var matched = asked.Where(word => item.Words.Any(other => MemoryRecall.Same(word, other))).ToList();
@@ -59,7 +63,6 @@ public static class MomentRecall
             .Where(item => item.Distinct)
             .OrderByDescending(item => item.Score)
             .ThenByDescending(item => item.Record.When)
-            .FirstOrDefault();
-        return best.Record;
+            .Select(item => item.Record)];
     }
 }

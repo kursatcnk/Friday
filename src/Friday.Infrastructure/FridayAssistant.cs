@@ -1232,6 +1232,7 @@ public sealed class FridayAssistant : IDisposable
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
+            + _tools.PersonalContext(question)
             + _tools.Situation(DateTime.Now)
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 
