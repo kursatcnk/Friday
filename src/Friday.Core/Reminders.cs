@@ -348,18 +348,20 @@ public sealed class ReminderStore : IRestorableStore
     }
 
     /// <summary>Söylenecek cümle: "Toplantıyı unutma, zamanı geldi." ya da "Hatırlatma: ilaç."</summary>
-    public static string Announcement(Reminder reminder) =>
+    public static string Announcement(Reminder reminder) => Announcement(reminder, TurkishGrammar.ToYou(reminder.Text));
+
+    private static string Announcement(Reminder reminder, string text) =>
         reminder.Trigger is not null
-            ? TurkishGrammar.IsAccusative(reminder.Text)
-                ? $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}{TurkishGrammar.Capitalize(reminder.Text)} unutma."
-                : $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}Hatırlatma: {reminder.Text}."
+            ? TurkishGrammar.IsAccusative(text)
+                ? $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}{TurkishGrammar.Capitalize(text)} unutma."
+                : $"{(reminder.Trigger == "donus" ? "Hoş geldin! " : "")}Hatırlatma: {text}."
             : reminder.Text == QuickIntents.AlarmText
             ? $"Günaydın! Saat {reminder.Due.ToString("HH:mm", CultureInfo.InvariantCulture)}, uyanma vakti."
             : reminder.Text.Length == 0
             ? $"{TurkishGrammar.Capitalize(TurkishGrammar.Duration((reminder.Due - reminder.Created).TotalMinutes))} doldu."
-            : TurkishGrammar.IsAccusative(reminder.Text)
-                ? $"{TurkishGrammar.Capitalize(reminder.Text)} unutma, zamanı geldi."
-                : $"Hatırlatma: {reminder.Text}.";
+            : TurkishGrammar.IsAccusative(text)
+                ? $"{TurkishGrammar.Capitalize(text)} unutma, zamanı geldi."
+                : $"Hatırlatma: {text}.";
 
     private void Save()
     {

@@ -60,4 +60,74 @@ public static class TurkishGrammar
     /// <summary>"çamaşırı", "toplantıyı" gibi belirtme hâlindeki nesne mi?</summary>
     public static bool IsAccusative(string phrase) =>
         phrase.Trim().Length > 3 && "ıiuü".Contains(phrase.Trim()[^1]);
+
+    /// <summary>
+    /// Birinci tekil iyelik eki alabilen sık adlar (sadeleşmemiş, ünsüz yumuşamasıyla): "annemi", "ilacımı", "oğlumu".
+    /// Genel bir kural "kalemi"ni (kalem+i) "kaleni" yapardı; yalnızca bu adlarda ek kesin iyeliktir.
+    /// </summary>
+    private static readonly string[] Possessed =
+    [
+        "anne", "baba", "eş", "kız", "oğl", "abla", "abi", "ağabey", "kardeş", "patron", "müdür", "doktor", "dişçi", "hoca",
+        "öğretmen", "ilac", "ilaç", "hap", "araba", "telefon", "bilgisayar", "anahtar", "cüzdan", "gözlüğ", "çanta", "ev",
+        "sevgili", "arkadaş", "komşu", "teyze", "dayı", "amca", "hala", "nine", "dede", "kedi", "köpeğ", "köpek",
+        "randevu", "toplantı", "ders", "ödev", "sınav", "maaş", "kira", "fatura"
+    ];
+
+    /// <summary>
+    /// Kullanıcının kendi ağzından söylediği bir metni Friday'in ağzına çevirir: "dişçiyi aramamı" → "dişçiyi aramanı",
+    /// "akşam ilacımı" → "akşam ilacını", "annemi ara" → "anneni ara". Hatırlatma kurulurken ve çalınca "Dişçiyi aramamı
+    /// unutma" yerine "Dişçiyi aramanı unutma" denir. Kayıtlı metin değişmez.
+    /// </summary>
+    public static string ToYou(string text)
+    {
+        if (text.Length == 0)
+        {
+            return text;
+        }
+
+        var words = text.Split(' ');
+        for (var index = 0; index < words.Length; index++)
+        {
+            words[index] = YouWord(words[index]);
+        }
+
+        return string.Join(' ', words);
+    }
+
+    private static string YouWord(string word)
+    {
+        var lower = word.ToLower(Turkish);
+        // Eylem adı + iyelik + belirtme: "aramamı", "gitmemi", "ödememi".
+        if (lower.Length > 5 && lower != "tamamı" && (lower.EndsWith("mamı", StringComparison.Ordinal) || lower.EndsWith("memi", StringComparison.Ordinal)))
+        {
+            return word[..^2] + "n" + word[^1];
+        }
+
+        foreach (var stem in Possessed)
+        {
+            if (!lower.StartsWith(stem, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var at = stem.Length;
+            if (lower.Length > at + 3 && (lower[at..].StartsWith("lar", StringComparison.Ordinal) || lower[at..].StartsWith("ler", StringComparison.Ordinal)))
+            {
+                at += 3;
+            }
+
+            var vowelEnd = BackVowels.Contains(lower[at - 1]) || FrontVowels.Contains(lower[at - 1]);
+            if (vowelEnd && at < lower.Length && lower[at] == 'm')
+            {
+                return word[..at] + "n" + word[(at + 1)..];
+            }
+
+            if (!vowelEnd && at + 1 < lower.Length && "ıiuü".Contains(lower[at]) && lower[at + 1] == 'm')
+            {
+                return word[..(at + 1)] + "n" + word[(at + 2)..];
+            }
+        }
+
+        return word;
+    }
 }

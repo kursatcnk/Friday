@@ -72,7 +72,7 @@ public sealed partial class AssistantTools
                 return upcoming.Count == 0
                     ? "Kurulu bir hatırlatma yok."
                     : $"{upcoming.Count} hatırlatma var: " + string.Join("; ", upcoming.Take(6).Select(item =>
-                        $"{(item.Repeat is { } rule ? RepeatRule.Describe(item.Due, rule) : TurkishTime.Describe(item.Due, now))} {(item.Text.Length > 0 ? item.Text : "zamanlayıcı")}")) + ".";
+                        $"{(item.Repeat is { } rule ? RepeatRule.Describe(item.Due, rule) : TurkishTime.Describe(item.Due, now))} {(item.Text.Length > 0 ? TurkishGrammar.ToYou(item.Text) : "zamanlayıcı")}")) + ".";
             case "sil":
                 var removed = reminders.Cancel(text);
                 return removed == 0 ? $"'{text}' diye bir hatırlatma bulamadım." : "Tamam, hatırlatmayı sildim.";
@@ -86,7 +86,8 @@ public sealed partial class AssistantTools
                 var added = reminders.Add(rule is null || RepeatRule.Interval(rule) is not null ? due : RepeatRule.Start(due, when, rule, now), text, now, rule);
                 EnsureReminderClock();
                 ledger.Record(DataFlow.Local, "Hatırlatma", rule is null ? $"{TurkishTime.Describe(due, now)} için kuruldu" : $"{RepeatRule.Describe(added.Due, rule)} için kuruldu");
-                var subject = text.Trim();
+                // Kullanıcının "aramamı" dediği şey Friday'in ağzından "aramanı" olur.
+                var subject = TurkishGrammar.ToYou(text.Trim());
                 if (rule is not null)
                 {
                     return $"Tamam, {RepeatRule.Describe(added.Due, rule)} {(subject.Length == 0 ? "haber veririm" : $"{subject} hatırlatırım")}.";
