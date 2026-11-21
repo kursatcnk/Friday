@@ -900,6 +900,44 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>
+    /// Birleşik komutun parçalarını sırayla hızlı yoldan yapar; her parçanın cevabı sırayla okunur. Hızlı yolda
+    /// yapılamayan bir parça (ör. eksik bilgi) dil modeline yalnızca o parça olarak sorulur; hiçbiri yapılamadıysa null
+    /// (bütün cümle dil modeline gider).
+    /// </summary>
+    private async Task<string?> RunCompoundAsync(IReadOnlyList<CompoundPart> parts, CancellationToken cancellationToken)
+    {
+        FridayLog.Info("Birleşik komut: " + string.Join(" + ", parts.Select(part => part.Command.Tool)));
+        var replies = new List<string>();
+        var left = new List<string>();
+        foreach (var part in parts)
+        {
+            if (await RunQuickAsync(part.Command, cancellationToken).ConfigureAwait(false) is { Length: > 0 } said)
+            {
+                replies.Add(said);
+            }
+            else
+            {
+                left.Add(part.Text);
+            }
+        }
+
+        if (replies.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var rest in left)
+        {
+            await WaitForBrainAsync(cancellationToken).ConfigureAwait(false);
+            replies.Add(await AnswerAsync(rest, cancellationToken).ConfigureAwait(false));
+        }
+
+        var all = string.Join(" ", replies);
+        Show(all);
+        return all;
+    }
+
+    /// <summary>
     /// Panelden bir sohbet açar (null: yeni, boş sohbet). Konuşuyorsa susar; sonraki soru o sohbetin bağlamıyla cevaplanır.
     /// </summary>
     public void OpenChat(string? id)
@@ -1008,6 +1046,12 @@ public sealed class FridayAssistant : IDisposable
         {
             (text, command, correction) = Reconsider(last, text, meant);
         }
+
+        // "Market listeme süt ekle, yarın 9'da dişçiyi hatırlat ve dolar kaç": her parçası tek başına bir hızlı komutsa
+        // parçalar sırayla, dil modeli beklenmeden yapılır (bkz. CompoundCommand).
+        var compound = !answering && !_tools.InChecklist && correction.Length == 0 && command is not { Tool: "onay" or "kontrol_cevap" }
+            ? CompoundCommand.Split(text, command, Quick)
+            : null;
         if (command is { Tool: "sohbet" })
         {
             ChatCommand(command.Arguments.TryGetValue("islem", out var action) ? action : "yeni");
@@ -1072,10 +1116,12 @@ public sealed class FridayAssistant : IDisposable
         var changes = _tools.Changes.Begin(text);
         try
         {
-            reply = command is { } quick
+            reply = compound is { } parts
+                ? await RunCompoundAsync(parts, cancellationToken).ConfigureAwait(false)
+                : command is { } quick
                 ? await RunQuickAsync(quick, cancellationToken).ConfigureAwait(false)
                 : null;
-            quickTool = reply is null ? null : command?.Tool;
+            quickTool = reply is null ? null : compound is [var first, ..] ? first.Command.Tool : command?.Tool;
             if (reply is null)
             {
                 // Ollama bir sebeple kapandıysa (çökme, elle kapatma) sessizce yeniden başlatılır; soru boşa gitmez.
