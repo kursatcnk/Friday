@@ -92,9 +92,11 @@ public sealed partial class AssistantTools
                     return $"Tamam, {RepeatRule.Describe(added.Due, rule)} {(subject.Length == 0 ? "haber veririm" : $"{subject} hatırlatırım")}.";
                 }
 
-                return subject.Length == 0
+                // Aynı saate yakın başka bir hatırlatma varsa kurarken söylenir.
+                var clash = ScheduleConflicts.ForReminder(added.Due, added.Id, reminders.Upcoming) is { } conflict ? " " + conflict : "";
+                return (subject.Length == 0
                     ? $"Tamam, {TurkishTime.Describe(due, now)} haber veririm."
-                    : $"Tamam, {TurkishTime.Describe(due, now)} {subject} hatırlatırım.";
+                    : $"Tamam, {TurkishTime.Describe(due, now)} {subject} hatırlatırım.") + clash;
         }
     }
 

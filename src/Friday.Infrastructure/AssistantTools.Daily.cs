@@ -42,6 +42,10 @@ public sealed partial class AssistantTools
                 var item = todos.Add(task, now, due, important);
                 ledger.Record(DataFlow.Local, "Yapılacaklar", "Bir iş eklendi");
                 var deadline = item.Due is { } until ? $" Son gün {DueSpoken(until, DateOnly.FromDateTime(now))}." : "";
+                if (ScheduleConflicts.ForDeadline(item, todos.Open) is { } busy)
+                {
+                    deadline += " " + busy;
+                }
                 return new QuickReply(todos.Open.Count == before
                     ? $"\"{item.Text}\" zaten listende.{deadline}"
                     : $"Yapılacaklara ekledim: {item.Text}.{deadline}" + (item.Important ? " Önemli olarak işaretledim." : ""));
