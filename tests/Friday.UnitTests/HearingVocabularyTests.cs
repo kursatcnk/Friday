@@ -39,8 +39,9 @@ public class HearingVocabularyTests
         var many = Enumerable.Range(0, 100).Select(index => $"Ad{index}x");
         var prompt = HearingVocabulary.Prompt("Friday", many);
         Assert.StartsWith("Merhaba Friday. Ad0x, Ad1x", prompt, StringComparison.Ordinal);
-        Assert.Equal(HearingVocabulary.MaxTerms, prompt.Split(", ").Length);
-        Assert.Equal("Merhaba Friday.", HearingVocabulary.Prompt("Friday", ["friday", " "]));
+        Assert.Equal(HearingVocabulary.MaxTerms, prompt.Split(". ")[1].Split(", ").Length);
+        Assert.EndsWith(HearingVocabulary.Commands, prompt, StringComparison.Ordinal);
+        Assert.Equal("Merhaba Friday. " + HearingVocabulary.Commands, HearingVocabulary.Prompt("Friday", ["friday", " "]));
     }
 
     [Theory]

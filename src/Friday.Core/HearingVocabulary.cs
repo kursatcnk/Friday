@@ -34,8 +34,14 @@ public static partial class HearingVocabulary
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(MaxTerms)
             .ToList();
-        return list.Count == 0 ? $"Merhaba {name}." : $"Merhaba {name}. {string.Join(", ", list)}.";
+        return (list.Count == 0 ? $"Merhaba {name}." : $"Merhaba {name}. {string.Join(", ", list)}.") + " " + Commands;
     }
+
+    /// <summary>
+    /// Kısa komutlar sentetik seste bile kolay yanlış duyuluyor ("Geri al" → "Get out", "Spotify'ı aç" → "Support your
+    /// future"). Ölçümde (20 sesli komut) ipucuna bu cümle eklenince doğru komut 16'dan 18'e çıktı, süre değişmedi.
+    /// </summary>
+    public const string Commands = "Geri al, not al, mola ver, müziği durdur, sesi aç, dolar, euro, bilgisayarı kilitle.";
 
     /// <summary>
     /// Kaynaklardan ipucu terimleri: sabit terimler (kullanıcının adı, şehir, liste ve uygulama adları) önce, sonra

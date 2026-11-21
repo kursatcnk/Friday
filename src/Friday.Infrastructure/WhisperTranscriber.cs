@@ -23,7 +23,7 @@ public sealed class WhisperTranscriber : IDisposable
     public bool IsLoaded => _processor is not null;
 
     /// <summary>Whisper'a verilen ipucu (bkz. <see cref="HearingVocabulary"/>); boşsa yalnızca asistanın adı.</summary>
-    public string Prompt => _prompt.Length > 0 ? _prompt : $"Merhaba {_settings.AssistantName}.";
+    public string Prompt => _prompt.Length > 0 ? _prompt : HearingVocabulary.Prompt(_settings.AssistantName, []);
 
     /// <summary>
     /// İpucunu değiştirir (kullanıcının dünyasındaki adlar). Model yüklüyse çözümleyici hemen yeni ipucuyla kurulur;
