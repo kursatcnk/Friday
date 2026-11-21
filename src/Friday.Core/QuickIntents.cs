@@ -424,7 +424,7 @@ public static partial class QuickIntents
     private static partial Regex DateQuestion();
 
     // "hava nasıl", "yarın hava nasıl olacak", "ankara'da hava nasıl", "bu hafta izmir'de hava", "yarın yağmur yağacak mı"
-    [GeneratedRegex(@"^(?<w1>bugün |yarın |bu hafta |haftaya |hafta sonu )?(?:(?<city>[\p{L} ]+?)['’]?(?:da|de|ta|te) )?(?<w2>bugün |yarın |bu hafta |haftaya |hafta sonu )?(?:hava(?: durumu)?(?: nasıl(?: olacak| görünüyor)?| ne durumda)?|(?<rain>yağmur|kar) yağ(?:acak|ar|ıyor) mı)$")]
+    [GeneratedRegex(@"^(?<w1>bugün |yarın |bu hafta |haftaya |hafta sonu )?(?:(?<city>[\p{L} ]+?)['’]?(?:da|de|ta|te) )?(?<w2>bugün |yarın |bu hafta |haftaya |hafta sonu )?(?:hava(?: durumu)?(?: nasıl(?: olacak| görünüyor)?| ne durumda)?|(?<rain>yağmur|kar) yağ(?:acak|ar|ıyor) mı|(?:dışarısı|dışarı|havalar) (?:soğuk|sıcak|serin|ılık|güzel|kapalı|güneşli) mu|dışarıda kaç derece)$")]
     private static partial Regex WeatherQuestion();
 
     // "dolar kaç", "euro ne kadar", "dolar ve euro kaç lira", "sterlin kuru"
@@ -475,7 +475,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?<x>.+?) (?:rutin(?:ini|i)?|protokol(?:ünü|ü)?) (?:çalıştır|aç|devreye sok)$")]
     private static partial Regex RoutineRun();
 
-    [GeneratedRegex(@"^(?:bir )?mola(?: ver(?:elim|eyim|iyorum|mek istiyorum)?| zamanı)?$|^molaya (?:çıkıyorum|çıkalım|gidiyorum)$")]
+    [GeneratedRegex(@"^(?:bir )?mola(?: ver(?:elim|eyim|iyorum|mek istiyorum)?| zamanı)?$|^molaya (?:çıkıyorum|çıkalım|gidiyorum)$|^(?:biraz )?mola (?:vermem|versem) (?:lazım|gerek|iyi olur)$")]
     private static partial Regex BreakRequest();
 
     [GeneratedRegex(@"^(?:molayı |hatırlatmayı )?(?:(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika )?ertele$|^(?:sonra hatırlat|şimdi değil)$")]

@@ -184,10 +184,10 @@ public static partial class QuickIntents
             : Command("doviz", ("miktar", amount.ToString("0.##", CultureInfo.InvariantCulture)), ("kaynak", from), ("hedef", to));
     }
 
-    [GeneratedRegex(@"^(?:yapılacaklar(?: listesi)?(?:ma|ne|na|a)?|yapılacaklarıma|yapılacaklara|görevlerime|görev listeme|listeme) ekle[:,]?\s+(?<x>.+)$|^(?<x>.+?) (?:yapılacaklara|yapılacaklarıma|yapılacaklar listesine|görevlerime|görev listeme|listeme) ekle$|^(?:yeni görev|görev ekle|yapılacak ekle)[:,]?\s+(?<x>.+)$")]
+    [GeneratedRegex(@"^(?:yapılacaklar(?: listesi)?(?:ma|ne|na|a)?|yapılacaklarıma|yapılacaklara|görevlerime|görev listeme|listeme) ekle[:,]?\s+(?<x>.+)$|^(?<x>.+?) (?:yapılacaklara|yapılacaklarıma|yapılacaklar listesine|görevlerime|görev listeme|listeme) ekle$|^(?:yeni görev|görev ekle|yapılacak ekle)[:,]?\s+(?<x>.+)$|^(?:yapılacaklara|yapılacaklarıma|yapılacaklar listesine|görevlerime) (?<x>.+?) (?:ekle|yaz)$")]
     private static partial Regex TodoAdd();
 
-    [GeneratedRegex(@"^(?:yapılacaklarım|yapılacaklar listem|yapılacaklar|görevlerim|yapılacak işlerim)(?: neler| ne| var mı| ne durumda)?$|^yapılacakları (?:oku|söyle|göster)$|^bugün ne yapmam (?:lazım|gerekiyor)$")]
+    [GeneratedRegex(@"^(?:yapılacaklarım|yapılacaklar listem|yapılacaklar|görevlerim|yapılacak işlerim)(?: neler| ne| var mı| ne durumda)?$|^yapılacakları (?:oku|söyle|göster)$|^bugün ne yapmam (?:lazım|gerekiyor)$|^(?:yapılacaklarımda|yapılacaklarda|yapılacaklar listemde|görevlerimde) ne(?:ler)? var$")]
     private static partial Regex TodoList();
 
     [GeneratedRegex(@"^(?:tamamlananları|bitenleri|bitmiş görevleri) (?:temizle|sil)$")]

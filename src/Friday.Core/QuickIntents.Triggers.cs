@@ -87,7 +87,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:hatırlatmayı )?(?:(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika )?ertele$|^(?:biraz )?sonra (?:tekrar )?hatırlat$")]
     private static partial Regex ReminderSnoozeRequest();
 
-    [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) listesine (?<i>.+?) (?:ekle|yaz)$")]
+    [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) (?:listesine|listeme) (?<i>.+?) (?:ekle|yaz)$")]
     private static partial Regex ListAddRequest();
 
     [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) listesinden (?<i>.+?) (?:çıkar|sil|kaldır)$")]

@@ -101,6 +101,6 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^ekranı (?:ikiye böl|bölüştür|ikiye ayır)$|^(?:son )?iki pencereyi yan yana (?:koy|getir|diz|al)$")]
     private static partial Regex SplitRequest();
 
-    [GeneratedRegex(@"^(?:bugünün |son )?(?:haberleri|haberler|gündem|son dakika)(?: (?:ne|neler|oku|söyle|nedir))?$|^gündemde ne var$|^(?:bugün )?neler oluyor$|^(?<c>spor|ekonomi|teknoloji|dünya) haberleri(?: (?:ne|neler|oku|söyle))?$")]
+    [GeneratedRegex(@"^(?:bugünün |bugünkü |dünkü |son )?(?:haberleri|haberler|gündem|son dakika)(?: (?:ne|neler|oku|söyle|nedir))?$|^gündemde ne var$|^(?:bugün )?neler oluyor$|^(?<c>spor|ekonomi|teknoloji|dünya) haberleri(?: (?:ne|neler|oku|söyle))?$")]
     private static partial Regex NewsRequest();
 }
