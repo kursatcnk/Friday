@@ -67,7 +67,8 @@ public sealed partial class MemoryStore : IRestorableStore
 
     public MemoryItem Remember(string text)
     {
-        var clean = text.Trim();
+        // "Yarın", "geçen salı" gibi göreli zamanlar gerçek tarihe çevrilir; bilgi zamanla yanlış anlama dönüşmez.
+        var clean = MemoryAnchor.Anchor(text.Trim(), _clock.GetLocalNow().DateTime);
         if (clean.Length == 0)
         {
             throw new ArgumentException("Hatırlanacak bilgi boş.", nameof(text));
