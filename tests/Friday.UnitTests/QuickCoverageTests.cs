@@ -65,4 +65,34 @@ public class QuickCoverageTests
     [InlineData("derin çalışmayı başlat")]
     public void StartsAUserRoutineByName(string text) =>
         Assert.Equal("rutin", QuickIntents.Match(text, ["derin çalışma", "akşam kapanışı"])?.Tool);
+
+    [Theory]
+    // Bilgi ya da sohbet soruları hızlı yolda bir komut sanılmamalı; dil modeline gitmeli.
+    [InlineData("bu şarkıyı kim besteledi")]
+    [InlineData("hava durumu uygulaması nasıl yapılır")]
+    [InlineData("dolar neden yükseliyor")]
+    [InlineData("zamanlayıcı nasıl çalışır")]
+    [InlineData("not almanın en iyi yolu ne")]
+    [InlineData("mola vermek verimliliği artırır mı")]
+    [InlineData("yapılacaklar listesi tutmak işe yarar mı")]
+    [InlineData("hatırlatıcı uygulaması önerir misin")]
+    [InlineData("müzik dinlemek odaklanmaya yardımcı olur mu")]
+    [InlineData("sesi kısmak için hangi tuşa basılır")]
+    [InlineData("bilgisayarı kilitlemek neden önemli")]
+    [InlineData("haberler neden hep kötü")]
+    [InlineData("rutin oluşturmak için ipuçları ver")]
+    [InlineData("pomodoro tekniğini kim buldu")]
+    [InlineData("su içmek neden önemli")]
+    [InlineData("günlük tutmanın faydaları neler")]
+    [InlineData("harcamalarımı nasıl azaltabilirim")]
+    [InlineData("İstanbul'un nüfusu ne kadar")]
+    [InlineData("yarın ne giysem")]
+    [InlineData("bana bir fıkra anlat")]
+    [InlineData("chrome mu edge mi daha iyi")]
+    [InlineData("spotify premium kaç lira")]
+    [InlineData("ekran süresi çocuklar için kaç saat olmalı")]
+    [InlineData("internet hızımı nasıl artırırım")]
+    [InlineData("alışkanlık kazanmak kaç gün sürer")]
+    public void LeavesQuestionsToTheModel(string text) =>
+        Assert.True(QuickIntents.Match(text) is null or { Tentative: true }, $"Hızlı yol yakaladı: {QuickIntents.Match(text)?.Tool}");
 }
