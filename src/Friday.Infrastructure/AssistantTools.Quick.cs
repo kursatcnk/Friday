@@ -41,6 +41,7 @@ public sealed partial class AssistantTools
     /// <returns>Konuşulacak cevap; komut burada yapılamıyorsa null (soru dil modeline gider).</returns>
     public async Task<QuickReply?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
     {
+        quick = quick with { Arguments = Shielded(quick.Tool, quick.Arguments) };
         string Arg(string key) => quick.Arguments.TryGetValue(key, out var value) ? value : "";
         _ = TakeCard();
         try

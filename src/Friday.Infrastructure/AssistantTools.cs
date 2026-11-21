@@ -320,6 +320,7 @@ public sealed partial class AssistantTools(
 
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
+        call = call with { Arguments = Shielded(call.Name, call.Arguments) };
         try
         {
             return call.Name switch

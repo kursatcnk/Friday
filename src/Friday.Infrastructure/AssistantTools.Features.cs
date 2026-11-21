@@ -110,6 +110,13 @@ public sealed partial class AssistantTools
             return "Hatırlanacak bir bilgi söylenmedi.";
         }
 
+        // Sırlar hafızaya yazılmaz: hafıza diskte düz metin durur ve her soruda dil modeline gidebilir.
+        if (PrivacyShield.Secret(fact) is { } secret)
+        {
+            ledger.Record(DataFlow.Local, "Gizlilik kalkanı", $"Hafızaya {secret} yazılmadı");
+            return $"Kaydetmedim: bu bilgide bir {secret} var. Hafızam diskte düz metin olarak duruyor; {secret} gibi sırları bir parola yöneticisinde saklamanı öneririm. Kullanıcıya bunu söyle.";
+        }
+
         memory.Remember(fact);
         ledger.Record(DataFlow.Local, "Hafıza", $"Kaydedildi: {fact}");
         return $"Hafızaya kaydedildi: {fact}";
