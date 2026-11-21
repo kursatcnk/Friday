@@ -233,8 +233,25 @@ public static class AgentPlan
     /// uydurdu ("toplam 3 hatırlatman var"); düşünmeyle 4/4. Bu yüzden düşünme yalnızca kesin bilgi sorusu ve geçmişte
     /// rakam içeren bir cevap birlikteyse açılır.
     /// </summary>
+    /// <remarks>
+    /// Ölçümdeki dört geçmişli sorunun hepsi bir değer soruyordu ("şimdi dolar kaç?"). "Yarın akşam hatırlatırsın değil
+    /// mi" gibi bir istek "hatırlat" yüzünden kesin bilgi sayılıyor, geçmişte bir telefon numarası geçince düşünme açılıp
+    /// ilk cümleyi 12 sn'ye çıkarıyordu; artık sorunun bir değer sorması da gerekir.
+    /// </remarks>
     public static bool NeedsThinking(string question, IEnumerable<string> earlierAnswers) =>
-        IsFactual(question) && earlierAnswers.Any(answer => answer.Any(char.IsDigit));
+        IsFactual(question) && AsksForValue(question) && earlierAnswers.Any(answer => answer.Any(char.IsDigit));
+
+    private static readonly string[] ValueWords =
+    [
+        " kaç", " ne kadar", " neydi", " nedir", " hangi", " ne zaman", " kim ", " kim?", " kimdi", " nerede", " var mı", " oldu mu", " durum"
+    ];
+
+    /// <summary>Soru bir değer mi soruyor ("kaç", "ne kadar", "hangi", "var mı")? Bir iş isteği ("hatırlat") sormaz.</summary>
+    public static bool AsksForValue(string question)
+    {
+        var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";
+        return ValueWords.Any(word => text.Contains(word, StringComparison.Ordinal));
+    }
 
     /// <summary>
     /// Kesin bir bilgi isteyen soru mu (sayı, tarih, belge, takvim)? Akıllı modda düşünme adımı yalnızca bunlarda açılır:
