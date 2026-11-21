@@ -91,6 +91,7 @@ public sealed partial class AssistantTools
         var minutes = double.TryParse(minutesText, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0 ? Math.Min(value, 180) : 25;
         var todo = Todos?.Find(task);
         _focusTask = todo?.Text ?? TurkishGrammar.Capitalize(task.Trim());
+        _focusAt = DateTime.Now;
         coach.StartFocus(minutes);
         ledger.Record(DataFlow.Local, "Odak", $"{minutes:0} dk · {_focusTask}");
         // İşe başlarken onunla ilgili not ya da bilgi varsa hatırlatılır ("Dünkü notunda: müşteri mavi tonları istedi.").

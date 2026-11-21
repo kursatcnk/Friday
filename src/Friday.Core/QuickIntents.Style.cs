@@ -10,6 +10,7 @@ public static partial class QuickIntents
         : DetailPlease().IsMatch(sentence) ? Command("uslup", ("islem", "ayrintili"))
         : NormalPlease().IsMatch(sentence) ? Command("uslup", ("islem", "normal"))
         : StyleQuestion().IsMatch(sentence) ? Command("uslup", ("islem", "durum"))
+        : WhereWasI().IsMatch(sentence) ? Command("kaldigim_yer")
         : ShortcutsReset().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "sifirla"))
         : ShortcutsList().IsMatch(sentence) ? Command("kisayol_ogrenimi", ("islem", "listele"))
         : null;

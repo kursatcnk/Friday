@@ -133,7 +133,6 @@ public class QuickIntentTests
     [InlineData("Su içtim", "su", "")]
     [InlineData("Bir bardak su içtim", "su", "")]
     [InlineData("Bugün ne kadar çalıştım?", "durum", "")]
-    [InlineData("Nerede kalmıştım?", "kaldigim_yer", "")]
     public void RecognizesRhythmCommands(string sentence, string action, string minutes)
     {
         var command = QuickIntents.Match(sentence, ["mola"]);

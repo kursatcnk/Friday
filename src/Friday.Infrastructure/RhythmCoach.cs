@@ -265,6 +265,18 @@ public sealed partial class RhythmCoach : IDisposable
         return history;
     }
 
+    /// <summary>Son moladan önce öndeki pencere ("Visual Studio Code, FridayAssistant.cs"); yoksa null.</summary>
+    public string? LastPlace
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _where;
+            }
+        }
+    }
+
     public QuickReply Where()
     {
         lock (_gate)

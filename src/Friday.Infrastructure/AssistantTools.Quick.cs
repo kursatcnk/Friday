@@ -113,6 +113,7 @@ public sealed partial class AssistantTools
                 "uslup" => StyleCommand(Arg("islem")),
                 "kisayol_ogrenimi" => ShortcutCommand(Arg("islem")),
                 "o_gun" => DayRecall(Arg("gun")),
+                "kaldigim_yer" => Resume(),
                 "durtme" => NudgeCommand(Arg("islem")),
                 "fis" => await ReceiptAsync(cancellationToken).ConfigureAwait(false),
                 "her_yerde_ara" => SearchEverywhere(Arg("sorgu")),
@@ -452,7 +453,7 @@ public sealed partial class AssistantTools
             "su" => WaterWithHabit(coach),
             "durum" => coach.Status(),
             "hafta" => coach.WeekSummary(),
-            "kaldigimyer" => coach.Where(),
+            "kaldigimyer" => Resume(),
             _ => new QuickReply($"Bilinmeyen ritim işlemi: {action}")
         };
         ledger.Record(DataFlow.Local, "Ritim", $"{action} istendi");

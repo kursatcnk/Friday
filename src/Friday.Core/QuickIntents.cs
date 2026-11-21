@@ -362,7 +362,6 @@ public static partial class QuickIntents
             _ when WaterLog().IsMatch(sentence) => "su",
             _ when DayStatus().IsMatch(sentence) => "durum",
             _ when WeekStatus().IsMatch(sentence) => "hafta",
-            _ when WhereWasI().IsMatch(sentence) => "kaldigim_yer",
             _ => ""
         };
         return action.Length > 0 ? Command("ritim", ("islem", action)) : null;
@@ -493,7 +492,7 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^bugün (?:ne kadar (?:çalıştım|odaklandım|aktiftim)|kaç mola verdim)$|^(?:günüm nasıl geçti|ritmim nasıl)$")]
     private static partial Regex DayStatus();
 
-    [GeneratedRegex(@"^(?:ne yapıyordum|nerede kalmıştım|kaldığım yer(?: neydi)?|en son ne yapıyordum)$")]
+    [GeneratedRegex(@"^(?:ben )?(?:ne yapıyordum|nerede kalmıştım|nerede kalmıştık|kaldığım yer(?: neydi| neresi)?|kaldığım yerden devam edelim|en son ne(?:yle)? (?:yapıyordum|uğraşıyordum)|en son neyle meşguldüm)$")]
     private static partial Regex WhereWasI();
 
     // "sesi yüzde 30 yap", "sesi 40'a ayarla", "ses seviyesini yüzde 50 yap"
