@@ -256,6 +256,7 @@ public sealed partial class App : Application, IDisposable
 
         var store = new JsonSettingsStore(paths);
         var settings = store.Load();
+        store.Live = settings;
         if (!settings.GpuRendering)
         {
             // Pencereler oluşturulmadan önce: bütün arayüz işlemciyle çizilir (bkz. FridaySettings.GpuRendering).
@@ -434,6 +435,15 @@ public sealed partial class App : Application, IDisposable
         rhythm.Changed += (_, _) => Ui(ShowRhythm);
         ShowRhythm();
         chats.Changed += (_, _) => Ui(panel.RefreshChats);
+        // "Geri al" bir ayar değişikliğini döndürünce ayarlar her yerde yeniden uygulanır.
+        store.Restored += (_, _) => Ui(() =>
+        {
+            assistant.ApplySettings();
+            RegisterRoutineKeys();
+            ApplyLook(settings);
+            panel.ReloadRoutines();
+            panel.ReloadSnippets();
+        });
         tools.SettingsChanged += (_, _) => Ui(() =>
         {
             panel.ReloadRoutines();
