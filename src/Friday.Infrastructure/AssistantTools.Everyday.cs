@@ -46,7 +46,7 @@ public sealed partial class AssistantTools
         foreach (var reminder in reminders.TakeDue(DateTime.Now))
         {
             RememberFired(reminder);
-            TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder));
+            TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder) + (MomentNote(reminder.Text) is { } related ? " " + related : ""));
         }
 
         lock (_clockGate)

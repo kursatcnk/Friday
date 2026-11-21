@@ -93,7 +93,9 @@ public sealed partial class AssistantTools
         _focusTask = todo?.Text ?? TurkishGrammar.Capitalize(task.Trim());
         coach.StartFocus(minutes);
         ledger.Record(DataFlow.Local, "Odak", $"{minutes:0} dk · {_focusTask}");
-        return new QuickReply($"Tamam, {TurkishGrammar.Duration(minutes)} boyunca yalnızca {_focusTask.ToLower(Turkish)}. Bitince soracağım" + (todo is null ? "." : "; bitirdiysen listeden düşerim."));
+        // İşe başlarken onunla ilgili not ya da bilgi varsa hatırlatılır ("Dünkü notunda: müşteri mavi tonları istedi.").
+        return new QuickReply($"Tamam, {TurkishGrammar.Duration(minutes)} boyunca yalnızca {_focusTask.ToLower(Turkish)}. Bitince soracağım"
+            + (todo is null ? "." : "; bitirdiysen listeden düşerim.") + (MomentNote(_focusTask) is { } related ? " " + related : ""));
     }
 
     /// <summary>

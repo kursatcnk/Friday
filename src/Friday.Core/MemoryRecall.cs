@@ -66,7 +66,7 @@ public static class MemoryRecall
     };
 
     /// <summary>Küçük harf, Türkçe harfler sadeleşmiş, 3 harften uzun ve dolgu olmayan sözcükler.</summary>
-    private static List<string> Words(string text) =>
+    internal static List<string> Words(string text) =>
         [.. text.ToLower(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))
             .Replace('ı', 'i').Replace('ğ', 'g').Replace('ü', 'u').Replace('ş', 's').Replace('ö', 'o').Replace('ç', 'c')
             .Split([' ', ',', '.', '\'', '’', '?', '!', ':', ';', '(', ')', '"', '-'], StringSplitOptions.RemoveEmptyEntries)
@@ -74,7 +74,7 @@ public static class MemoryRecall
             .Distinct()];
 
     /// <summary>Türkçe ekler sona gelir: "kızımın"/"kızı", "sütlü"/"süt", "arabamın"/"arabası" ortak kökle eşleşir.</summary>
-    private static bool Same(string first, string second)
+    internal static bool Same(string first, string second)
     {
         if (first == second)
         {

@@ -69,7 +69,7 @@ public sealed partial class AssistantTools
         foreach (var reminder in reminders.TakeTriggered(trigger, app))
         {
             RememberFired(reminder);
-            TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder));
+            TimerElapsed?.Invoke(this, ReminderStore.Announcement(reminder) + (MomentNote(reminder.Text) is { } related ? " " + related : ""));
         }
     }
 
