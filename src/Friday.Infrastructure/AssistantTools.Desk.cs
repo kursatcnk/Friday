@@ -145,7 +145,8 @@ public sealed partial class AssistantTools
                 Keys.Chord(Keys.Control, 0x08);
                 break;
             default:
-                Keys.Text(text.Trim() + " ");
+                // Dolgu sesleri atılır, söylenen noktalama yazıya çevrilir (bkz. DictationText).
+                Keys.Text(DictationText.Clean(text) + " ");
                 break;
         }
     }
