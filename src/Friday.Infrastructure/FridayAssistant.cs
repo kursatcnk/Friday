@@ -1260,10 +1260,13 @@ public sealed class FridayAssistant : IDisposable
             var replyStart = reply.Length;
             var unable = false;
             // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
-            // kadar ekliyordu. Kesin bilgi isteyen sorularda düşünme kalır: yoksa model aracı atlayıp sayı uydurabiliyor.
-            // Küçük model düşünmeden aracı çağırmak yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
+            // kadar ekliyordu. Kesin bilgi sorularında da yalnızca sohbette sayılı eski bir cevap varken düşünür; yoksa
+            // model o sayıyı tekrarlayabiliyor (bkz. AgentPlan.NeedsThinking). Küçük model düşünmeden aracı çağırmak
+            // yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
+            var answered = _memory.Messages.Where(message => message.Role == ChatRole.Assistant).Select(message => message.Content)
+                .Append(_memory.Summary ?? "");
             var think = round == 0 && !smallTalk && documents is null
-                        && (multiStep || _settings.OllamaModel != FridaySettings.SmartTextModel || AgentPlan.IsFactual(question));
+                        && (multiStep || _settings.OllamaModel != FridaySettings.SmartTextModel || AgentPlan.NeedsThinking(question, answered));
 
             var thinking = 0;
             await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken, think).ConfigureAwait(false))

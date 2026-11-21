@@ -227,6 +227,16 @@ public static class AgentPlan
     ];
 
     /// <summary>
+    /// Akıllı modda düşünme adımı gerekir mi? Ölçüm (21.11.2026, Friday'in gerçek talimatı ve araçlarıyla): kesin bilgi
+    /// soruları ilk kez sorulduğunda model düşünmeden de 10/10 doğru aracı seçiyor ve ilk tepki ~1,0 sn yerine ~3,4 sn
+    /// sürüyordu. Ama sohbette o konunun sayılı eski bir cevabı varken düşünmeden 4 sorunun 2'sinde aracı atlayıp sayı
+    /// uydurdu ("toplam 3 hatırlatman var"); düşünmeyle 4/4. Bu yüzden düşünme yalnızca kesin bilgi sorusu ve geçmişte
+    /// rakam içeren bir cevap birlikteyse açılır.
+    /// </summary>
+    public static bool NeedsThinking(string question, IEnumerable<string> earlierAnswers) =>
+        IsFactual(question) && earlierAnswers.Any(answer => answer.Any(char.IsDigit));
+
+    /// <summary>
     /// Kesin bir bilgi isteyen soru mu (sayı, tarih, belge, takvim)? Akıllı modda düşünme adımı yalnızca bunlarda açılır:
     /// düşünmeden model bazen aracı atlayıp sohbet geçmişinden sayı uyduruyor. Fıkra, sohbet, öneri gibi serbest
     /// isteklerde düşünme 9 sn'ye kadar gecikme ekliyor ve gerekmiyor.
