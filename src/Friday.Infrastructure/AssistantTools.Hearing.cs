@@ -39,6 +39,33 @@ public sealed partial class AssistantTools
         return [.. HearingVocabulary.Collect(fixedTerms, texts)];
     }
 
+    /// <summary>Yazılı düzeltmeden öğrenilen adlar; öğretilenler listesine eklenir (en fazla 80 ad).</summary>
+    public void LearnHearing(IEnumerable<string> names)
+    {
+        var added = false;
+        foreach (var name in names.Where(name => name.Trim().Length > 1))
+        {
+            if (!Settings.HearingWords.Contains(name, StringComparer.OrdinalIgnoreCase))
+            {
+                Settings.HearingWords.Add(name.Trim());
+                added = true;
+            }
+        }
+
+        if (!added)
+        {
+            return;
+        }
+
+        while (Settings.HearingWords.Count > 80)
+        {
+            Settings.HearingWords.RemoveAt(0);
+        }
+
+        SaveSettings?.Invoke(Settings);
+        HearingChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     private QuickReply HearingCommand(string action, string word)
     {
         var name = string.Join(' ', word.Trim().Trim('"', '\'', '.', ',').Split(' ', StringSplitOptions.RemoveEmptyEntries)

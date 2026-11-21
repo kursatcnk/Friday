@@ -96,6 +96,65 @@ public static partial class HearingVocabulary
     }
 
     /// <summary>
+    /// Yanlış duyulan sözün düzeltmesi: kullanıcı söylediğini hemen ardından yazarak tekrarladıysa (sözcüklerin en az
+    /// yarısı aynı), yazıda olup duyulanda olmayan ve duyulan bir sözcüğe çok benzeyen özel adlar ("Kinsu" yerine
+    /// "Ekinsu") kulağın öğrenmesi gereken adlardır.
+    /// </summary>
+    public static IReadOnlyList<string> Corrections(string heard, string typed)
+    {
+        var heardWords = Word().Matches(heard).Select(match => Fold(Stem(match.Value))).Where(word => word.Length > 0).ToList();
+        var typedWords = Word().Matches(typed).Select(match => Fold(Stem(match.Value))).Where(word => word.Length > 0).ToList();
+        if (heardWords.Count == 0 || typedWords.Count == 0 || typedWords.Count > heardWords.Count * 2 || heardWords.Count > typedWords.Count * 2)
+        {
+            return [];
+        }
+
+        var shared = typedWords.Count(word => heardWords.Contains(word));
+        if (shared * 2 < typedWords.Count || shared == typedWords.Count)
+        {
+            return [];
+        }
+
+        var learned = new List<string>();
+        foreach (var name in ProperNames(typed).Where(name => !name.Contains(' ', StringComparison.Ordinal)))
+        {
+            var folded = Fold(name);
+            if (heardWords.Contains(folded))
+            {
+                continue;
+            }
+
+            var closest = heardWords.Where(word => !typedWords.Contains(word)).Select(word => Distance(word, folded)).DefaultIfEmpty(int.MaxValue).Min();
+            if (closest <= Math.Max(2, folded.Length / 3))
+            {
+                learned.Add(name);
+            }
+        }
+
+        return [.. learned.Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static string Stem(string word) => word.IndexOfAny(['\'', '’']) is var at and > 0 ? word[..at] : word;
+
+    private static int Distance(string first, string second)
+    {
+        var previous = Enumerable.Range(0, second.Length + 1).ToArray();
+        for (var i = 1; i <= first.Length; i++)
+        {
+            var current = new int[second.Length + 1];
+            current[0] = i;
+            for (var j = 1; j <= second.Length; j++)
+            {
+                current[j] = Math.Min(Math.Min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + (first[i - 1] == second[j - 1] ? 0 : 1));
+            }
+
+            previous = current;
+        }
+
+        return previous[second.Length];
+    }
+
+    /// <summary>
     /// Sessizlikte Whisper bazen ipucunu "duyar". İpucundaki adlardan en az üçünü, ipucundaki sırayla ve başka hiçbir
     /// şey söylemeden döken bir yazı kullanıcının sözü sayılmaz.
     /// </summary>

@@ -67,4 +67,19 @@ public class HearingVocabularyTests
         Assert.Equal(action, command.Arguments["islem"]);
         Assert.Equal(name, command.Arguments.GetValueOrDefault("ad"));
     }
+
+    [Theory]
+    [InlineData("Kinsu'nun piyano dersi yarın saat beşte.", "Ekinsu'nun piyano dersi yarın saat beşte", "Ekinsu")]
+    [InlineData("Göktuğa Valideba'daki dükkanı sor.", "Göktuğ'a Validebağ'daki dükkanı sor", "Göktuğ|Validebağ")]
+    [InlineData("Boruk'un okul servisini ara.", "Doruk'un okul servisini ara.", "Doruk")]
+    public void LearnsNamesFromATypedCorrection(string heard, string typed, string expected) =>
+        Assert.Equal(expected.Split('|'), HearingVocabulary.Corrections(heard, typed));
+
+    [Theory]
+    // Aynı cümle, bambaşka bir cümle ya da adı olmayan bir düzeltme öğretmez.
+    [InlineData("Doruk'un servisini ara.", "Doruk'un servisini ara.")]
+    [InlineData("Hava nasıl?", "Selin'e mesaj yaz ve akşam yemeğini sor")]
+    [InlineData("toplantıyı yarına al", "toplantıyı cumaya al")]
+    public void LearnsNothingFromUnrelatedText(string heard, string typed) =>
+        Assert.Empty(HearingVocabulary.Corrections(heard, typed));
 }

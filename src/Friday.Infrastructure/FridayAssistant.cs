@@ -72,6 +72,11 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Son söylenen cevap ("tekrar et" için).</summary>
     private string _lastReply = "";
 
+    /// <summary>Son sesli söz ve zamanı: hemen ardından yazıyla düzeltilirse kulak yanlış duyduğu adı öğrenir.</summary>
+    private string? _lastHeard;
+
+    private DateTime _lastHeardAt;
+
     /// <summary>Bu turda dil modelinin çağırdığı araçlar (kısayol öğrenimi için).</summary>
     private readonly List<ToolCall> _turnCalls = [];
 
@@ -709,6 +714,15 @@ public sealed class FridayAssistant : IDisposable
         {
             if (typed is not null)
             {
+                // Az önce sesle söylenen cümle yazıyla düzeltildiyse yanlış duyulan adlar kulağa öğretilir.
+                if (_lastHeard is { } heard && DateTime.Now - _lastHeardAt < TimeSpan.FromMinutes(2)
+                    && HearingVocabulary.Corrections(heard, typed) is { Count: > 0 } names)
+                {
+                    _tools.LearnHearing(names);
+                    FridayLog.Info($"Kulak yazılı düzeltmeden öğrendi: {string.Join(", ", names)}");
+                }
+
+                _lastHeard = null;
                 await AskAsync(typed, cancellationToken).ConfigureAwait(false);
                 if (_dictation)
                 {
@@ -727,6 +741,9 @@ public sealed class FridayAssistant : IDisposable
                 {
                     return;
                 }
+
+                _lastHeard = text;
+                _lastHeardAt = DateTime.Now;
 
                 await AskAsync(text, cancellationToken).ConfigureAwait(false);
                 if (_dictation)
