@@ -557,7 +557,8 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$|^(?:yarın|bugün)(?: için)? (?:hatırlatman|hatırlatmam|hatırlatıcım|hatırlatmalarım|hatırlatıcılarım) var mı$")]
     private static partial Regex ReminderList();
 
-    [GeneratedRegex(@"^(?<x>.+?) hatırlatma(?:sını|yı)? (?:iptal et|sil|kaldır)$")]
+    // "dişçi hatırlatmasını sil/iptal et/kaldır/unut", "dişçiyle ilgili hatırlatmayı sil", "dişçi hatırlatmasına gerek yok"
+    [GeneratedRegex(@"^(?<x>.+?)(?:(?:y?l[ae]) ilgili)? hatırlatma(?:sını|yı|sına|ya)? (?:iptal et|sil|kaldır|unut|gerek yok|lazım değil)$")]
     private static partial Regex ReminderCancel();
 
     // "not al: süt al", "şunu not et: yarın bankaya git", "süt almayı not al"

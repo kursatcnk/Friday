@@ -360,7 +360,7 @@ public sealed class ReminderStore : IRestorableStore
             || MemoryRecall.Words(needle).All(word => MemoryRecall.Words(lower).Any(other => MemoryRecall.Same(word, other)));
     }
 
-    /// <summary>Metninde aranan ifade geçen hatırlatmaları siler.</summary>
+    /// <summary>Metninde aranan ifade (ya da sözcük kökleri: "dişçi" → "dişçiyi aramamı") geçen hatırlatmaları siler.</summary>
     public int Cancel(string query)
     {
         var needle = query.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR"));
@@ -369,7 +369,7 @@ public sealed class ReminderStore : IRestorableStore
         {
             removed = needle.Length == 0
                 ? 0
-                : _items.RemoveAll(item => item.Text.ToLower(CultureInfo.GetCultureInfo("tr-TR")).Contains(needle, StringComparison.Ordinal));
+                : _items.RemoveAll(item => Mentions(item.Text, needle));
             if (removed > 0)
             {
                 Save();
