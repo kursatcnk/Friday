@@ -65,7 +65,10 @@ public sealed partial class MemoryStore : IRestorableStore
         }
     }
 
-    public MemoryItem Remember(string text)
+    public MemoryItem Remember(string text) => Remember(text, out _);
+
+    /// <summary>Bilgiyi kaydeder; eski bir bilginin yerine geçtiyse o eski metin <paramref name="replaced"/>'dir.</summary>
+    public MemoryItem Remember(string text, out string? replaced)
     {
         // "Yarın", "geçen salı" gibi göreli zamanlar gerçek tarihe çevrilir; bilgi zamanla yanlış anlama dönüşmez.
         var clean = MemoryAnchor.Anchor(text.Trim(), _clock.GetLocalNow().DateTime);
@@ -74,6 +77,7 @@ public sealed partial class MemoryStore : IRestorableStore
             throw new ArgumentException("Hatırlanacak bilgi boş.", nameof(text));
         }
 
+        replaced = null;
         MemoryItem item;
         lock (_gate)
         {
@@ -84,9 +88,16 @@ public sealed partial class MemoryStore : IRestorableStore
             }
 
             // Aynı bilginin biraz farklı söylenişi (ya da düzeltilmiş hali) yeni kayıt açmaz; eskisinin yerine geçer.
-            var index = _items.FindIndex(entry => SameFact(entry.Text, clean));
+            // Aynı kişinin aynı tek değerli özelliği ("Ayşe'nin yeni numarası") da güncellemedir (bkz. FactKey).
+            var index = _items.FindIndex(entry => SameFact(entry.Text, clean) && !FactKey.Differ(entry.Text, clean));
+            if (index < 0)
+            {
+                index = _items.FindLastIndex(entry => FactKey.Same(entry.Text, clean));
+            }
+
             if (index >= 0)
             {
+                replaced = _items[index].Text;
                 item = _items[index] with { Text = clean, Created = _clock.GetUtcNow() };
                 _items[index] = item;
             }

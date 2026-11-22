@@ -117,9 +117,12 @@ public sealed partial class AssistantTools
             return $"Kaydetmedim: bu bilgide bir {secret} var. Hafızam diskte düz metin olarak duruyor; {secret} gibi sırları bir parola yöneticisinde saklamanı öneririm. Kullanıcıya bunu söyle.";
         }
 
-        var saved = memory.Remember(fact);
+        var saved = memory.Remember(fact, out var replaced);
         ledger.Record(DataFlow.Local, "Hafıza", $"Kaydedildi: {saved.Text}");
-        return $"Hafızaya kaydedildi: {saved.Text}";
+        // Eski bir bilgi güncellendiyse model bunu kullanıcıya söyler ("eskiden 0532 … idi").
+        return replaced is null || replaced == saved.Text
+            ? $"Hafızaya kaydedildi: {saved.Text}"
+            : $"Hafızadaki eski bilgi güncellendi. Eski: {replaced} Yeni: {saved.Text} Kullanıcıya eski bilginin yerine yenisini koyduğunu kısaca söyle.";
     }
 
     private string Forget(string topic)
