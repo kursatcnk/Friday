@@ -57,6 +57,7 @@ public class CompoundCommandTests
     [InlineData("Bir de eurokaç?", "doviz")]
     [InlineData("Total toplantı Perşembe'ye kaldı.", "not")]
     [InlineData("Bola vermem lazım.", "ritim")]
+    [InlineData("Komodoro başlat.", "ritim")]
     public void ASecondPartSpokenAfterAPauseIsStillACommand(string text, string tool) =>
         Assert.Equal(tool, QuickIntents.Match(text)?.Tool);
 

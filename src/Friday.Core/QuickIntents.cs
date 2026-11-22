@@ -192,6 +192,8 @@ public static partial class QuickIntents
         // "Not al, …" → "Total …", "mola ver…" → "bola ver…" (Friday'in kendi sesiyle her ölçümde).
         sentence = MisheardNote().Replace(sentence, "not al ");
         sentence = MisheardBreak().Replace(sentence, "mola $1");
+        // "Pomodoro başlat" → "Komodoro başlat" (birleşik komut ölçümünde).
+        sentence = MisheardPomodoro().Replace(sentence, "pomodoro");
         sentence = Politeness().Replace(" " + sentence, " ");
         sentence = OpenVerbs().Replace(sentence, " aç");
         return Whitespace().Replace(sentence, " ").Trim().TrimEnd(',').Trim();
@@ -588,6 +590,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"\bbola (ver\p{L}*)")]
     private static partial Regex MisheardBreak();
+
+    [GeneratedRegex(@"\b(?:komodoro|pomodor|bomodoro|pomodora)\b")]
+    private static partial Regex MisheardPomodoro();
 
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]
     private static partial Regex Politeness();
