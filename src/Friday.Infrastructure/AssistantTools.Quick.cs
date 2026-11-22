@@ -522,18 +522,32 @@ public sealed partial class AssistantTools
             return (shortcut, Path.GetFileNameWithoutExtension(shortcut));
         }
 
-        // Türkçe okunuşla söylenen ad ("vatsap", "krom", "spotifay", "eksel"): sesçe en yakın kısayol ya da kayıtlı uygulama.
+        // Mağaza uygulamaları (WhatsApp, Spotify, Hesap Makinesi…): Başlat menüsü klasörlerinde kısayolları yoktur.
+        var store = StoreApps.All;
+        if (store.FirstOrDefault(app => Simplify(app.Name) is var key && (key == wanted || (wanted.Length >= 4 && key.StartsWith(wanted, StringComparison.Ordinal))))
+            is { Name.Length: > 0 } stored)
+        {
+            return (stored.Target, stored.Name);
+        }
+
+        // Türkçe okunuşla söylenen ad ("vatsap", "krom", "spotifay", "eksel"): sesçe en yakın kısayol, Mağaza uygulaması ya da kayıtlı uygulama.
         var shortcuts = StartMenuShortcuts().ToList();
-        var names = shortcuts.Select(Path.GetFileNameWithoutExtension).OfType<string>().Concat(Settings.Apps.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
+        var names = shortcuts.Select(Path.GetFileNameWithoutExtension).OfType<string>().Concat(store.Select(app => app.Name)).Concat(Settings.Apps.Keys)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
         if (PhoneticName.Best(spoken, names) is not { } heard)
         {
             return null;
         }
 
         FridayLog.Info($"Uygulama adı sesçe eşleşti: \"{spoken}\" → {heard}");
-        return Settings.Apps.TryGetValue(heard, out var saved)
-            ? (saved, heard)
-            : (shortcuts.First(path => string.Equals(Path.GetFileNameWithoutExtension(path), heard, StringComparison.OrdinalIgnoreCase)), heard);
+        if (Settings.Apps.TryGetValue(heard, out var saved))
+        {
+            return (saved, heard);
+        }
+
+        return shortcuts.FirstOrDefault(path => string.Equals(Path.GetFileNameWithoutExtension(path), heard, StringComparison.OrdinalIgnoreCase)) is { } link
+            ? (link, heard)
+            : (store.First(app => string.Equals(app.Name, heard, StringComparison.OrdinalIgnoreCase)).Target, heard);
     }
 
     private string Open((string Target, string Name) app)
