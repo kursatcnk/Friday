@@ -30,6 +30,20 @@ public static partial class TodoDue
             due = until;
             clean = clean.Remove(deadline.Index, deadline.Length);
         }
+        else if (OnDate().Match(clean) is { Success: true } dated && Day(dated.Groups["d"].Value, today) is { } onDate)
+        {
+            // "3 Aralık'ta doktora git", "kirayı ayın 5'inde öde"
+            due = onDate;
+            clean = clean.Remove(dated.Index, dated.Length);
+        }
+        else if (Within().Match(clean) is { Success: true } within)
+        {
+            // "2 gün içinde dönüş yap", "bu hafta içinde bankaya git"
+            due = within.Groups["n"].Success && QuickIntents.ParseNumber(within.Groups["n"].Value) is { } days
+                ? today.AddDays((int)days)
+                : Next(today, DayOfWeek.Sunday);
+            clean = clean.Remove(within.Index, within.Length);
+        }
         else if (LeadingDay().Match(clean) is { Success: true } lead && Day(lead.Groups["d"].Value, today) is { } on)
         {
             due = on;
@@ -64,6 +78,22 @@ public static partial class TodoDue
                 return today.AddDays(7);
             case "ay sonu" or "ayın sonu":
                 return new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        }
+
+        if (MonthDay().Match(word) is { Success: true } monthly)
+        {
+            // "ayın 15'i": bu ayın 15'i geçmediyse o, geçtiyse gelecek ayınki.
+            var dayOfMonth = int.Parse(monthly.Groups["n"].Value, CultureInfo.InvariantCulture);
+            for (var ahead = 0; ahead < 3; ahead++)
+            {
+                var first = new DateOnly(today.Year, today.Month, 1).AddMonths(ahead);
+                if (dayOfMonth >= 1 && dayOfMonth <= DateTime.DaysInMonth(first.Year, first.Month) && first.AddDays(dayOfMonth - 1) is var date && date >= today)
+                {
+                    return date;
+                }
+            }
+
+            return null;
         }
 
         var index = Array.IndexOf(Weekdays, word);
@@ -104,7 +134,8 @@ public static partial class TodoDue
     private static partial Regex ImportantMark();
 
     // "cumaya kadar", "yarına kadar", "25 kasıma kadar", "hafta sonuna kadar", "ay sonuna kadar"
-    [GeneratedRegex(@"\b(?<d>bugün|yarın|öbür gün|hafta ?sonu|ay sonu|ayın sonu|haftaya|gelecek hafta|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar|\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık))(?:['’]?(?:ya|ye|na|ne|a|e|ün|un|in|ın|ü|u|i|ı))? kadar\b", RegexOptions.IgnoreCase)]
+    // "haftaya salıya kadar", "yarın akşama kadar", "ayın 30'una kadar" da: önek ve gün bölümü tarihle birlikte atılır.
+    [GeneratedRegex(@"\b(?:(?:haftaya|gelecek) )?(?<d>bugün|yarın|öbür gün|hafta ?sonu|ay sonu|ayın sonu|haftaya|gelecek hafta|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar|ayın \d{1,2}|\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık))(?:['’]?(?:ya|ye|na|ne|a|e|ün|un|in|ın|ü|u|i|ı|una|üne|ine|ına|sına|sine))?(?: (?:sabah|öğlen|öğle|akşam|gece)(?:a|e|ya|ye)?)? kadar\b", RegexOptions.IgnoreCase)]
     private static partial Regex DeadlinePhrase();
 
     // "yarın bankaya git", "cuma günü raporu gönder"
@@ -116,4 +147,14 @@ public static partial class TodoDue
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();
+
+    /// <summary>Bulunma ekli tarih: "3 aralık'ta", "ayın 5'inde".</summary>
+    [GeneratedRegex(@"\b(?<d>ayın \d{1,2}|\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık))['’]?(?:ta|te|da|de|inde|ında|unda|ünde|nde|nda)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex OnDate();
+
+    [GeneratedRegex(@"\b(?:(?<n>\d{1,2}|bir|iki|üç|dört|beş|altı|yedi|on) gün içinde|bu hafta içinde)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex Within();
+
+    [GeneratedRegex(@"^ayın (?<n>\d{1,2})$")]
+    private static partial Regex MonthDay();
 }
