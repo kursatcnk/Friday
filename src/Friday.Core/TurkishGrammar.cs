@@ -88,6 +88,16 @@ public static class TurkishGrammar
         var words = text.Split(' ');
         for (var index = 0; index < words.Length; index++)
         {
+            // "gitmem gerektiğini", "aramam lazım olduğunu" → "gitmen gerektiğini", "araman lazım olduğunu".
+            var next = index + 1 < words.Length ? words[index + 1].ToLower(Turkish) : "";
+            var lower = words[index].ToLower(Turkish);
+            if (lower.Length > 4 && (lower.EndsWith("mam", StringComparison.Ordinal) || lower.EndsWith("mem", StringComparison.Ordinal))
+                && (next.StartsWith("gerek", StringComparison.Ordinal) || next.StartsWith("lazım", StringComparison.Ordinal)))
+            {
+                words[index] = words[index][..^1] + "n";
+                continue;
+            }
+
             words[index] = YouWord(words[index]);
         }
 

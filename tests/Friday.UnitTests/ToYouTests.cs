@@ -17,6 +17,8 @@ public class ToYouTests
     [InlineData("faturalarımı öde", "faturalarını öde")]
     [InlineData("çamaşırları asmamı", "çamaşırları asmanı")]
     [InlineData("Babamı ara", "Babanı ara")]
+    [InlineData("dişçiye gitmem gerektiğini", "dişçiye gitmen gerektiğini")]
+    [InlineData("annemi aramam lazım", "anneni araman lazım")]
     public void SpeaksToTheUser(string text, string expected) => Assert.Equal(expected, TurkishGrammar.ToYou(text));
 
     [Theory]

@@ -315,7 +315,9 @@ public static partial class QuickIntents
     /// <summary>"yarın 9'da doktoru hatırlat", "akşam 8'de ilacımı hatırlat", "pazartesi 10:30'da toplantıyı hatırlat".</summary>
     private static QuickCommand? ReminderAt(string sentence)
     {
-        var match = ReminderRequest().Match(sentence);
+        // "yarın on bir buçukta dişçiyi hatırlat": sözle söylenen saat önce rakama çevrilir; yoksa kalıp zamanı "yarın"
+        // diye alıp "on bir buçukta"yı nota katıyor, hatırlatma 09:00'a kuruluyordu.
+        var match = ReminderRequest().Match(TurkishTime.Spoken(sentence));
         if (!match.Success || match.Groups["when"].Value.Trim().Length == 0 || TurkishTime.Parse(match.Groups["when"].Value, DateTime.Now) is null)
         {
             return null;
@@ -518,8 +520,9 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:ses seviyesi|ses) (?:kaç|ne kadar|yüzde kaç)$")]
     private static partial Regex VolumeQuestion();
 
-    // "<zaman> <not> hatırlat"; zaman: "yarın 9'da", "saat 15:30'da", "akşam 8'de", "pazartesi sabah", "öğleden sonra 3'te"
-    [GeneratedRegex(@"^(?<when>(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar) ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
+    // "<zaman> <not> hatırlat"; zaman: "yarın 9'da", "saat 15:30'da", "akşam 8'de", "pazartesi sabah", "öğleden sonra 3'te",
+    // "23 kasım'da", "ayın 15'inde"
+    [GeneratedRegex(@"^(?<when>(?:(?:\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)|ayın \d{1,2})(?:['’]?\p{L}+)? ?)?(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar) ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
     private static partial Regex ReminderRequest();
 
     [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$|^(?:yarın|bugün)(?: için)? (?:hatırlatman|hatırlatmam|hatırlatıcım|hatırlatmalarım|hatırlatıcılarım) var mı$")]
