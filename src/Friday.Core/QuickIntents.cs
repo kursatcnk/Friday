@@ -189,6 +189,9 @@ public static partial class QuickIntents
         // Whisper'ın sık yanlış yazdıkları (ses ölçümü): "sesi kız" (kıs), "eurokaç" (euro kaç).
         sentence = MisheardVolume().Replace(sentence, "$1 kıs");
         sentence = MergedRate().Replace(sentence, "$1 kaç");
+        // "Not al, …" → "Total …", "mola ver…" → "bola ver…" (Friday'in kendi sesiyle her ölçümde).
+        sentence = MisheardNote().Replace(sentence, "not al ");
+        sentence = MisheardBreak().Replace(sentence, "mola $1");
         sentence = Politeness().Replace(" " + sentence, " ");
         sentence = OpenVerbs().Replace(sentence, " aç");
         return Whitespace().Replace(sentence, " ").Trim().TrimEnd(',').Trim();
@@ -564,6 +567,13 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"\b(dolar|euro|avro|sterlin|altın|frank|yen)kaç\b")]
     private static partial Regex MergedRate();
+
+    /// <summary>Cümle başındaki "total" ardından en az iki söz geliyorsa "not al"dır ("Total toplantı perşembeye kaldı").</summary>
+    [GeneratedRegex(@"^total,?\s+(?=\S+\s+\S)")]
+    private static partial Regex MisheardNote();
+
+    [GeneratedRegex(@"\bbola (ver\p{L}*)")]
+    private static partial Regex MisheardBreak();
 
     [GeneratedRegex(@"\s+(?:lütfen|bana|benim için)(?=\s|$)")]
     private static partial Regex Politeness();

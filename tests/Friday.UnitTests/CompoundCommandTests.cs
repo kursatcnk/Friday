@@ -55,6 +55,8 @@ public class CompoundCommandTests
     // Whisper'ın sık yanlış yazışları.
     [InlineData("Sesi kız.", "medya")]
     [InlineData("Bir de eurokaç?", "doviz")]
+    [InlineData("Total toplantı Perşembe'ye kaldı.", "not")]
+    [InlineData("Bola vermem lazım.", "ritim")]
     public void ASecondPartSpokenAfterAPauseIsStillACommand(string text, string tool) =>
         Assert.Equal(tool, QuickIntents.Match(text)?.Tool);
 
