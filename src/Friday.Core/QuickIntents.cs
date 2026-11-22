@@ -544,8 +544,8 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^bu hafta (?:ne kadar (?:çalıştım|odaklandım)|kaç mola verdim)$")]
     private static partial Regex WeekStatus();
 
-    // "spotify'ı aç", "not defterini aç", "çalışma modunu aç"
-    [GeneratedRegex(@"^(?<x>[\p{L}\d .+-]{2,40}?)(?:['’]?(?:yı|yi|yu|yü|ı|i|u|ü|nı|ni|nu|nü))? aç$")]
+    // "spotify'ı aç", "not defterini aç", "çalışma modunu aç"; Whisper bazen "Zipotifiyo'a aç" diye yönelme ekiyle yazar.
+    [GeneratedRegex(@"^(?<x>[\p{L}\d .+-]{2,40}?)(?:['’]?(?:yı|yi|yu|yü|ı|i|u|ü|nı|ni|nu|nü)|['’](?:ya|ye|a|e))? aç$")]
     private static partial Regex OpenObject();
 
     [GeneratedRegex(@"[.!?]+\s+")]

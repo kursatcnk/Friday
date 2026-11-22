@@ -517,7 +517,23 @@ public sealed partial class AssistantTools
             .ThenBy(item => Math.Abs(item.key.Length - wanted.Length))
             .Select(item => item.path)
             .FirstOrDefault();
-        return shortcut is null ? null : (shortcut, Path.GetFileNameWithoutExtension(shortcut));
+        if (shortcut is not null)
+        {
+            return (shortcut, Path.GetFileNameWithoutExtension(shortcut));
+        }
+
+        // Türkçe okunuşla söylenen ad ("vatsap", "krom", "spotifay", "eksel"): sesçe en yakın kısayol ya da kayıtlı uygulama.
+        var shortcuts = StartMenuShortcuts().ToList();
+        var names = shortcuts.Select(Path.GetFileNameWithoutExtension).OfType<string>().Concat(Settings.Apps.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
+        if (PhoneticName.Best(spoken, names) is not { } heard)
+        {
+            return null;
+        }
+
+        FridayLog.Info($"Uygulama adı sesçe eşleşti: \"{spoken}\" → {heard}");
+        return Settings.Apps.TryGetValue(heard, out var saved)
+            ? (saved, heard)
+            : (shortcuts.First(path => string.Equals(Path.GetFileNameWithoutExtension(path), heard, StringComparison.OrdinalIgnoreCase)), heard);
     }
 
     private string Open((string Target, string Name) app)
