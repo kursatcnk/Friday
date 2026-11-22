@@ -76,6 +76,19 @@ public sealed partial class AssistantTools
             case "sil":
                 var removed = reminders.Cancel(text);
                 return removed == 0 ? $"'{text}' diye bir hatırlatma bulamadım." : "Tamam, hatırlatmayı sildim.";
+            case "tasi" or "ertele" or "degistir":
+                // "dişçi hatırlatmasını yarın 3'e al": söylenmeyen gün ya da saat eskisinden alınır (bkz. TurkishTime.Shift).
+                if (reminders.Move(text, item => TurkishTime.Shift(item.Due, when, now) is { } moved && moved > now ? moved : null) is not { } move)
+                {
+                    return text.Trim().Length == 0
+                        ? "Taşınacak bir hatırlatma ya da yeni zamanı bulamadım."
+                        : $"'{text}' diye bir hatırlatma bulamadım ya da yeni zamanı anlayamadım.";
+                }
+
+                EnsureReminderClock();
+                ledger.Record(DataFlow.Local, "Hatırlatma", $"{TurkishTime.Describe(move.New.Due, now)} zamanına taşındı");
+                var movedSubject = TurkishGrammar.ToYou(move.New.Text.Trim());
+                return $"Tamam, {TurkishTime.Describe(move.New.Due, now)} {(movedSubject.Length == 0 ? "haber veririm" : $"{movedSubject} hatırlatırım")} (önce {TurkishTime.Describe(move.Old.Due, now)} idi).";
             default:
                 if (TurkishTime.Parse(when, now) is not { } due || due <= now)
                 {

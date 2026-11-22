@@ -323,6 +323,43 @@ public sealed class ReminderStore : IRestorableStore
         return true;
     }
 
+    /// <summary>
+    /// Saatli bir hatırlatmayı yeni zamanına taşır ("dişçi hatırlatmasını yarın 3'e al"). Hatırlatma metninde aranan söz
+    /// geçenlerin en yakını seçilir; söz boşsa en son kurulan. Yeni zamanı eskisinden hesaplayan <paramref name="retime"/>
+    /// null dönerse taşınmaz. Taşınamadıysa null; taşındıysa eski ve yeni hali.
+    /// </summary>
+    public (Reminder Old, Reminder New)? Move(string query, Func<Reminder, DateTime?> retime)
+    {
+        var needle = query.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        (Reminder Old, Reminder New) moved;
+        lock (_gate)
+        {
+            var timed = _items.Where(item => item.Trigger is null && item.Text != QuickIntents.AlarmText).ToList();
+            var found = needle.Length == 0
+                ? timed.MaxBy(item => item.Created)
+                : timed.Where(item => Mentions(item.Text, needle)).MinBy(item => item.Due);
+            if (found is null || retime(found) is not { } due)
+            {
+                return null;
+            }
+
+            moved = (found, found with { Due = due });
+            _items[_items.IndexOf(found)] = moved.New;
+            Save();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return moved;
+    }
+
+    /// <summary>"dişçi" → "dişçiyi aramamı", "annemi arama" → "annemi aramayı": metin ya da sözcük kökleri tutuyor mu?</summary>
+    private static bool Mentions(string text, string needle)
+    {
+        var lower = text.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return lower.Contains(needle, StringComparison.Ordinal)
+            || MemoryRecall.Words(needle).All(word => MemoryRecall.Words(lower).Any(other => MemoryRecall.Same(word, other)));
+    }
+
     /// <summary>Metninde aranan ifade geçen hatırlatmaları siler.</summary>
     public int Cancel(string query)
     {

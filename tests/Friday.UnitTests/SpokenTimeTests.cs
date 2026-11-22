@@ -49,6 +49,9 @@ public class SpokenTimeTests
     [InlineData("saat 15:30'da", "2026-11-21 15:30")]
     [InlineData("saat 15.30'da", "2026-11-21 15:30")]
     [InlineData("bir saat sonra", "2026-11-21 15:00")]
+    [InlineData("yarın 3'te", "2026-11-22 15:00")]
+    [InlineData("yarın sabah 6'da", "2026-11-22 06:00")]
+    [InlineData("25 Kasım 4'te", "2026-11-25 16:00")]
     public void UnderstandsSpokenTimes(string said, string expected) =>
         Assert.Equal(expected, TurkishTime.Parse(said, Now)?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
 

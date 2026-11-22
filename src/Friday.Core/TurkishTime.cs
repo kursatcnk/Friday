@@ -29,6 +29,80 @@ public static partial class TurkishTime
         ("elli", 50), ("kırk", 40), ("bir", 1), ("iki", 2), ("beş", 5), ("üç", 3), ("on", 10)
     ];
 
+    /// <summary>
+    /// Kurulu bir hatırlatmanın yeni zamanı. Söylenmeyen kısım eskisinden alınır: "cumaya" saati korur, "3'e" günü korur
+    /// (öğleden sonraki bir hatırlatmada "4'e" 16:00 demektir), "1 saat" ileri ("geri" denirse geri) alır, "23 Kasım'a"
+    /// saati korur. Zaman yoksa null.
+    /// </summary>
+    public static DateTime? Shift(DateTime old, string phrase, DateTime now)
+    {
+        var text = Dative().Replace(Spaces().Replace(phrase.ToLower(Turkish).Trim(), " "), "$1");
+        if (Duration().Match(text) is { Success: true } duration && QuickIntents.ParseNumber(duration.Groups["n"].Value) is { } amount)
+        {
+            var span = duration.Groups["u"].Value switch { "saat" => TimeSpan.FromHours(amount), "gün" => TimeSpan.FromDays(amount), _ => TimeSpan.FromMinutes(amount) };
+            return duration.Value.EndsWith("geri", StringComparison.Ordinal) || duration.Value.EndsWith("öne", StringComparison.Ordinal) ? old - span : old + span;
+        }
+
+        text = Spoken(text);
+        DateTime? date = null;
+        if (DateIn(text, now) is var (on, remainder))
+        {
+            date = on;
+            text = Spaces().Replace(remainder, " ").Trim();
+        }
+
+        var match = Absolute().Match(text);
+        var day = match.Success ? match.Groups["day"].Value : "";
+        var part = match.Success ? match.Groups["part"].Value : "";
+        var hasHour = int.TryParse(match.Groups["h"].Value, CultureInfo.InvariantCulture, out var hour);
+        var minute = int.TryParse(match.Groups["m"].Value, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0;
+        if (!hasHour && part.Length == 0)
+        {
+            if (day.Length == 0 && date is null)
+            {
+                return null;
+            }
+
+            // Yalnızca gün: saat eskisi gibi kalır.
+            var target = date ?? Parse(day, now)?.Date;
+            return target?.Add(old.TimeOfDay);
+        }
+
+        if (day.Length == 0 && date is null)
+        {
+            // Yalnızca saat: gün eskisi gibi kalır; "4'e" eski saate en yakın yorumla (04:00 değil 16:00) alınır.
+            var options = new List<DateTime>();
+            if (hasHour)
+            {
+                var full = Parse(text, old.Date.AddMinutes(-1));
+                // Gece 1–6 arası hatırlatma kurulmaz: "3'e" 15:00'tir.
+                if (part.Length > 0 || hour is 0 or > 6)
+                {
+                    options.Add(old.Date.AddHours(hour).AddMinutes(minute));
+                }
+
+                if (part.Length == 0 && hour < 12)
+                {
+                    options.Add(old.Date.AddHours(hour + 12).AddMinutes(minute));
+                }
+
+                if (part.Length > 0 && full is { } withPart)
+                {
+                    options = [old.Date.Add(withPart.TimeOfDay)];
+                }
+            }
+            else if (Parse(part, old.Date.AddMinutes(-1)) is { } partOnly)
+            {
+                options.Add(old.Date.Add(partOnly.TimeOfDay));
+            }
+
+            var chosen = options.OrderBy(option => Math.Abs((option - old).TotalMinutes)).FirstOrDefault();
+            return chosen == default ? null : chosen > now ? chosen : chosen.AddDays(1);
+        }
+
+        return Parse(Dative().Replace(phrase.ToLower(Turkish), "$1"), now);
+    }
+
     /// <summary>İfadedeki anı bulur; zaman yoksa null.</summary>
     public static DateTime? Parse(string phrase, DateTime now)
     {
@@ -94,7 +168,7 @@ public static partial class TurkishTime
 
         if (fixedDate is { } on)
         {
-            return on.AddHours(hour).AddMinutes(minute);
+            return on.AddHours(hasHour && part.Length == 0 && hour is >= 1 and <= 6 ? hour + 12 : hour).AddMinutes(minute);
         }
 
         if (day == "hafta sonu")
@@ -113,7 +187,8 @@ public static partial class TurkishTime
                 "öbür gün" or "ertesi gün" => now.Date.AddDays(2),
                 _ => NextWeekday(now.Date, Days[day])
             };
-            return date2.AddHours(hour).AddMinutes(minute);
+            // "Yarın 3'te" gece 03:00 değil 15:00'tir: gün bölümü söylenmemiş 1–6 arası saat öğleden sonradır.
+            return date2.AddHours(hasHour && part.Length == 0 && hour is >= 1 and <= 6 ? hour + 12 : hour).AddMinutes(minute);
         }
 
         // Gün söylenmediyse bir sonraki uygun an: bugün, saat 12'den küçükse öğleden sonrası, değilse yarın.
@@ -280,13 +355,13 @@ public static partial class TurkishTime
     [GeneratedRegex(@"^(?:['’]?(?:de|da|te|ta|e|a|ye|ya|i|ı|u|ü|yi|yı|yu|yü|inde|ında|unda|ünde|nde|nda|ine|ına|une|üne|ni|nı|nu|nü))?$")]
     private static partial Regex NumberSuffix();
 
-    [GeneratedRegex(@"^(?:buçuk\p{L}*|çeyrek|geçe|kala|var|\d{1,2}|on|yirmi|otuz|kırk|elli|beş|on beş|yirmi beş)$")]
+    [GeneratedRegex(@"^(?:buçu[kğ]\p{L}*|çeyrek|geçe|kala|var|\d{1,2}|on|yirmi|otuz|kırk|elli|beş|on beş|yirmi beş)$")]
     private static partial Regex ClockNext();
 
     [GeneratedRegex(@"^(?:saat|sabah|öğle|öğlen|sonra|akşam|akşamüstü|gece|bugün|yarın|gün|pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar)$")]
     private static partial Regex ClockPrevious();
 
-    [GeneratedRegex(@"\b(?<h>\d{1,2}) buçuk(?:['’]?(?:ta|da|a|e))?(?!\s+(?:saat|dakika|gün|saniye))")]
+    [GeneratedRegex(@"\b(?<h>\d{1,2}) buçu[kğ](?:['’]?(?:ta|da|a|e))?(?!\s+(?:saat|dakika|gün|saniye))")]
     private static partial Regex HalfPast();
 
     [GeneratedRegex(@"\b(?<h>\d{1,2})['’]?(?:e|a|ye|ya) çeyrek (?:kala|var)")]
@@ -309,4 +384,12 @@ public static partial class TurkishTime
 
     [GeneratedRegex(@"\b(?:(?<iy>\d{4})-(?<im>\d{1,2})-(?<id>\d{1,2})|(?<d>\d{1,2})[./](?<mo>\d{1,2})[./](?<y>\d{4}))\b")]
     private static partial Regex NumericDate();
+
+    /// <summary>Yönelme ekli gün ve gün bölümleri: "yarına", "cumaya", "akşama" → "yarın", "cuma", "akşam".</summary>
+    [GeneratedRegex(@"\b(bugün|yarın|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar|akşam|sabah|öğlen|gece)(?:ya|ye|a|e)\b")]
+    private static partial Regex Dative();
+
+    /// <summary>Taşımada süre: "1 saat", "yarım saat", "20 dakika", "2 gün" (ardından "ileri", "sonraya", "geri" gelebilir).</summary>
+    [GeneratedRegex(@"^(?<n>[\p{L}\d,.]+(?: buçuk| [\p{L}]+)?) (?<u>dakika|saat|gün)(?: (?:ileri|sonraya|sonra|geri|öne))?$")]
+    private static partial Regex Duration();
 }

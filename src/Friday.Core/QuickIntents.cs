@@ -333,10 +333,21 @@ public static partial class QuickIntents
             return Command("hatirlatici", ("islem", "listele"));
         }
 
+        // "dişçi hatırlatmasını yarın 3'e al", "toplantı hatırlatmasını cumaya ertele", "hatırlatmayı bir saat ileri al".
+        // "Hatırlatmayı 10 dakika ertele" az önce çalan hatırlatmanın ertelenmesidir (ertele komutu), taşıma değil.
+        if (ReminderMove().Match(sentence) is { Success: true } move && move.Groups["when"].Value.Trim() is { Length: > 0 } when
+            && !(move.Groups["x"].Value.Length == 0 && move.Groups["v"].Value == "ertele" && when.EndsWith("dakika", StringComparison.Ordinal)))
+        {
+            return Command("hatirlatici", ("islem", "tasi"), ("metin", move.Groups["x"].Value.Trim()), ("zaman", when));
+        }
+
         return ReminderCancel().Match(sentence) is { Success: true } cancel
             ? Command("hatirlatici", ("islem", "sil"), ("metin", cancel.Groups["x"].Value.Trim()))
             : null;
     }
+
+    [GeneratedRegex(@"^(?:(?<x>.+?) hatırlatma(?:sını|yı)|hatırlatmayı) (?<when>.+?) (?<v>al|ertele|kaydır|taşı|çek|yap)$")]
+    private static partial Regex ReminderMove();
 
     private static QuickCommand? Notes(string sentence)
     {

@@ -163,7 +163,7 @@ public sealed partial class AssistantTools(
         Tool("zamanlayici", "Belirtilen süre sonra kullanıcıya sesli hatırlatma yapar.",
             [("dakika", "number", "Kaç dakika sonra", true), ("not", "string", "Hatırlatılacak şey", false)]),
         Tool("hatirlatici", "Belirli bir zamanda sesli hatırlatma kurar (Friday kapansa bile kaybolmaz), kurulu hatırlatmaları listeler ya da siler.",
-            [("islem", "string", "ekle, listele ya da sil", true),
+            [("islem", "string", "ekle, listele, sil ya da tasi (kurulu bir hatırlatmayı yeni zamanına taşır; metin hangisi, zaman yeni zaman)", true),
              ("zaman", "string", "ekle için kullanıcının söylediği zaman, ör. 'yarın 9'da', 'akşam 8'de', 'pazartesi 10:30'da'", false),
              ("metin", "string", "Hatırlatılacak şey (ekle) ya da silinecek hatırlatmada geçen sözcük (sil)", false)]),
         Tool("not", "Kullanıcının sesli notlarını kaydeder ya da son notları okur (D:\\Friday\\data\\notes.md).",
