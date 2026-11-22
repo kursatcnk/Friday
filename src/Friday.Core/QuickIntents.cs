@@ -319,13 +319,25 @@ public static partial class QuickIntents
     {
         // "yarın on bir buçukta dişçiyi hatırlat": sözle söylenen saat önce rakama çevrilir; yoksa kalıp zamanı "yarın"
         // diye alıp "on bir buçukta"yı nota katıyor, hatırlatma 09:00'a kuruluyordu.
-        var match = ReminderRequest().Match(TurkishTime.Spoken(sentence));
+        // Türkçede iş çoğu kez önce söylenir: "dişçiyi yarın 9'da hatırlat", "toplantıyı pazartesi 10:30'da hatırlat".
+        // Zaman başta gelmezse ikinci kalıp denenir; ölçümde 14 söyleyişten 8'i bu yüzden dil modeline gidiyordu.
+        var spoken = TurkishTime.Spoken(sentence);
+        var match = ReminderRequest().Match(spoken);
+        if (!match.Success || match.Groups["when"].Value.Trim().Length == 0 || TurkishTime.Parse(match.Groups["when"].Value, DateTime.Now) is null)
+        {
+            match = ReminderNoteFirst().Match(spoken);
+        }
+
         if (!match.Success || match.Groups["when"].Value.Trim().Length == 0 || TurkishTime.Parse(match.Groups["when"].Value, DateTime.Now) is null)
         {
             return null;
         }
 
-        return Command("hatirlatici", ("islem", "ekle"), ("zaman", match.Groups["when"].Value.Trim()), ("metin", match.Groups["note"].Value.Trim()));
+        // "Bunu yarın hatırlat": neyin kastedildiğini sohbetten dil modeli bilir; hızlı yol "bunu" diye kurmaz.
+        var note = match.Groups["note"].Value.Trim();
+        return note is "bunu" or "şunu" or "onu" or "bunları" or "şunları" or "onları" or "bunu da" or "onu da"
+            ? null
+            : Command("hatirlatici", ("islem", "ekle"), ("zaman", match.Groups["when"].Value.Trim()), ("metin", note));
     }
 
     private static QuickCommand? Reminders(string sentence)
@@ -535,8 +547,12 @@ public static partial class QuickIntents
 
     // "<zaman> <not> hatırlat"; zaman: "yarın 9'da", "saat 15:30'da", "akşam 8'de", "pazartesi sabah", "öğleden sonra 3'te",
     // "23 kasım'da", "ayın 15'inde"
-    [GeneratedRegex(@"^(?<when>(?:(?:\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)|ayın \d{1,2})(?:['’]?\p{L}+)? ?)?(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar) ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
+    [GeneratedRegex(@"^(?<when>(?:(?:\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)|ayın \d{1,2})(?:['’]?\p{L}+)? ?)?(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar)(?: günü)? ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?!(?:dakika|saniye|saat|gün|buçuk)\b)(?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
     private static partial Regex ReminderRequest();
+
+    // "<not> <zaman> hatırlat": "dişçiyi yarın 9'da hatırlat", "faturayı ödemeyi ayın 15'inde hatırlat"
+    [GeneratedRegex(@"^(?:bana )?(?<note>.+?) (?<when>(?:(?:\d{1,2} (?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)|ayın \d{1,2})(?:['’]?\p{L}+)? ?)?(?:(?:bugün|yarın|öbür gün|ertesi gün|pazartesi|salı|çarşamba|perşembe|cumartesi|cuma|pazar)(?: günü)? ?)?(?:(?:sabah|öğleden sonra|öğlen|öğle|akşam|gece) ?)?(?:saat ?)?(?:\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?)?) (?:bana )?(?:hatırlat|hatırlatır mısın|uyar|haber ver)$")]
+    private static partial Regex ReminderNoteFirst();
 
     [GeneratedRegex(@"^(?:hatırlatmalarım|hatırlatıcılarım|kurulu hatırlatmalar|hangi hatırlatmalar var|hatırlatmalarımı (?:oku|söyle|listele))(?: neler| ne| var mı)?$|^(?:yarın|bugün)(?: için)? (?:hatırlatman|hatırlatmam|hatırlatıcım|hatırlatmalarım|hatırlatıcılarım) var mı$")]
     private static partial Regex ReminderList();

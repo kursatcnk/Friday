@@ -207,7 +207,7 @@ public static partial class TurkishTime
     /// "4:45", "dokuzu on geçe" → "9:10", "dörde beş var" → "3:55". Ölçümde bunların hiçbiri anlaşılmıyordu;
     /// "yarın on bir buçukta" sessizce 09:00'a kuruluyordu.
     /// </summary>
-    internal static string Spoken(string text)
+    public static string Spoken(string text)
     {
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var result = new List<string>();
@@ -234,7 +234,10 @@ public static partial class TurkishTime
             // önünde "saat", "sabah", gün adı olan. "Bir ara" saat 1 değildir.
             var next = index + 1 < words.Length ? words[index + 1] : "";
             var previous = start > 0 ? words[start - 1] : "";
-            if (suffix.Length > 0 || ClockNext().IsMatch(next) || ClockPrevious().IsMatch(previous))
+            // "onu", "ona", "onda" çoğu kez zamirdir ("Ahmet'e onu sor"); ancak saat bağlamı varsa sayıdır ("saat onda").
+            var pronoun = index == start && words[start] is "onu" or "ona" or "onda" or "ondan" or "onun" or "bire" or "biri";
+            var clock = ClockNext().IsMatch(next) || ClockPrevious().IsMatch(previous);
+            if ((suffix.Length > 0 && !pronoun) || clock)
             {
                 result.Add(value.ToString(CultureInfo.InvariantCulture) + (suffix.Length > 0 ? "'" + suffix : ""));
             }

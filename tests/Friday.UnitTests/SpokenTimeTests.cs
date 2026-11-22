@@ -56,6 +56,13 @@ public class SpokenTimeTests
         Assert.Equal(expected, TurkishTime.Parse(said, Now)?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
 
     [Theory]
+    [InlineData("ahmet'e onu sor", "ahmet'e onu sor")]
+    [InlineData("ona kitabı ver", "ona kitabı ver")]
+    [InlineData("saat onda", "saat 10'da")]
+    [InlineData("sabah dokuzda", "sabah 9'da")]
+    public void TurnsOnlyClockNumbersIntoDigits(string text, string expected) => Assert.Equal(expected, TurkishTime.Spoken(text));
+
+    [Theory]
     [InlineData("bir ara")]
     [InlineData("sonra")]
     [InlineData("31 Şubat'ta")]
