@@ -49,9 +49,17 @@ public static partial class QuickIntents
             return Command("ertele", ("dakika", minutes));
         }
 
-        if (ListAddRequest().Match(sentence) is { Success: true } add)
+        // "market listeme süt ekle", "süt ekle market listesine", "sütü market listesine koy", "listeye yumurta at",
+        // "markete süt ekle": ad söylenmezse market listesi.
+        foreach (var pattern in new[] { ListAddRequest(), ListAddItemFirst(), ListAddVerbFirst(), ListAddUnnamed() })
         {
-            return Command("liste", ("islem", "ekle"), ("ad", add.Groups["l"].Value.Trim()), ("oge", add.Groups["i"].Value.Trim()));
+            // "Panodakini market listesine ekle", "bunu listeye ekle" pano ya da ekran komutudur.
+            if (pattern.Match(sentence) is { Success: true } add && LeadingAlso().Replace(add.Groups["i"].Value.Trim(), "") is { Length: > 0 } item
+                && !PointedItem().IsMatch(item))
+            {
+                var name = add.Groups["l"].Success ? add.Groups["l"].Value.Trim() : "market";
+                return Command("liste", ("islem", "ekle"), ("ad", name), ("oge", item));
+            }
         }
 
         if (ListRemoveRequest().Match(sentence) is { Success: true } remove)
@@ -87,8 +95,23 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:hatırlatmayı )?(?:(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika )?ertele$|^(?:biraz )?sonra (?:tekrar )?hatırlat$")]
     private static partial Regex ReminderSnoozeRequest();
 
-    [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) (?:listesine|listeme) (?<i>.+?) (?:ekle|yaz)$")]
+    [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) (?:listesine|listeme) (?<i>.+?) (?:ekle|yaz|koy|at)$")]
     private static partial Regex ListAddRequest();
+
+    [GeneratedRegex(@"^(?<i>.+?) (?<l>[\p{L}\d]+(?: [\p{L}\d]+)?) (?:listesine|listeme) (?:ekle|yaz|koy|at)$")]
+    private static partial Regex ListAddItemFirst();
+
+    [GeneratedRegex(@"^(?<i>.+?) (?:ekle|yaz|koy|at) (?<l>[\p{L}\d]+(?: [\p{L}\d]+)?) (?:listesine|listeme)$")]
+    private static partial Regex ListAddVerbFirst();
+
+    [GeneratedRegex(@"^(?:listeye|listeme|markete|alışverişe) (?<i>.+?) (?:ekle|yaz|koy|at)$")]
+    private static partial Regex ListAddUnnamed();
+
+    [GeneratedRegex(@"^(?:bir de|ayrıca) ")]
+    private static partial Regex LeadingAlso();
+
+    [GeneratedRegex(@"^(?:panodaki\p{L}*|panodan\p{L}*|ekrandaki\p{L}*|seçili\p{L}*|kopyaladığım\p{L}*|bunu|şunu|onu|bunları|şunları)$")]
+    private static partial Regex PointedItem();
 
     [GeneratedRegex(@"^(?<l>[\p{L}\d ]{2,25}?) listesinden (?<i>.+?) (?:çıkar|sil|kaldır)$")]
     private static partial Regex ListRemoveRequest();
