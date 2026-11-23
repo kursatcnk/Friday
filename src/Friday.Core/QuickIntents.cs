@@ -127,8 +127,18 @@ public static partial class QuickIntents
             ?? HabitDone(sentence)
             ?? TodoDone(sentence)
             ?? CloseApp(sentence)
-            ?? App(sentence);
+            ?? App(sentence)
+            ?? DoneSaid(sentence);
     }
+
+    /// <summary>
+    /// "Annemi aradım", "raporu gönderdim", "mail attım": birinci tekil geçmiş zamanlı kısa bir cümle açık bir işi
+    /// karşılıyor olabilir (bkz. <see cref="DoneStatement"/>). Kesin değildir: eşleşen iş yoksa soru dil modeline gider.
+    /// </summary>
+    private static QuickCommand? DoneSaid(string sentence) =>
+        sentence.Split(' ').Length is >= 2 and <= 7 && DoneStatement.IsDoneStatement(sentence)
+            ? new QuickCommand("yapilacak", new Dictionary<string, string> { ["islem"] = "yaptim", ["metin"] = sentence }, Tentative: true)
+            : null;
 
     /// <summary>"5", "beş", "on beş", "yarım", "bir buçuk", "iki buçuk" → sayı.</summary>
     public static double? ParseNumber(string text)

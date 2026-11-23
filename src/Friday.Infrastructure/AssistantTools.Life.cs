@@ -43,7 +43,8 @@ public sealed partial class AssistantTools
                     ? $"{habit.Name} zaten takip ettiğin alışkanlıklar arasında."
                     : $"Tamam, \"{habit.Name}\" alışkanlığını {(habit.IsWeekly ? $"haftada {habit.PerWeek} kez olarak " : "")}takip ediyorum. Yaptığın gün söylemen yeter, ör. \"{DoneExample(habit.Name)}\".");
             case "yaptim":
-                return MarkHabit(book, name, today);
+                // "Sütü aldım": öyle bir alışkanlık yoksa yapılacaklardaki "süt al" işi kapanır.
+                return MarkHabit(book, name, today) ?? (LastUserText.Length > 0 ? TodoCommand("yaptim", LastUserText) : null);
             case "gerial":
                 if (book.Find(name) is not { } undone)
                 {

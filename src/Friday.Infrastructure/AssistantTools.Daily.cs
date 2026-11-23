@@ -59,6 +59,17 @@ public sealed partial class AssistantTools
                 todos.Complete(match.Id, now);
                 var left = todos.Open.Count;
                 return new QuickReply($"Harika, \"{match.Text}\" tamamlandı." + (left == 0 ? " Liste bitti, tebrikler!" : $" {left} iş kaldı."));
+            case "yaptim":
+                // "Annemi aradım", "mail attım": yapıldığı söylenen açık iş kapanır; yoksa soru dil modeline gider.
+                if (todos.FindDone(text) is not { } said)
+                {
+                    return null;
+                }
+
+                todos.Complete(said.Id, now);
+                ledger.Record(DataFlow.Local, "Yapılacaklar", "Söylenen iş tamamlandı");
+                var remaining = todos.Open.Count;
+                return new QuickReply($"Harika, \"{said.Text}\" işini listeden düştüm." + (remaining == 0 ? " Liste bitti, tebrikler!" : $" {remaining} iş kaldı."));
             case "temizle":
                 var removed = todos.ClearDone();
                 return new QuickReply(removed == 0 ? "Temizlenecek tamamlanmış iş yok." : $"{removed} tamamlanmış işi listeden kaldırdım.");

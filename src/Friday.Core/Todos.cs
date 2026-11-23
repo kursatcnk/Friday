@@ -122,6 +122,17 @@ public sealed class TodoStore : IRestorableStore
         return item;
     }
 
+    /// <summary>"Annemi aradım" gibi bir cümlenin yapıldığını söylediği açık iş; yoksa null (bkz. <see cref="DoneStatement"/>).</summary>
+    public TodoItem? FindDone(string sentence)
+    {
+        lock (_gate)
+        {
+            return _items.Where(item => !item.IsDone && DoneStatement.Fulfills(sentence, item.Text))
+                .OrderByDescending(item => item.Text.Length)
+                .FirstOrDefault();
+        }
+    }
+
     /// <summary>Açık işlerden metni en iyi eşleşeni bulur ("faturayı ödedim" → "Faturayı öde").</summary>
     public TodoItem? Find(string query)
     {
