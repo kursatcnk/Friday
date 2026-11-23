@@ -88,7 +88,10 @@ public sealed class ListStore(string file) : IRestorableStore
                 return null;
             }
 
-            var match = current.FirstOrDefault(existing => Same(existing, item) || Fold(item).StartsWith(Fold(existing), StringComparison.Ordinal));
+            // "ekmeği" → "ekmek" (ünsüz yumuşaması): tek sözcüklü öğede kök eşleşmesi de kabul edilir.
+            var match = current.FirstOrDefault(existing => Same(existing, item) || Fold(item).StartsWith(Fold(existing), StringComparison.Ordinal))
+                ?? current.FirstOrDefault(existing => !existing.Contains(' ', StringComparison.Ordinal) && !item.Contains(' ', StringComparison.Ordinal)
+                    && Fold(existing).Length >= 4 && MemoryRecall.Same(Fold(existing), Fold(item)));
             if (match is null)
             {
                 return null;

@@ -63,7 +63,8 @@ public sealed partial class AssistantTools
                 // "Annemi aradım", "mail attım": yapıldığı söylenen açık iş kapanır; yoksa soru dil modeline gider.
                 if (todos.FindDone(text) is not { } said)
                 {
-                    return null;
+                    // "Sütü aldım": iş değilse alışveriş listelerinden düşülür.
+                    return CrossOffBought(text);
                 }
 
                 todos.Complete(said.Id, now);
@@ -85,6 +86,38 @@ public sealed partial class AssistantTools
                     _ => $"{open.Count} iş var: {TurkishGrammar.Join([.. open.Take(5).Select(Spoken)])}" + (open.Count > 5 ? " ve diğerleri." : ".")
                 });
         }
+    }
+
+    /// <summary>"Sütü ve ekmeği aldım": alınanlar alışveriş listelerinden düşülür; hiçbiri listede yoksa null.</summary>
+    private QuickReply? CrossOffBought(string sentence)
+    {
+        if (Lists is not { } lists || DoneStatement.Bought(sentence) is not { Count: > 0 } bought)
+        {
+            return null;
+        }
+
+        var crossed = new List<(string List, string Item)>();
+        foreach (var name in lists.Names)
+        {
+            foreach (var item in bought)
+            {
+                if (!crossed.Any(done => done.Item == item) && lists.Remove(name, item) is { } removed)
+                {
+                    crossed.Add((name, removed));
+                }
+            }
+        }
+
+        if (crossed.Count == 0)
+        {
+            return null;
+        }
+
+        ledger.Record(DataFlow.Local, "Listeler", $"{crossed.Count} öğe alındı diye düşüldü");
+        var list = crossed[0].List;
+        var left = lists.Items(list).Count;
+        return new QuickReply($"{TurkishGrammar.Capitalize(list)} listesinden düştüm: {TurkishGrammar.Join([.. crossed.Select(done => done.Item)])}."
+            + (left == 0 ? " Liste bitti." : $" {left} şey kaldı."));
     }
 
     /// <summary>Son tarihin okunuşu: "bugün", "yarın", "cuma", "25 Kasım", "2 gün önce geçti".</summary>

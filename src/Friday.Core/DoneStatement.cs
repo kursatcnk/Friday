@@ -46,6 +46,26 @@ public static partial class DoneStatement
         return objects.Count > 0 && objects.All(word => others.Any(other => MemoryRecall.Same(Fold(word), Fold(other))));
     }
 
+    /// <summary>
+    /// "Sütü aldım", "süt ve ekmeği aldım", "marketten yumurta aldım": alınan şeyler (listeden düşmek için); "aldım" ile
+    /// bitmiyorsa boş. "Marketten" gibi nereden alındığını söyleyen sözcükler atılır.
+    /// </summary>
+    public static IReadOnlyList<string> Bought(string sentence)
+    {
+        var words = Words(sentence).Where(word => !Fillers.Contains(word)).ToList();
+        if (words.Count < 2 || words[^1] is not ("aldım" or "aldık"))
+        {
+            return [];
+        }
+
+        var things = words.Take(words.Count - 1).Where(word => word != "satın" && !Ablative().IsMatch(word)).ToList();
+        return [.. string.Join(' ', things).Split([" ve ", " ile ", " bir de "], StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => item.Trim()).Where(item => item.Length > 1)];
+    }
+
+    [GeneratedRegex(@"['’]?(?:dan|den|tan|ten)$")]
+    private static partial Regex Ablative();
+
     private static List<string> Words(string text) =>
         [.. Split().Split(text.ToLower(Turkish).Trim().TrimEnd('.', '!', '?')).Where(word => word.Length > 0)];
 
