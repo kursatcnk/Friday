@@ -68,6 +68,7 @@ public static partial class QuickIntents
         }
 
         return Chat(sentence)
+            ?? Front(sentence)
             ?? Closing(sentence)
             ?? Trigger(sentence, triggers ?? [])
             ?? StatusReport(sentence)
