@@ -295,7 +295,7 @@ public static class AgentPlan
     /// <summary>Bir işi yaptığını ya da yapacağını söyleyen kalıplar ("not ettim", "listene ekledim", "yarın hatırlatırım").</summary>
     private static readonly string[] Claims =
     [
-        "ekledim", "kaydettim", "not ettim", "not aldım", "kurdum", "ayarladım", "oluşturdum", "hafızama", "aklıma yazdım",
+        "ekledim", "kaydettim", "not ettim", "not aldım", "notunu aldım", "notunu ettim", "notunu düştüm", "not düştüm", "notlarına ekledim", "notlarına yazdım", "kenara yazdım", "kenara not", "kurdum", "ayarladım", "oluşturdum", "hafızama", "aklıma yazdım",
         "hatırlatacağım", "hatırlatırım", "haber vereceğim", "haber veririm", "aklımda tut", "unutmayacağım", "uyandıracağım",
         "uyandırırım", "takip edeceğim", "dürteceğim", "seslenirim", "sesleneceğim", "kaydedeceğim", "ekleyeceğim", "not edeceğim",
         "kaydediyorum", "ekliyorum", "not ediyorum", "kuruyorum", "hatırlatıyorum", "yazdım bile", "listene attım", "listeye attım",
@@ -334,7 +334,7 @@ public static class AgentPlan
     [
         (["listene", "listeye", "listesine"], "liste"),
         (["yapılacak", "işlerine", "görevlerine"], "yapilacaklar"),
-        (["not ettim", "not aldım", "not edeceğim", "not ediyorum", "notlarına", "yazdım bile"], "not"),
+        (["not ettim", "not aldım", "notunu", "not düştüm", "kenara yazdım", "kenara not", "not edeceğim", "not ediyorum", "notlarına", "yazdım bile"], "not"),
         (["hatırlatıcı", "hatırlatırım", "hatırlatacağım", "hatırlatıyorum", "haber vereceğim", "haber veririm", "uyandır", "dürt", "seslen",
           "uyar", "bilgilendir", "alarm"], "hatirlatici"),
         (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla")
