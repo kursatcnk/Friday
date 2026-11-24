@@ -50,6 +50,9 @@ public sealed class LearnedShortcuts(string file)
     private readonly object _gate = new();
     private Dictionary<string, Shortcut>? _shortcuts;
 
+    /// <summary>Birebir sözün ötesinde öğrenilen kalıplar ("{metin} {zaman} bildir"; bkz. <see cref="PhraseTemplates"/>).</summary>
+    public PhraseTemplates Templates { get; } = new(Path.Combine(Path.GetDirectoryName(file) ?? ".", "templates.json"));
+
     /// <summary>Öğrenilmiş kısayollar: söz → hızlı yol aracı.</summary>
     public IReadOnlyList<(string Phrase, string Tool)> Learned
     {
@@ -67,6 +70,13 @@ public sealed class LearnedShortcuts(string file)
     /// öğrenilir; true döner.
     /// </summary>
     public bool Observe(string text, string tool, IReadOnlyDictionary<string, string> arguments)
+    {
+        // Kalıp da gözlenir: değerleri cümlede aynen geçen istekler yeni değerlere genellenebilir.
+        var generalized = Templates.Observe(text, tool, arguments);
+        return ObserveExact(text, tool, arguments) || generalized;
+    }
+
+    private bool ObserveExact(string text, string tool, IReadOnlyDictionary<string, string> arguments)
     {
         var key = Key(text);
         if (key.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 2 || !Learnable.TryGetValue(tool, out var rule)
@@ -95,26 +105,30 @@ public sealed class LearnedShortcuts(string file)
         }
     }
 
-    /// <summary>Söz öğrenilmiş bir kısayolsa hızlı yol komutu; değilse null.</summary>
+    /// <summary>Söz öğrenilmiş bir kısayolsa ya da öğrenilmiş bir kalıba uyuyorsa hızlı yol komutu; değilse null.</summary>
     public QuickCommand? Find(string text)
     {
         var key = Key(text);
         lock (_gate)
         {
-            return Load().TryGetValue(key, out var shortcut) && shortcut.Seen >= Confirmations
-                ? new QuickCommand(shortcut.Tool, new Dictionary<string, string>(shortcut.Arguments, StringComparer.Ordinal))
-                : null;
+            if (Load().TryGetValue(key, out var shortcut) && shortcut.Seen >= Confirmations)
+            {
+                return new QuickCommand(shortcut.Tool, new Dictionary<string, string>(shortcut.Arguments, StringComparer.Ordinal));
+            }
         }
+
+        return Templates.Find(text);
     }
 
     public bool Forget(string text)
     {
+        var template = Templates.Forget(text) > 0;
         lock (_gate)
         {
             var shortcuts = Load();
             if (!shortcuts.Remove(Key(text)))
             {
-                return false;
+                return template;
             }
 
             Save(shortcuts);
@@ -128,7 +142,7 @@ public sealed class LearnedShortcuts(string file)
         lock (_gate)
         {
             var shortcuts = Load();
-            var count = shortcuts.Values.Count(item => item.Seen >= Confirmations);
+            var count = shortcuts.Values.Count(item => item.Seen >= Confirmations) + Templates.Clear();
             shortcuts.Clear();
             Save(shortcuts);
             return count;

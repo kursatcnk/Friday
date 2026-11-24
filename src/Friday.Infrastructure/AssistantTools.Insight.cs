@@ -52,6 +52,12 @@ public sealed partial class AssistantTools
             parts.Add($"{shortcuts.Count} sözü düşünmeden yapmayı öğrendim");
         }
 
+        if (Shortcuts?.Templates.Learned is { Count: > 0 } templates)
+        {
+            // "{metin} {zaman} bildir" gibi: değerleri değişse de aynı biçimdeki her söz anında yapılır.
+            parts.Add($"{templates.Count} söyleyiş biçimini öğrendim; o biçimdeki istekleri artık dil modelini beklemeden yapıyorum");
+        }
+
         if (Corrections?.Phrases is { Count: > 0 } corrections)
         {
             parts.Add($"{corrections.Count} sözün komut olmadığını öğrendim");
