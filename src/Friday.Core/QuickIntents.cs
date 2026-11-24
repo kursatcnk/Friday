@@ -61,6 +61,11 @@ public static partial class QuickIntents
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
         }
 
+        if (WritingRequest(text) is { } writing)
+        {
+            return writing;
+        }
+
         var sentence = Normalize(text);
         if (sentence.Length == 0)
         {
@@ -69,6 +74,7 @@ public static partial class QuickIntents
 
         return Chat(sentence)
             ?? Front(sentence)
+            ?? Reading(sentence)
             ?? Closing(sentence)
             ?? Trigger(sentence, triggers ?? [])
             ?? StatusReport(sentence)

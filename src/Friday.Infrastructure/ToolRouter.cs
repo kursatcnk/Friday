@@ -54,6 +54,10 @@ public static class ToolRouter
         (["linkedin", "github", "google"], ["web_ara", "web_sitesi_ac"]),
         (["geri al", "geri getir", "yanlışlıkla", "değişiklik", "değiştirdin"], ["geri_al"]),
         (["ne yaptım", "neler yaptım", "yapmışım", "nasıl geçti", "ne yapıyordum", "uğraştım"], ["o_gun"]),
+        (["okuduğum", "okudum", "okuduklarım", "okumuştum", "açtığım", "açmıştım", "baktığım", "bakmıştım", "incelediğim", "önceki sürüm",
+          "farkı ne", "değişmiş", "eski sürüm"], ["okuduklarim"]),
+        (["cevap yaz", "cevap ver", "yanıt yaz", "ingilizce yaz", "ingilizce mail", "ingilizce mesaj", "mail yaz", "mesaj yaz", "kibar yap",
+          "resmi yap", "kısalt", "taslak"], ["yazi"]),
         (["bu belge", "bu sayfa", "bu pdf", "bu dosya", "bu sözleşme", "bu makale", "bu mail", "bu metin", "burada", "bunda", "önümdeki", "ekrandaki", "çevir"], ["onumdeki"]),
         (["konuşmuştuk", "konuştuk", "konuştuğumuz", "demiştin", "dediğin", "söylemiştin", "söylediğin", "sormuştum", "sorduğum", "bahsetmiştin",
           "bahsettiğin", "bahsetmiştik", "önermiştin", "önerdiğin", "anlatmıştın", "geçen sefer", "önceki sohbet", "hatırlıyor musun"], ["gecmis"])

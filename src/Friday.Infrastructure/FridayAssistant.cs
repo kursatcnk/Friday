@@ -1041,6 +1041,12 @@ public sealed class FridayAssistant : IDisposable
         // bir komut ("yeni sohbet", "100 dolar kaç lira") ya da araya giren bir soru ("100 dolar ne kadar", "yarın hava nasıl
         // olacak") cevap sanılmaz (bkz. QuickIntents.IsAside). Eskiden bir kez başlayan kelime çalışması her şeyi yutuyordu.
         var matched = Quick(text);
+        // "Kısalt", "daha kibar yap" ancak düzeltilecek bir taslak varken yazma köprüsüne gider.
+        if (matched is { Tool: "yazi" } && matched.Arguments.GetValueOrDefault("islem") == "duzelt" && !_tools.HasDraft)
+        {
+            matched = null;
+        }
+
         var clearCommand = matched is { Tentative: false } && text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2;
         var checklist = _tools.InChecklist && !clearCommand && !QuickIntents.IsAside(text, shortAnswer: true);
         var answering = !checklist && _tools.AwaitsAnswer
@@ -1329,10 +1335,14 @@ public sealed class FridayAssistant : IDisposable
 
         // Talimatta olmayan ama soruyla ilgili hafıza bilgileri bütün hafızada aranır ve yalnızca bu soruya eklenir.
         var memories = _longTermMemory.Items;
+        // Okunmuş bir belgeye değinen soru: belge hatırlatılır ve okuduklarim aracı da gönderilir.
+        var reading = smallTalk ? "" : _tools.ReadingContext(question);
+        IReadOnlyList<string> readingTool = reading.Length > 0 ? ["okuduklarim"] : [];
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
             + _tools.PersonalContext(question)
             + _tools.ConversationContext(question, _memory.Messages.Where(message => message.Role == ChatRole.User).Select(message => message.Content).ToHashSet(StringComparer.Ordinal))
             + _tools.Situation(DateTime.Now)
+            + reading
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 
         for (var round = 0; round <= maxRounds; round++)
@@ -1357,7 +1367,7 @@ public sealed class FridayAssistant : IDisposable
             var calls = new List<ToolCall>();
             // Son turda araç verilmez; model mutlaka sözlü bir cevap verir.
             // Araç tanımları her soruda baştan işlenir (~4.100 belirteç, ~1,1 sn); soruya göre gereken alt küme gönderilir.
-            var tools = round < maxRounds ? (widened ? _tools.Definitions : _tools.DefinitionsFor(question, multiStep, RecentTools().Concat(claimed))) : [];
+            var tools = round < maxRounds ? (widened ? _tools.Definitions : _tools.DefinitionsFor(question, multiStep, RecentTools().Concat(claimed).Concat(readingTool))) : [];
             var replyStart = reply.Length;
             var unable = false;
             var held = false;
@@ -1608,6 +1618,7 @@ public sealed class FridayAssistant : IDisposable
             _activity.Distracted += (_, site) => OnDistracted(site);
             _activity.AppFocused += (_, app) => OnAppFocused(app.Label, app.Process);
             _activity.Returned += (_, _) => OnReturned();
+            _activity.Looked += (_, title) => _tools.NoticeReading(title, ActivityTracker.Seconds);
             _activity.Start();
         }
 
@@ -2019,6 +2030,13 @@ public sealed class FridayAssistant : IDisposable
             if (snapshot.StretchStart is not { } start || now - start < TimeSpan.FromMinutes(2))
             {
                 _lastEyeBreak = now;
+            }
+
+            // Okunan belgelerin özetleri model boştayken, dakikada en fazla bir belge yazılır (oyun ya da tam ekran video
+            // sırasında ekran kartı kullanılmaz).
+            if (!FullScreenDetector.IsBusy() && await _tools.DigestReadingAsync(CancellationToken.None).ConfigureAwait(false))
+            {
+                return;
             }
 
             _scheduler.Allowed = _tools.AllowsNudge;

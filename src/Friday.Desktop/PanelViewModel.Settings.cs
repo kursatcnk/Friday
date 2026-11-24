@@ -48,6 +48,9 @@ public sealed partial class PanelViewModel
     private bool _documentMemory = true;
 
     [ObservableProperty]
+    private bool _readingMemory = true;
+
+    [ObservableProperty]
     private bool _weatherAlerts = true;
 
     [ObservableProperty]
@@ -450,6 +453,7 @@ public sealed partial class PanelViewModel
         _settings.AccentColor = Accents.FirstOrDefault(accent => accent.Name == SelectedAccent).Color ?? "#FF8A5B";
         _settings.UiScale = ScaleValue(SelectedScale);
         _settings.DocumentMemory = DocumentMemory;
+        _settings.ReadingMemory = ReadingMemory;
         _settings.WeatherAlerts = WeatherAlerts;
         _settings.AutoBackup = AutoBackup;
         var folders = DocumentFoldersText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
@@ -552,6 +556,7 @@ public sealed partial class PanelViewModel
         SelectedScale = ScaleName(_settings.UiScale);
         LoadHome();
         DocumentMemory = _settings.DocumentMemory;
+        ReadingMemory = _settings.ReadingMemory;
         WeatherAlerts = _settings.WeatherAlerts;
         AutoBackup = _settings.AutoBackup;
         DocumentFoldersText = string.Join("\n", _settings.DocumentFolders.Count > 0 ? _settings.DocumentFolders : Friday.Infrastructure.DocumentLibrary.DefaultFolders());

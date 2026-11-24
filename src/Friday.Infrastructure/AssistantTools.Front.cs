@@ -57,11 +57,12 @@ public sealed partial class AssistantTools
                     "tarihleri metindeki gibi ver. Markdown yok.\nSoru: " + question.Trim(),
                     FrontDocument.Relevant(text, question, 6000), cancellationToken).ConfigureAwait(false);
             default:
+                // Bu belgenin önceki bir sürümü okunmuşsa (aynı dosya değişmiş ya da "teklif_v1.pdf") farkı sormak önerilir.
                 return await FrontLlmAsync(
                     "Kullanıcı ekranında açık olan belge ya da sayfa için 'bu ne, açıkla' dedi. Dili ne olursa olsun Türkçe açıkla: " +
                     "ne olduğu, ne anlattığı ve kullanıcı için önemli olan noktalar (tarih, tutar, yapılması gereken bir şey varsa " +
                     "onu da söyle). 4-6 cümle, sade konuşma dili; cevap sesli okunacak, markdown yok.",
-                    FrontDocument.Relevant(text, "", 6000), cancellationToken).ConfigureAwait(false);
+                    FrontDocument.Relevant(text, "", 6000), cancellationToken).ConfigureAwait(false) + VersionNote(name);
         }
     }
 
@@ -89,6 +90,7 @@ public sealed partial class AssistantTools
                 if (text.Trim().Length > 40)
                 {
                     ledger.Record(DataFlow.Local, "Önündeki belge", $"{Path.GetFileName(path)} okundu");
+                    RememberFront(path, text);
                     _front = (key, Path.GetFileName(path), text.Trim(), 0);
                     return (Path.GetFileName(path), text.Trim());
                 }

@@ -488,6 +488,11 @@
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DocumentMemory}" Margin="0,0,0,12">
                             <TextBlock Text="Belgelerimden cevap ver" FontWeight="SemiBold"/>
                         </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ReadingMemory}" Margin="0,0,0,4">
+                            <TextBlock Text="Okuduğum belgeleri hatırla" FontWeight="SemiBold"/>
+                        </CheckBox>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                                   Text="Yarım dakikadan uzun baktığın PDF ve Word belgelerinin metni bu bilgisayarda saklanır: &quot;geçen hafta okuduğum sözleşmede depozito ne kadardı&quot;, &quot;bunun öncekinden farkı ne&quot;. Ekran görüntüsü alınmaz. &quot;Okuduklarımı unut&quot; hepsini siler."/>
                         <TextBlock Text="Klasörler (her satıra bir tane)" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,6"/>
                         <TextBox Text="{Binding DocumentFoldersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="58" TextWrapping="NoWrap"/>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">

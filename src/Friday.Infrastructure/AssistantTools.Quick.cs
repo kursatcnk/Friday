@@ -126,6 +126,8 @@ public sealed partial class AssistantTools
                 "kelime_cevir" => await VocabularyTranslateAsync(Arg("islem"), Arg("kelime"), cancellationToken).ConfigureAwait(false),
                 "ekran_metni" => await ScreenTextAsync(cancellationToken).ConfigureAwait(false),
                 "onumdeki" => new QuickReply(await FrontAsync(Arg("islem"), Arg("soru"), cancellationToken).ConfigureAwait(false)),
+                "okuduklarim" => new QuickReply(await ReadingAsync(Arg("islem"), Arg("soru"), Arg("ad"), Arg("zaman"), cancellationToken).ConfigureAwait(false)),
+                "yazi" => new QuickReply(await WriteAsync(Arg("islem"), Arg("icerik"), Arg("dil"), cancellationToken).ConfigureAwait(false)),
                 "pano_kaydet" => SaveClipboard(Arg("islem"), Arg("ad")),
                 "doviz_alarmi" => await RateAlertCommandAsync(Arg("islem"), Arg("birim"), Arg("deger"), Arg("yon")).ConfigureAwait(false),
                 "uyku_saati" => BedTimeCommand(Arg("islem"), Arg("saat")),

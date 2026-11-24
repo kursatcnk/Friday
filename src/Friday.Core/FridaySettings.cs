@@ -155,6 +155,9 @@ public sealed class FridaySettings
     /// <summary>Belge hafızası: seçilen klasörlerdeki belgeler yerelde dizinlenir, sorulara kaynak gösterilerek cevap verilir.</summary>
     public bool DocumentMemory { get; set; } = true;
 
+    /// <summary>Okuduklarım: yarım dakikadan uzun bakılan belgelerin metni yerelde saklanır ("geçen hafta okuduğum sözleşme").</summary>
+    public bool ReadingMemory { get; set; } = true;
+
     /// <summary>Bugün ekranındaki kartların sırası (anahtarlar); listede olmayan yeni kartlar sona eklenir.</summary>
     public List<string> HomeOrder { get; set; } = [];
 

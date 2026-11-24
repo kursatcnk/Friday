@@ -283,7 +283,8 @@ public sealed partial class App : Application, IDisposable
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Vocabulary = vocabulary, Nudges = new NudgePolicy(Path.Combine(paths.Data, "nudges.json")) };
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Vocabulary = vocabulary, Nudges = new NudgePolicy(Path.Combine(paths.Data, "nudges.json")),
+            Reading = new ReadingLog(Path.Combine(paths.Data, "reading.json")), WritingStyle = new WritingStyle(Path.Combine(paths.Data, "writing-style.json")) };
         StoreApps.Warm();
         _tools = tools;
         var assistant = _assistant = new FridayAssistant(

@@ -16,5 +16,6 @@ public sealed partial class AssistantTools
         _checklist = null;
         _pendingAction = null;
         _front = null;
+        _draft = null;
     }
 }

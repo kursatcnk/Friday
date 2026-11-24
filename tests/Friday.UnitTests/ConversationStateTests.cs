@@ -84,6 +84,19 @@ public sealed class ConversationStateTests : IDisposable
         Assert.False(_tools.HasPendingConfirmation);
     }
 
+    [Fact]
+    public void AQuestionAboutAReadDocumentRemindsTheModelOfIt()
+    {
+        var log = new ReadingLog(Path.Combine(_temp.Path, "reading.json"));
+        var (offer, _) = log.Touch(@"C:\a\teklif_v2.pdf", DateTime.Now, 300);
+        log.SetDigest(offer, "Mavi Yazılım'ın kurumsal web sitesi teklifi; toplam 92.000 TL artı KDV, teslim 30 gün.", "teklif, web sitesi, Mavi Yazılım, proposal");
+        _tools.Reading = log;
+
+        Assert.Contains("teklif_v2.pdf", _tools.ReadingContext("Mavi Yazılım'ın teklifi ne kadardı"), StringComparison.Ordinal);
+        Assert.Equal("", _tools.ReadingContext("yarın hava nasıl olacak"));
+        Assert.Equal("", _tools.ReadingContext("web tasarımı nedir"));
+    }
+
     public void Dispose()
     {
         _tools.Dispose();

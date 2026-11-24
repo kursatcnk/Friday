@@ -67,6 +67,12 @@ public sealed class ActivityTracker : IDisposable
     /// <summary>Dikkat dağıtan bir sitede ~45 sn kalındı (YouTube, Netflix, Instagram…); site adıyla.</summary>
     public event EventHandler<string>? Distracted;
 
+    /// <summary>Kullanıcı başındayken her yoklamada öndeki pencerenin başlığı (okuduklarım bundan belgeyi bulur; saklanmaz).</summary>
+    public event EventHandler<string>? Looked;
+
+    /// <summary>İki yoklama arası (saniye).</summary>
+    public const int Seconds = TickSeconds;
+
     /// <summary>Öne başka bir uygulama geldi: (gösterilen ad, süreç adı).</summary>
     public event EventHandler<(string Label, string Process)>? AppFocused;
 
@@ -131,6 +137,7 @@ public sealed class ActivityTracker : IDisposable
                 Returned?.Invoke(this, EventArgs.Empty);
             }
 
+            Looked?.Invoke(this, window.Title);
             var label = ScreenTimeLog.Label(window.Process, Description(window.ProcessId, window.Process), window.Title);
             if (label != _lastLabel)
             {
