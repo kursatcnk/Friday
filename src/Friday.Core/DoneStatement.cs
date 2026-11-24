@@ -20,8 +20,25 @@ public static partial class DoneStatement
     };
 
     /// <summary>Cümle birinci tekil geçmiş zamanla bitiyor mu ("…dım/dim/tım…")?</summary>
+    /// <summary>
+    /// "Dün akşam ne yemiştim" (soru, -mıştım) ve "bugün çok yoruldum" (kendiliğinden olan, -ıl/-ul) bir işi yaptığını
+    /// söylemez; eskiden yapılacaklarda eşleşme aranıp boşa bir adım atılıyordu.
+    /// </summary>
     public static bool IsDoneStatement(string sentence) =>
-        Words(sentence) is [.., var last] && PastFirstPerson().IsMatch(last) && !NegativePast().IsMatch(last);
+        Words(sentence) is [.., var last] words && PastFirstPerson().IsMatch(last) && !NegativePast().IsMatch(last)
+        && !PastPerfect().IsMatch(last) && !Undergone().IsMatch(last) && !words.Any(QuestionWords.Contains);
+
+    private static readonly HashSet<string> QuestionWords = new(StringComparer.Ordinal)
+    {
+        "ne", "neyi", "neden", "niye", "niçin", "nasıl", "kim", "kimi", "kime", "nerede", "nereye", "nereden", "hangi", "kaç", "mı", "mi", "mu", "mü"
+    };
+
+    [GeneratedRegex(@"m[ıiuü]ş(?:t|d)[ıiuü]m$")]
+    private static partial Regex PastPerfect();
+
+    /// <summary>"Yoruldum", "sıkıldım", "üzüldüm", "kırıldım": başına gelen, yapılan bir iş değil.</summary>
+    [GeneratedRegex(@"^(?:yoruldum|sıkıldım|üzüldüm|kırıldım|bunaldım|daraldım|şaşırdım|korktum|acıktım|susadım|üşüdüm|hastalandım|uyudum|uyandım|bayıldım|sinirlendim|rahatladım)$")]
+    private static partial Regex Undergone();
 
     /// <summary>Cümle bu işi yapıldı diye mi söylüyor?</summary>
     public static bool Fulfills(string sentence, string task)

@@ -147,7 +147,7 @@ public static partial class QuickIntents
     private static partial Regex ExpenseAdd();
 
     // "bu ay ne kadar harcadım", "bu hafta kahveye ne kadar harcadım", "dün kaç lira harcadım"
-    [GeneratedRegex(@"^(?:(?<p>bugün|dün|bu hafta|bu ay|geçen ay) )?(?:(?<c>[\p{L}]+?)['’]?(?:ya|ye|na|ne|a|e) )?(?:toplam )?(?:ne kadar|kaç lira|kaç para|kaç tl) (?:para )?(?:harcadım|harcamışım|gitti)$")]
+    [GeneratedRegex(@"^(?:(?<p>bugün|dün|bu hafta|bu ay|geçen ay) )?(?:(?<c>[\p{L}]+?)['’]?(?:ya|ye|na|ne|a|e) )?(?:toplam )?(?:ne kadar|kaç lira|kaç para|kaç tl) (?:para )?(?:harcadım|harcamışım|harcadık|gitti|verdim|verdik|ödedim|ödedik)$")]
     private static partial Regex ExpenseQuestion();
 
     [GeneratedRegex(@"^(?:(?<p>bugünkü|dünkü|bu haftaki|bu ayki|geçen ayki|aylık|haftalık) )?harcamalar(?:ım)?(?:ı|ımı)?(?: neler| ne kadar| ne durumda| özeti| göster| oku| söyle)?$|^harcama özeti$|^bütçem(?: ne durumda| nasıl gidiyor| nasıl| ne kadar kaldı)$|^(?:bu ay )?ne kadar bütçem kaldı$")]

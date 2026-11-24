@@ -136,7 +136,7 @@ public class DayCountdownTests
             new("b", "Kullanıcının doğum günü 2 Aralık.", DateTimeOffset.Now)
         ];
         Assert.StartsWith("Doğum günüm için 15 gün kaldı", DayCountdown.Answer(DayCountdown.Target("Doğum günüme kaç gün kaldı?")!, memories, Today));
-        Assert.StartsWith("Kızımın doğum günü için 106 gün kaldı", DayCountdown.Answer(DayCountdown.Target("Kızımın doğum gününe kaç gün kaldı?")!, memories, Today));
+        Assert.StartsWith("Kızının doğum günü için 106 gün kaldı", DayCountdown.Answer(DayCountdown.Target("Kızımın doğum gününe kaç gün kaldı?")!, memories, Today));
     }
 }
 

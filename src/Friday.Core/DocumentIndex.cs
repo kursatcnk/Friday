@@ -204,6 +204,9 @@ public sealed class DocumentIndex
 /// <summary>Birden çok adımlı istekleri tanır: "PDF'i bul, özetle ve notlarıma ekle", "önce sesi kıs sonra müziği aç".</summary>
 public static class AgentPlan
 {
+    /// <summary>Düşünme kapalı turlarda soruya eklenen yönerge (bkz. OllamaChatClient.MaxTokens).</summary>
+    public const string NoThinking = "\n(Düşünmeden, hemen cevap ver.)";
+
     private static readonly string[] Verbs =
     [
         "aç", "bul", "yaz", "kaydet", "ekle", "özetle", "oku", "hatırlat", "gönder", "kapat", "ara", "çevir", "listele", "sil",

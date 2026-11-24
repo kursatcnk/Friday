@@ -59,7 +59,10 @@ public sealed partial class AssistantTools
         var records = new List<PersonalRecord>();
         records.AddRange(notes.All.Where(note => now - note.Time < TimeSpan.FromDays(120) && !note.Text.StartsWith("Notlarım burada", StringComparison.Ordinal))
             .Select(note => new PersonalRecord("Not", note.Text, note.Time)));
-        records.AddRange((Todos?.Open ?? []).Select(item => new PersonalRecord("Açık iş", item.Text, item.Created)));
+        var today = DateOnly.FromDateTime(now);
+        // Son günü olan işin tarihi de verilir; eskiden "sunumu ne zamana bitirmem lazım" sorusuna model "tarih yok" diyordu.
+        records.AddRange((Todos?.Open ?? []).Select(item => new PersonalRecord(
+            item.Due is { } due ? $"Açık iş (son gün {DayAgenda.DayLabel(due, today)}, {due.ToString("d MMMM", Turkish)})" : "Açık iş", item.Text, item.Created)));
         records.AddRange(reminders.Upcoming.Where(item => item.Text.Length > 0)
             .Select(item => new PersonalRecord($"Hatırlatıcı ({TurkishTime.Describe(item.Due, now)})", item.Text, item.Created)));
         if (Journal is { } journal)
@@ -67,7 +70,16 @@ public sealed partial class AssistantTools
             records.AddRange(journal.Between(now.AddDays(-60), now).Select(entry => new PersonalRecord("Günlük", entry.Text, entry.When)));
         }
 
-        var found = MomentRecall.Ranked(question, records).Take(3).ToList();
+        var found = MomentRecall.Ranked(question, records, includeSame: true).Take(3).ToList();
+        // "Sunumu ne zamana bitirmem lazım": son günü olan bir işe tek bir sözcükle değinilse de o iş eklenir; işler azdır
+        // ve tarih sorusunun cevabı ancak oradadır.
+        if (Deadline().IsMatch(question.ToLower(Turkish)))
+        {
+            found.AddRange(records.Where(record => record.Source.StartsWith("Açık iş (son gün", StringComparison.Ordinal) && !found.Contains(record)
+                    && MomentRecall.Mentions(question, record.Text))
+                .Take(2));
+        }
+
         if (found.Count == 0)
         {
             return "";
@@ -77,6 +89,10 @@ public sealed partial class AssistantTools
         return "\n[Kayıtlarından, bu soruyla ilgili olabilir: " + string.Join(" | ", found.Select(record =>
             $"{record.Source}{(record.Source is "Not" or "Günlük" ? $" ({record.When.ToString("d MMMM", Turkish)})" : "")}: {Short(record.Text.TrimEnd('.'), 160)}")) + "]";
     }
+
+    /// <summary>Son gün soran sözler: "ne zamana kadar", "teslim", "kaç gün".</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"ne zaman|ne zamana|kaçına kadar|son gün|teslim|yetiştir|kaç gün")]
+    private static partial System.Text.RegularExpressions.Regex Deadline();
 
     /// <summary>
     /// Geçmişe dönen sorularda ("geçen hafta ne önermiştin?") eski sohbetlerdeki ilgili soru-cevaplar (bkz.

@@ -174,6 +174,8 @@ public sealed class OllamaServer(FridayPaths paths, HttpClient http) : IDisposab
             _process.WaitForExit(TimeSpan.FromSeconds(5));
         }
 
+        // İki kez kapatılabilir (asistan ve uygulama); ikincisinde atılmış süreç nesnesine dokunulmaz.
         _process?.Dispose();
+        _process = null;
     }
 }

@@ -58,4 +58,51 @@ public sealed partial class AssistantTools
 
         return $"\n[Durum: {string.Join(" · ", parts)}]";
     }
+
+    /// <summary>
+    /// Soru bir günün programını soruyorsa ("yarın dişçim var mı", "cuma boş muyum") o günün gündemi kayıtlardan
+    /// hesaplanıp eklenir (bkz. <see cref="DayAgenda"/>). Model eskiden yarınki dişçi hatırlatmasını görmeyip "takviminde
+    /// yok" diyebiliyordu. Takvim bağlıysa önbellekteki etkinlikler de girer; ağa gidilmez.
+    /// </summary>
+    public string AgendaContext(string question, DateTime now)
+    {
+        var today = DateOnly.FromDateTime(now);
+        if (DayAgenda.Range(question, today) is not { } range)
+        {
+            return "";
+        }
+
+        IReadOnlyList<CalendarEvent> events = Calendar.IsConfigured
+            ? Calendar.Cached(range.From == today ? now : range.From.ToDateTime(TimeOnly.MinValue), range.To.ToDateTime(TimeOnly.MinValue))
+            : [];
+        var agenda = DayAgenda.Build(range.From, range.To, now, events, reminders.Upcoming, Todos?.Open ?? [], memory.Items, Expenses?.Bills ?? []);
+        var text = agenda.Count == 0 ? "kayıtlı bir şey yok" : DayAgenda.Describe(agenda, range.From, range.To, today, range.Label);
+        return $"\n[Gündem ({range.Label.ToLower(Turkish)}; hatırlatmalar, işler, özel günler{(Calendar.IsConfigured ? ", takvim" : "; takvim bağlı değil")}): {text}]";
+    }
+
+    /// <summary>
+    /// Soru hafızadaki haftalık bir tekrara değiniyorsa ("bugün yüzmeye gidiyor muyum", "pilates hangi gün") ya da
+    /// bugün/yarın soruluyorsa, tekrarın bugüne denk gelip gelmediği kodla hesaplanıp eklenir (bkz. <see cref="WeeklyFacts"/>).
+    /// </summary>
+    public string WeeklyContext(string question, DateTime now)
+    {
+        var today = DateOnly.FromDateTime(now);
+        var weekly = memory.Items.Where(item => MemoryDates.NextOccurrence(item.Text, today) is null && WeeklyFacts.Parse(item.Text) is not null).ToList();
+        if (weekly.Count == 0)
+        {
+            return "";
+        }
+
+        IReadOnlyList<MemoryItem> chosen = MemoryRecall.Relevant(weekly, question, new HashSet<MemoryItem>(), 3);
+        if (chosen.Count == 0 && TodayWords().IsMatch(question.ToLower(Turkish)))
+        {
+            chosen = [.. weekly.Take(3)];
+        }
+
+        return chosen.Count == 0 ? ""
+            : "\n[Haftalık tekrarlar, bugüne göre hesaplandı: " + string.Join(" | ", chosen.Select(item => WeeklyFacts.Note(WeeklyFacts.Parse(item.Text)!, today))) + "]";
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(?:bugün|yarın|bu akşam|bu sabah|bu hafta|yarın akşam|programım)")]
+    private static partial System.Text.RegularExpressions.Regex TodayWords();
 }

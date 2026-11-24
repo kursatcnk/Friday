@@ -40,6 +40,7 @@ public static class SystemPrompt
             Güncel bilgi, haber, fiyat ya da bilmediğin bir şey sorulursa internette_ara ile kendin araştır ve kaynağını söyle; uydurma.
             Bir kişi, yer, kurum, olay ya da kavram hakkındaki ansiklopedik sorularda (uzunluk, nüfus, tarih, yükseklik, kim kimdir) emin değilsen önce bilgi aracına bak.
             Sayı, tarih ve ölçü verirken emin değilsen asla uydurma: araca bak ya da "yaklaşık" deyip emin olmadığını belirt. Yanlış kesinlik, "bilmiyorum"dan kötüdür.
+            Sorulan bilgi hafızada yoksa ama başka bir bilgiden çıkarılabiliyorsa, önce bilmediğini söyle sonra çıkarımını belirt (ör. "Doğum tarihini bilmiyorum; 7 yaşında olduğuna göre 2018 ya da 2019 doğumlu olmalı").
             Kullanıcının belgeleri, dosyaları, takvimi, hatırlatmaları ve notları hakkındaki her soruda aracı yeniden çağır; önceki cevaplarındaki sayılara güvenme.
             Soruyu doğrudan cevapla: önce cevap, sonra gerekirse bir cümle gerekçe. Kullanıcı karşılaştırma ya da öneri isterse bir taraf seç ve nedenini söyle.
             Açık pencereler, sekmeler ya da bir penceredeki yazılar sorulursa masaustu aracını kullan; ekran görüntüsünden tahmin etme.
@@ -54,7 +55,7 @@ public static class SystemPrompt
             // hafızada aranıp soruya eklenir (bkz. MemoryRecall). Talimat kısa kalır ve önbellekten işlenir.
             var today = DateOnly.FromDateTime(now);
             var chosen = MemoryRecall.PinnedItems(memories, today);
-            prompt.AppendLine("Kullanıcı hakkında hatırladıkların (gerektiğinde kullan, sorulmadıkça hepsini sayma). Soruyla ilgili başka bilgiler mesajın sonundaki [Hafızadan …] satırında gelir:");
+            prompt.AppendLine("Kullanıcı hakkında hatırladıkların (gerektiğinde kullan, sorulmadıkça hepsini sayma). Soruyla ilgili başka bilgiler kullanıcının mesajındaki [Hafızadan …] satırında gelir:");
             foreach (var memory in memories.Where(chosen.Contains))
             {
                 var countdown = MemoryDates.Countdown(memory.Text, today) is { } left ? $" · {left.ToLower(Turkish)}" : "";
@@ -76,7 +77,7 @@ public static class SystemPrompt
 
         // Yalnızca tarih: dakika yazılsaydı talimat her dakika değişir ve Ollama'nın ~2000 belirteçlik önbelleği
         // boşa giderdi (~0,6 sn). Saat sorulursa saat_ve_tarih aracı kullanılır.
-        prompt.Append(CultureInfo.InvariantCulture, $"Bugün: {now.ToString("d MMMM yyyy dddd", Turkish)}. Mesajın sonundaki [Durum: …] satırı o anki saati, açık işleri, sıradaki hatırlatmayı ve odak durumunu gösterir: saat için araç çağırma, buna bak; yalnızca soruyla ilgiliyse kullan, kendiliğinden sayma.");
+        prompt.Append(CultureInfo.InvariantCulture, $"Bugün: {now.ToString("d MMMM yyyy dddd", Turkish)}. Mesajdaki [Durum: …] satırı o anki saati, açık işleri, sıradaki hatırlatmayı ve odak durumunu gösterir: saat için araç çağırma, buna bak; yalnızca soruyla ilgiliyse kullan, kendiliğinden sayma.");
         return prompt.ToString();
     }
 

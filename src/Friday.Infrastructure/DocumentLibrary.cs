@@ -26,6 +26,13 @@ public sealed class DocumentLibrary : IDisposable
 
     private readonly string _metaFile;
     private readonly string _textFile;
+
+    /// <summary>
+    /// Metni çıkmayan dosyalar (taranmış PDF, boş ya da bozuk belge) ve damgaları. Eskiden bunlar hiçbir yere yazılmadığı
+    /// için her saatlik taramada baştan okunuyordu (günlükte her saat aynı "53 yeni/değişen dosya"); artık dosya
+    /// değişmedikçe atlanır.
+    /// </summary>
+    private readonly string _skipFile;
     private readonly object _gate = new();
     private List<IndexedDocument> _documents = [];
     private DocumentIndex _index = new();
@@ -37,6 +44,7 @@ public sealed class DocumentLibrary : IDisposable
     {
         _metaFile = Path.Combine(dataFolder, "documents.json");
         _textFile = Path.Combine(dataFolder, "documents.txt");
+        _skipFile = Path.Combine(dataFolder, "documents-skipped.json");
     }
 
     /// <summary>Taranan klasörler; boşsa Belgeler ve Masaüstü.</summary>
@@ -189,6 +197,23 @@ public sealed class DocumentLibrary : IDisposable
         LastScan = File.GetLastWriteTime(_metaFile);
     }
 
+    private Dictionary<string, FileStamp> ReadSkipped()
+    {
+        try
+        {
+            return File.Exists(_skipFile)
+                ? new Dictionary<string, FileStamp>(JsonSerializer.Deserialize<Dictionary<string, FileStamp>>(File.ReadAllText(_skipFile), Json) ?? [], StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, FileStamp>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return new Dictionary<string, FileStamp>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>Bir dosyanın değişip değişmediğini anlamaya yeten damga: son yazılma zamanı ve boyutu.</summary>
+    internal sealed record FileStamp(DateTime Modified, long Size);
+
     private void Scan()
     {
         if (Interlocked.Exchange(ref _scanning, 1) == 1)
@@ -208,6 +233,8 @@ public sealed class DocumentLibrary : IDisposable
             }
 
             Changed?.Invoke(this, Status);
+            var skipped = ReadSkipped();
+            var stillSkipped = new Dictionary<string, FileStamp>(StringComparer.OrdinalIgnoreCase);
             var documents = new List<IndexedDocument>();
             var index = new DocumentIndex();
             long written = 0;
@@ -218,6 +245,13 @@ public sealed class DocumentLibrary : IDisposable
                 foreach (var file in Files().Take(MaxFiles))
                 {
                     var info = new FileInfo(file);
+                    var stamp = new FileStamp(info.LastWriteTimeUtc, info.Length);
+                    if (skipped.TryGetValue(file, out var empty) && empty == stamp)
+                    {
+                        stillSkipped[file] = stamp;
+                        continue;
+                    }
+
                     IReadOnlyList<string> texts;
                     if (previous.TryGetValue(file, out var known) && known.Modified == info.LastWriteTimeUtc && known.Size == info.Length && oldText is not null)
                     {
@@ -233,6 +267,7 @@ public sealed class DocumentLibrary : IDisposable
                         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException
                                                               or System.Xml.XmlException or FormatException or ArgumentException or IndexOutOfRangeException)
                         {
+                            stillSkipped[file] = stamp;
                             continue;
                         }
 
@@ -242,6 +277,7 @@ public sealed class DocumentLibrary : IDisposable
 
                     if (texts.Count == 0)
                     {
+                        stillSkipped[file] = stamp;
                         continue;
                     }
 
@@ -268,6 +304,7 @@ public sealed class DocumentLibrary : IDisposable
             {
                 File.Move(temporary, _textFile, overwrite: true);
                 File.WriteAllText(_metaFile, JsonSerializer.Serialize(documents, Json));
+                File.WriteAllText(_skipFile, JsonSerializer.Serialize(stillSkipped, Json));
                 _documents = documents;
                 _index = index;
                 LastScan = DateTime.Now;

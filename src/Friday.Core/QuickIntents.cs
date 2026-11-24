@@ -72,6 +72,38 @@ public static partial class QuickIntents
             return null;
         }
 
+        return Cased(text, MatchNormalized(text, sentence, routines, triggers));
+    }
+
+    /// <summary>Metin taşıyan argümanlar: küçük harfe çevrilmiş cümleden alınsalar da asıl yazılışlarına döndürülür.</summary>
+    private static readonly string[] TextArguments = ["metin", "oge", "not", "aciklama", "bilgi", "icerik"];
+
+    /// <summary>
+    /// Komutlar küçük harfli cümleden çıkarılır; "Ela'yı yüzmeden al" hatırlatması "ela'yı yüzmeden al" diye kaydedilip
+    /// okunuyordu. Metin argümanı asıl cümlede (Türkçe büyük/küçük harf farkı gözetmeden) aynen geçiyorsa oradaki yazılışı alınır.
+    /// </summary>
+    internal static QuickCommand? Cased(string original, QuickCommand? command)
+    {
+        if (command is null || !command.Arguments.Keys.Any(TextArguments.Contains))
+        {
+            return command;
+        }
+
+        var arguments = new Dictionary<string, string>(command.Arguments);
+        foreach (var key in TextArguments)
+        {
+            if (arguments.TryGetValue(key, out var value) && value.Length >= 2
+                && Turkish.CompareInfo.IndexOf(original, value, CompareOptions.IgnoreCase) is var at and >= 0)
+            {
+                arguments[key] = original.Substring(at, value.Length);
+            }
+        }
+
+        return command with { Arguments = arguments };
+    }
+
+    private static QuickCommand? MatchNormalized(string text, string sentence, IEnumerable<string>? routines, IEnumerable<string>? triggers)
+    {
         return Chat(sentence)
             ?? Front(sentence)
             ?? Reading(sentence)
@@ -317,8 +349,18 @@ public static partial class QuickIntents
             "saat" => amount * 60,
             _ => amount
         };
+        // Baştaki söz virgülle ayrılmışsa bir açıklamadır ("çayı demledim,"); değilse işin kendisidir ("fırındaki keki …
+        // kontrol etmemi"): not olur ve sondaki sözle birleşir.
+        var note = match.Groups["note"].Value.Trim();
+        if (match.Groups["pre"].Success)
+        {
+            var pre = match.Groups["pre"].Value.Trim();
+            var after = match.Groups["after"].Value.Trim();
+            note = pre.Contains(',', StringComparison.Ordinal) ? after : (pre + " " + after).Trim();
+        }
+
         return Command("zamanlayici",
-            ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)), ("not", match.Groups["note"].Value.Trim()));
+            ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)), ("not", note));
     }
 
     private static QuickCommand? Volume(string sentence)
@@ -582,7 +624,8 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?:(?:bir )?not (?:al|et|ekle)|(?:şunu|bunu) not (?:al|et)|not tut)[:,]? (?<x>.+)$|^(?<x>.+?) (?:diye )?not (?:al|et)$")]
     private static partial Regex NoteTake();
 
-    [GeneratedRegex(@"^.+? (?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>dakika|saniye|saat) sonra (?:bana )?(?:söyle|haber ver|uyar|seslen)$")]
+    // "Çayı demledim, on beş dakika sonra söyle", "fırındaki keki 25 dakika sonra kontrol etmemi söyle".
+    [GeneratedRegex(@"^(?<pre>.+?) (?<n>[\p{L}\d,.]+(?: [\p{L}]+)?) (?<u>dakika|saniye|saat) sonra (?:(?<after>.+?) )?(?:bana )?(?:söyle|haber ver|uyar|seslen|hatırlat)$")]
     private static partial Regex TimerAfterContext();
 
     [GeneratedRegex(@"^ (?:modu|modunu|moduna|rutini|rutinini|rutinine)$")]

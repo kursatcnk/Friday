@@ -483,6 +483,26 @@ public sealed class FridayAssistant : IDisposable
             : $"{ReadyText} · dil modeli yükleniyor, hızlı komutlar hazır");
     }
 
+    /// <summary>
+    /// Yalnızca yazılı sorular için hazırlık: mikrofon, uyandırma kelimesi, ses, ekran izleme ve zamanlayıcılar açılmaz.
+    /// Ölçüm düzenekleri gerçek cevap hattını (hızlı komutlar, hafıza, araçlar, dil modeli) böyle çalıştırır.
+    /// </summary>
+    public async Task InitializeTextOnlyAsync(FridaySettings settings, CancellationToken cancellationToken)
+    {
+        _textOnly = true;
+        _settings = settings;
+        _tools.Settings = settings;
+        _memory = new ConversationMemory(TimeSpan.FromMinutes(settings.ConversationMemoryMinutes));
+        _chat.KeepAlive = $"{Math.Max(1, settings.GpuIdleMinutes)}m";
+        _brainReady = PrepareBrainAsync(settings, Task.CompletedTask, Stopwatch.StartNew(), cancellationToken);
+        _tools.BrainReady = _brainReady;
+        await _brainReady.ConfigureAwait(false);
+        Report(AssistantState.Idle, ReadyText);
+    }
+
+    /// <summary>Yalnızca yazıyla çalışıyor (bkz. InitializeTextOnlyAsync): hiçbir şey sesli okunmaz.</summary>
+    private bool _textOnly;
+
     /// <summary>Ollama'yı başlatır, sohbet modelini hazırlar ve ses hazır olunca GPU'ya yükler.</summary>
     private async Task PrepareBrainAsync(FridaySettings settings, Task voiceReady, Stopwatch clock, CancellationToken cancellationToken)
     {
@@ -1223,6 +1243,21 @@ public sealed class FridayAssistant : IDisposable
         Report(AssistantState.Idle, ReadyText);
     }
 
+    /// <summary>Metnin son tam cümlesinin bittiği yer (". ", "! ", "? " ya da sonda); hiç yoksa metnin tamamı.</summary>
+    internal static int SentenceEnd(string text)
+    {
+        var end = text.TrimEnd().Length;
+        for (var index = end - 1; index >= 0; index--)
+        {
+            if (text[index] is '.' or '!' or '?' && (index + 1 >= text.Length || char.IsWhiteSpace(text[index + 1])))
+            {
+                return index + 1;
+            }
+        }
+
+        return text.Length;
+    }
+
     /// <summary>Üslup öğreniminde "uzun cevap" sayılan uzunluk (karakter); kabaca üç cümle.</summary>
     private const int LongAnswer = 200;
 
@@ -1328,6 +1363,10 @@ public sealed class FridayAssistant : IDisposable
         }
 
         var widened = false;
+        // Boş dönen tur (gizli düşünme üretim sınırına takıldı) düşünme açık yinelenir: açıkken düşünce görünür ve
+        // model kendiliğinden bitirir; kapalı yinelemede aynı kaçak tekrar edebiliyordu.
+        var thinkOnRetry = false;
+        var toolNames = _tools.Definitions.Select(tool => tool?["function"]?["name"]?.GetValue<string>()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         // Araç çağrılmadan "not ettim" denirse cümle okunmaz; tur bir kez, işi araçla yapması istenerek yinelenir.
         var claimRetried = false;
         IReadOnlyList<string> claimed = [];
@@ -1342,6 +1381,7 @@ public sealed class FridayAssistant : IDisposable
             + _tools.PersonalContext(question)
             + _tools.ConversationContext(question, _memory.Messages.Where(message => message.Role == ChatRole.User).Select(message => message.Content).ToHashSet(StringComparer.Ordinal))
             + _tools.Situation(DateTime.Now)
+            + (smallTalk ? "" : _tools.AgendaContext(question, DateTime.Now) + _tools.WeeklyContext(question, DateTime.Now))
             + reading
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 
@@ -1357,9 +1397,31 @@ public sealed class FridayAssistant : IDisposable
             {
                 messages[firstUser] = messages[firstUser] with { Content = earlier + "\n" + messages[firstUser].Content };
             }
-            if (recalled.Length + nudge.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
+
+            // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
+            // kadar ekliyordu. Kesin bilgi sorularında da yalnızca sohbette sayılı eski bir cevap varken düşünür; yoksa
+            // model o sayıyı tekrarlayabiliyor (bkz. AgentPlan.NeedsThinking). Küçük model düşünmeden aracı çağırmak
+            // yerine anlatmaya kaçtığı için onda ilk turda hep açıktır (ölçüldü: kapatınca 49 sorudan 44'ü doğru, uydurma
+            // doğum tarihleri; açıkken 47).
+            var answered = _memory.Messages.Where(message => message.Role == ChatRole.Assistant).Select(message => message.Content)
+                .Append(_memory.Summary ?? "");
+            var think = thinkOnRetry
+                        || (round == 0 && !smallTalk && documents is null
+                            && (multiStep || _settings.OllamaModel != FridaySettings.SmartTextModel || AgentPlan.NeedsThinking(question, answered)));
+            thinkOnRetry = false;
+            // Düşünme kapalıyken model yine de gizlice düşünüp dakikalarca susabiliyor (bkz. OllamaChatClient.MaxTokens);
+            // ölçümde bu kısa yönerge onu tamamen önledi.
+            var noThinking = think ? "" : AgentPlan.NoThinking;
+            if (recalled.Length + nudge.Length + noThinking.Length > 0 && messages.FindLastIndex(message => message.Role == ChatRole.User) is var lastUser and >= 0)
             {
-                messages[lastUser] = messages[lastUser] with { Content = messages[lastUser].Content + recalled + nudge };
+                // Sıra: bağlam satırları, düşünmeme yönergesi, sonra soru. Bağlam sorudan sonra gelince model onları
+                // birbirine bağlamak için gizlice düşünmeye dalıyordu (ölçüm: aynı istekte 10/10 takılma); yönerge soruya
+                // bitişik olunca da bilmecelere aceleyle yanlış cevap veriyordu. Bu sırayla 24 denemede 0 takılma, 8/8 doğru.
+                var background = (recalled + noThinking).Trim('\n');
+                messages[lastUser] = messages[lastUser] with
+                {
+                    Content = (background.Length > 0 ? background + "\n\n" : "") + messages[lastUser].Content + nudge
+                };
             }
 
             var chunker = new SentenceChunker();
@@ -1373,19 +1435,13 @@ public sealed class FridayAssistant : IDisposable
             var held = false;
             var guardClaims = !claimRetried && !smallTalk && round < maxRounds && tools.Count > 0 && _turnCalls.Count == 0
                               && !AgentPlan.AsksWhatWasDone(question);
-            // Akıllı model (12B) serbest isteklerde (fıkra, sohbet, öneri) düşünmeden cevap verir; düşünme orada 9 sn'ye
-            // kadar ekliyordu. Kesin bilgi sorularında da yalnızca sohbette sayılı eski bir cevap varken düşünür; yoksa
-            // model o sayıyı tekrarlayabiliyor (bkz. AgentPlan.NeedsThinking). Küçük model düşünmeden aracı çağırmak
-            // yerine anlatmaya kaçtığı için onda ilk turda hep açıktır.
-            var answered = _memory.Messages.Where(message => message.Role == ChatRole.Assistant).Select(message => message.Content)
-                .Append(_memory.Summary ?? "");
-            var think = round == 0 && !smallTalk && documents is null
-                        && (multiStep || _settings.OllamaModel != FridaySettings.SmartTextModel || AgentPlan.NeedsThinking(question, answered));
-
             var thinking = 0;
+            var truncated = false;
+            var textCall = false;
             await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken, think).ConfigureAwait(false))
             {
                 thinking += delta.ThinkingLength;
+                truncated |= delta.Truncated;
                 if (delta.Timings is { } t)
                 {
                     Diagnostics?.Invoke(this, string.Create(CultureInfo.InvariantCulture,
@@ -1400,6 +1456,10 @@ public sealed class FridayAssistant : IDisposable
 
                 content.Append(delta.Content);
                 reply.Append(delta.Content);
+                // Model aracı düz metin olarak yazıyorsa ("eposta_taslagi(alici=…)") ne okunur ne gösterilir (bkz. TextToolCall).
+                var sofar = content.ToString();
+                textCall |= calls.Count == 0 && sofar.Length < 400 && TextToolCall.Starts(sofar, toolNames);
+                var undecided = !textCall && TextToolCall.MaybeStarts(sofar);
                 foreach (var sentence in chunker.Push(delta.Content))
                 {
                     // Seçilen araçlar yetmediyse model "bunu yapamıyorum" der: cümle okunmaz, tur bütün araçlarla yinelenir.
@@ -1411,7 +1471,7 @@ public sealed class FridayAssistant : IDisposable
 
                     // "Not ettim" gibi bir iş iddiası, araç çağrısı gelene kadar okunmaz (bkz. AgentPlan.ClaimsAction).
                     held |= guardClaims && AgentPlan.ClaimsAction(sentence);
-                    if (!held)
+                    if (!held && !textCall)
                     {
                         SayUnlessFiller(sentence);
                     }
@@ -1422,7 +1482,7 @@ public sealed class FridayAssistant : IDisposable
                     break;
                 }
 
-                if (!held)
+                if (!held && !textCall && !undecided)
                 {
                     Show(reply.ToString());
                 }
@@ -1438,13 +1498,40 @@ public sealed class FridayAssistant : IDisposable
                 continue;
             }
 
-            if (chunker.Flush() is { } rest)
+            if (textCall)
+            {
+                if (calls.Count == 0 && TextToolCall.Parse(content.ToString(), toolNames) is { } written)
+                {
+                    FridayLog.Info($"Model {written.Name} aracını metin olarak yazdı; çağrıya çevrildi");
+                    calls.Add(written);
+                }
+
+                content.Clear();
+                reply.Length = replyStart;
+                Show(reply.ToString());
+            }
+            else if (truncated && content.Length > 0)
+            {
+                // Üretim sınırına takılan çok uzun bir cevap yarım cümleyle bitmesin: son tam cümlede kesilir.
+                FridayLog.Info("Cevap üretim sınırına takıldı; son tam cümlede bitirildi");
+                var whole = SentenceEnd(reply.ToString());
+                content.Length = Math.Max(0, content.Length - (reply.Length - whole));
+                reply.Length = whole;
+                Show(reply.ToString());
+            }
+            else if (chunker.Flush() is { } rest)
             {
                 held |= guardClaims && AgentPlan.ClaimsAction(rest);
                 if (!held)
                 {
                     SayUnlessFiller(rest);
                 }
+            }
+
+            if (!held && !textCall)
+            {
+                // Araç adına benzediği için bekletilen kısa bir cevap ("tamam") da ekrana yazılsın.
+                Show(reply.ToString());
             }
 
             if (held)
@@ -1469,7 +1556,9 @@ public sealed class FridayAssistant : IDisposable
             {
                 if (!retried)
                 {
+                    FridayLog.Info(think ? "Model boş döndü; tur bir kez daha deneniyor" : "Model boş döndü (gizli düşünme); tur düşünme açık yineleniyor");
                     retried = true;
+                    thinkOnRetry = !think;
                     round--;
                     continue;
                 }
@@ -1574,11 +1663,12 @@ public sealed class FridayAssistant : IDisposable
     private void Say(string sentence)
     {
         var spoken = Pronunciation.Apply(SpokenText.Clean(sentence), _settings.Pronunciations);
-        if (spoken.Length == 0 || _quiet)
+        if (spoken.Length == 0)
         {
             return;
         }
 
+        // Telefondan gelen sessiz turlarda da gecikme ölçülür; yalnızca okunmaz.
         // 45 sn'den eskiyse ölçüm yarıda kalmış bir turdan kalmıştır; gösterilmez.
         if (Interlocked.Exchange(ref _turnStart, 0) is var started and > 0 && Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(45))
         {
@@ -1589,6 +1679,11 @@ public sealed class FridayAssistant : IDisposable
                 : string.Create(CultureInfo.GetCultureInfo("tr-TR"), $"Son cevap: yazınca {seconds:0.0} sn'de söze başladı.");
             FridayLog.Info(string.Create(CultureInfo.InvariantCulture, $"Gecikme: ilk cümle {seconds:0.00} sn (yazıya dökme {ms} ms)"));
             LatencyMeasured?.Invoke(this, LastLatency);
+        }
+
+        if (_quiet || _textOnly)
+        {
+            return;
         }
 
         if (State != AssistantState.Speaking)

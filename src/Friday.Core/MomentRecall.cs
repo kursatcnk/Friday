@@ -19,12 +19,23 @@ public static class MomentRecall
         "yarin", "bugun", "sabah", "aksam", "ogle", "gece", "saat", "dakika", "hafta", "zamani", "geldi", "lazim", "gerek", "icin"
     };
 
+    /// <summary>Soru, kaydın en az bir içerik sözcüğüne (eylem ve zaman sözleri hariç, 4+ harf) değiniyor mu?</summary>
+    public static bool Mentions(string question, string text)
+    {
+        var asked = MemoryRecall.Words(question).Where(word => !Actions.Contains(word)).ToList();
+        return MemoryRecall.Words(text).Any(word => word.Length >= 4 && !Actions.Contains(word) && asked.Any(other => MemoryRecall.Same(word, other)));
+    }
+
     /// <summary>Konuyla en ilgili kayıt; ayırt edici bir eşleşme yoksa null.</summary>
     public static PersonalRecord? Related(string subject, IReadOnlyList<PersonalRecord> records) =>
         Ranked(subject, records) is [var best, ..] ? best : null;
 
     /// <summary>Konuyla ayırt edici biçimde eşleşen kayıtlar, en ilgiliden başlayarak.</summary>
-    public static IReadOnlyList<PersonalRecord> Ranked(string subject, IReadOnlyList<PersonalRecord> records)
+    /// <param name="includeSame">
+    /// Konunun kendisiyle aynı kayıt da sayılsın mı. Hatırlatma çalarken "Ahmet'i ara" kaydı kendisini getirmemeli; ama
+    /// "Ela'nın formunu ne zamana kadar imzalamam lazım" sorusunda aranan şey tam da o iştir.
+    /// </param>
+    public static IReadOnlyList<PersonalRecord> Ranked(string subject, IReadOnlyList<PersonalRecord> records, bool includeSame = false)
     {
         var asked = MemoryRecall.Words(subject).Where(word => !Actions.Contains(word)).ToList();
         if (asked.Count == 0 || records.Count == 0)
@@ -35,7 +46,7 @@ public static class MomentRecall
         // Konunun kendisi (aynı işin kaydı) ilgili sayılmaz.
         var candidates = records
             .Select(record => (Record: record, Words: MemoryRecall.Words(record.Text)))
-            .Where(item => !item.Words.All(word => asked.Any(other => MemoryRecall.Same(word, other)) || Actions.Contains(word)))
+            .Where(item => includeSame || !item.Words.All(word => asked.Any(other => MemoryRecall.Same(word, other)) || Actions.Contains(word)))
             .ToList();
         if (candidates.Count == 0)
         {

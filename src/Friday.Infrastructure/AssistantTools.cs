@@ -259,7 +259,7 @@ public sealed partial class AssistantTools(
             [("ad", "string", "Rutinin adı", true), ("zaman", "string", "SS:dd ve gün: '09:00 haftaici', '18:30 hergun', '10:00 haftasonu'; açılışta için 'acilis'; kaldırmak için 'kapat'", true)]),
         Tool("arastirma_raporu", "Bir konuyu arka planda internette araştırıp kaynaklı bir rapor dosyası hazırlar; bitince kullanıcıya haber verilir. 'X hakkında rapor hazırla', 'X'i detaylı araştır' için.",
             [("konu", "string", "Araştırılacak konu", true)]),
-        Tool("takvim", "Kullanıcının takvimindeki etkinlikleri söyler (Google/Outlook takvimi bağlıysa).",
+        Tool("takvim", "Bir günün ya da haftanın gündemi: takvim etkinlikleri (bağlıysa), hatırlatmalar, son günü gelen işler, özel günler, ödemeler ve haftalık tekrarlar. \"Yarın neler var\", \"bu hafta programım\" gibi sorular için.",
             [("gun", "string", "bugun, yarin, hafta ya da sonraki", false)]),
         Tool("yapilacaklar", "Kullanıcının yapılacaklar listesi: iş ekler, listeler, tamamlar.",
             [("islem", "string", "ekle, listele ya da tamamla", true), ("metin", "string", "İşin metni (ekle ve tamamla için)", false)]),
@@ -337,9 +337,20 @@ public sealed partial class AssistantTools(
         }
     }
 
+    /// <summary>
+    /// Prova: ölçüm düzeneklerinde bilgisayarda iz bırakan araçlar (uygulama açma, ses, pano…) gerçekten çalıştırılmaz.
+    /// Dönen metin aracın sonucu sayılır; null ise araç normal çalışır. Uygulamada hep null'dır.
+    /// </summary>
+    public Func<string, IReadOnlyDictionary<string, string>, string?>? Rehearsal { get; set; }
+
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
         call = call with { Arguments = Shielded(call.Name, call.Arguments) };
+        if (Rehearsal?.Invoke(call.Name, call.Arguments) is { } staged)
+        {
+            return staged;
+        }
+
         try
         {
             return call.Name switch

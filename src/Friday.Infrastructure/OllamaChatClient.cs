@@ -13,6 +13,9 @@ public sealed record ChatDelta(string Content, IReadOnlyList<ToolCall> ToolCalls
 
     /// <summary>Modelin düşünme metninin uzunluğu (karakter); seslendirilmez.</summary>
     public int ThinkingLength { get; init; }
+
+    /// <summary>Cevap üretim sınırına takılıp kesildi (bkz. <see cref="OllamaChatClient.MaxTokens"/>).</summary>
+    public bool Truncated { get; init; }
 }
 
 public sealed record ChatTimings(int PromptTokens, double PromptMs, int GeneratedTokens, double GenerateMs, double LoadMs);
@@ -98,6 +101,19 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
         return JsonNode.Parse(text)?["message"]?["content"]?.GetValue<string>()?.Trim() ?? "";
     }
 
+    /// <summary>
+    /// Bir cevabın üretebileceği en çok belirteç. Gemma 4 düşünme kapalıyken de ara sıra gizlice düşünüyor; Ollama bu
+    /// düşünceyi göstermediği için akışa hiçbir şey gelmez ve model bağlam dolana kadar (~4.800 belirteç, ~60 sn) üretir.
+    /// Ölçümde soruların ~%6'sında Friday bu yüzden bir dakika susuyordu. Sesli cevaplar ve araç çağrıları bunun çok
+    /// altında kalır; sınır kaçağı ~6 sn'de keser ve boş dönen tur düşünme açık yinelenir (bkz.
+    /// FridayAssistant.AnswerAsync). Sınırı aşan gerçekten uzun bir araç çağrısı (uzun bir e-posta taslağı) da böylece
+    /// düşünme açıkken, daha geniş sınırla yeniden üretilir.
+    /// </summary>
+    public const int MaxTokens = 512;
+
+    /// <summary>Düşünme açıkken düşünce de sayılır; ölçümde en uzun düşünce ~1.350 belirteçti.</summary>
+    public const int MaxTokensThinking = 3072;
+
     public async IAsyncEnumerable<ChatDelta> StreamAsync(
         string model,
         IReadOnlyList<ChatMessage> messages,
@@ -106,6 +122,7 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
         bool think = true)
     {
         var body = BuildRequest(model, messages, tools, KeepAlive, think);
+        body["options"]!["num_predict"] = think ? MaxTokensThinking : MaxTokens;
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(server.BaseAddress, "api/chat"))
         {
             Content = JsonContent.Create(body)
@@ -242,6 +259,9 @@ public sealed class OllamaChatClient(HttpClient http, OllamaServer server)
                 Ms(node?["load_duration"]));
         }
 
-        return new ChatDelta(content, calls, done) { Timings = timings, ThinkingLength = thinking };
+        return new ChatDelta(content, calls, done)
+        {
+            Timings = timings, ThinkingLength = thinking, Truncated = done && node?["done_reason"]?.GetValue<string>() == "length"
+        };
     }
 }

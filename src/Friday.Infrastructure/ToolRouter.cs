@@ -22,7 +22,7 @@ public static class ToolRouter
     /// <summary>Sözcük kökü → ilgili araçlar. Kökler küçük harfle, sorunun içinde aranır.</summary>
     private static readonly (string[] Stems, string[] Tools)[] Topics =
     [
-        (["harca", "masraf", "lira", " tl", "bütçe", "para", "fatura", "kira", "abonelik", "ödedim", "ödeme", "ekstre", "kredi kartı", "taksit", "fiş"], ["harcama", "sabit_gider", "doviz", "fis"]),
+        (["harca", "masraf", "lira", " tl", "bütçe", "para", "fatura", "kira", "abonelik", "ödedim", "ödeme", "ekstre", "kredi kartı", "taksit", "fiş", "ne kadar verdim", "kaç verdim"], ["harcama", "sabit_gider", "doviz", "fis"]),
         (["dolar", "euro", "avro", "sterlin", "kur", "döviz", "altın"], ["doviz", "doviz_alarmi"]),
         (["alışkanl", "seri", "her gün"], ["aliskanlik"]),
         (["kelime", "ingilizce", "kart", "deste", "anlamı", "ne demek"], ["kelime", "kelime_cevir"]),

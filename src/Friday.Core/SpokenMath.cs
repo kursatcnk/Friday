@@ -249,7 +249,8 @@ public static partial class DayCountdown
         }
 
         var days = when.DayNumber - today.DayNumber;
-        var spoken = TurkishGrammar.Capitalize(label);
+        // "Annemin doğum günü" → "Annenin doğum günü": kullanıcının sözü Friday'in ağzına çevrilir.
+        var spoken = TurkishGrammar.Capitalize(TurkishGrammar.ToYou(label));
         return days switch
         {
             0 => $"{spoken} bugün!",

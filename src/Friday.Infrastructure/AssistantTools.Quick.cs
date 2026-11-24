@@ -42,6 +42,11 @@ public sealed partial class AssistantTools
     public async Task<QuickReply?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
     {
         quick = quick with { Arguments = Shielded(quick.Tool, quick.Arguments) };
+        if (Rehearsal?.Invoke(quick.Tool, quick.Arguments) is { } staged)
+        {
+            return new QuickReply(staged);
+        }
+
         string Arg(string key) => quick.Arguments.TryGetValue(key, out var value) ? value : "";
         _ = TakeCard();
         try

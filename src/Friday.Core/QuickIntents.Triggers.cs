@@ -51,14 +51,21 @@ public static partial class QuickIntents
 
         // "market listeme süt ekle", "süt ekle market listesine", "sütü market listesine koy", "listeye yumurta at",
         // "markete süt ekle": ad söylenmezse market listesi.
-        foreach (var pattern in new[] { ListAddRequest(), ListAddItemFirst(), ListAddVerbFirst(), ListAddUnnamed() })
+        // "Markete gitmem lazım, listeme ekmek ve yumurta ekle": baştaki açıklama komut değilse virgülden sonrası denenir;
+        // eskiden "gitmem lazım, listeme ekmek" de listeye öğe olarak yazılıyordu.
+        var cut = sentence.IndexOf(", ", StringComparison.Ordinal);
+        string[] tries = cut > 0 && Match(sentence[..cut]) is null ? [sentence, sentence[(cut + 2)..]] : [sentence];
+        foreach (var text in tries)
         {
-            // "Panodakini market listesine ekle", "bunu listeye ekle" pano ya da ekran komutudur.
-            if (pattern.Match(sentence) is { Success: true } add && LeadingAlso().Replace(add.Groups["i"].Value.Trim(), "") is { Length: > 0 } item
-                && !PointedItem().IsMatch(item))
+            foreach (var pattern in new[] { ListAddRequest(), ListAddItemFirst(), ListAddVerbFirst(), ListAddUnnamed() })
             {
-                var name = add.Groups["l"].Success ? add.Groups["l"].Value.Trim() : "market";
-                return Command("liste", ("islem", "ekle"), ("ad", name), ("oge", item));
+                // "Panodakini market listesine ekle", "bunu listeye ekle" pano ya da ekran komutudur.
+                if (pattern.Match(text) is { Success: true } add && LeadingAlso().Replace(add.Groups["i"].Value.Trim(), "") is { Length: > 0 } item
+                    && !PointedItem().IsMatch(item) && !item.Contains("liste", StringComparison.Ordinal))
+                {
+                    var name = add.Groups["l"].Success ? add.Groups["l"].Value.Trim() : "market";
+                    return Command("liste", ("islem", "ekle"), ("ad", name), ("oge", item));
+                }
             }
         }
 

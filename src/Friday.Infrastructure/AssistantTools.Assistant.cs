@@ -208,44 +208,70 @@ public sealed partial class AssistantTools
 
     // ---------- Takvim ----------
 
+    /// <summary>
+    /// "Bugün/yarın/bu hafta neler var": takvim bağlıysa etkinlikleri, her durumda da hatırlatmalar, son günü gelen ve
+    /// gecikmiş işler, özel günler, ödeme günü gelen sabit giderler ve haftalık tekrarlar (bkz. <see cref="DayAgenda"/>).
+    /// </summary>
     private async Task<QuickReply> CalendarCommandAsync(string day, CancellationToken cancellationToken)
+    {
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        var kind = Simplify(day);
+        if (kind == "sonraki")
+        {
+            return await NextEventAsync(now, cancellationToken).ConfigureAwait(false);
+        }
+
+        var (from, to, label) = kind switch
+        {
+            "yarin" => (today.AddDays(1), today.AddDays(2), "Yarın"),
+            "hafta" => (today, today.AddDays(7), "Önümüzdeki 7 günde"),
+            _ => (today, today.AddDays(1), "Bugün")
+        };
+        IReadOnlyList<CalendarEvent> events = Calendar.IsConfigured
+            ? await Calendar.EventsAsync(from == today ? now : from.ToDateTime(TimeOnly.MinValue), to.ToDateTime(TimeOnly.MinValue), cancellationToken).ConfigureAwait(false)
+            : [];
+        var agenda = DayAgenda.Build(from, to, now, events, reminders.Upcoming, Todos?.Open ?? [], memory.Items, Expenses?.Bills ?? []);
+        ledger.Record(DataFlow.Local, "Gündem", $"{label.ToLower(Turkish)} için {agenda.Count} kayıt bir araya getirildi");
+        ShowListCard($"Gündem · {label.ToLower(Turkish)}", "\uE787", agenda.Select(item => new CardRow(item.Text,
+            (to.DayNumber - from.DayNumber > 1 ? DayAgenda.DayLabel(item.Day, today) + " " : "")
+            + (item.Time is { } time ? time.ToString("HH:mm", CultureInfo.InvariantCulture) : AgendaLabel(item.Kind)))));
+        if (agenda.Count == 0)
+        {
+            return new QuickReply(Calendar.IsConfigured
+                ? (kind == "bugun" ? "Bugün için takviminde ve kayıtlarında başka bir şey yok." : $"{label} takviminde ve kayıtlarında bir şey yok.")
+                : $"{(kind == "bugun" ? "Bugün için" : label)} kayıtlarında bir şey yok. Toplantıların da gelsin istersen Ayarlar › Takvim'e takviminin gizli iCal adresini yapıştır.");
+        }
+
+        return new QuickReply(DayAgenda.Describe(agenda, from, to, today, label));
+    }
+
+    private static string AgendaLabel(AgendaKind kind) => kind switch
+    {
+        AgendaKind.Overdue => "gecikmiş",
+        AgendaKind.Deadline => "son gün",
+        AgendaKind.SpecialDay => "özel gün",
+        AgendaKind.Bill => "ödeme",
+        AgendaKind.Weekly => "her hafta",
+        _ => "tüm gün"
+    };
+
+    private async Task<QuickReply> NextEventAsync(DateTime now, CancellationToken cancellationToken)
     {
         if (!Calendar.IsConfigured)
         {
-            return new QuickReply("Takvimini henüz bağlamadık. Ayarlar › Takvim bölümüne Google ya da Outlook takviminin gizli iCal adresini yapıştırman yeter.");
+            return reminders.Upcoming.Where(item => item.Trigger is null && item.Due > now).OrderBy(item => item.Due).FirstOrDefault() is { } reminder
+                ? new QuickReply($"Takvimin bağlı değil; sıradaki hatırlatman {TurkishTime.Describe(reminder.Due, now)}: {TurkishGrammar.ToYou(reminder.Text)}.")
+                : new QuickReply("Takvimini henüz bağlamadık. Ayarlar › Takvim bölümüne Google ya da Outlook takviminin gizli iCal adresini yapıştırman yeter.");
         }
 
-        var now = DateTime.Now;
-        var (from, to, label) = Simplify(day) switch
+        var events = await Calendar.EventsAsync(now, now.AddDays(30), cancellationToken).ConfigureAwait(false);
+        if (events.FirstOrDefault(item => !item.AllDay) is not { } next)
         {
-            "yarin" => (now.Date.AddDays(1), now.Date.AddDays(2), "Yarın"),
-            "hafta" => (now, now.Date.AddDays(7), "Önümüzdeki 7 günde"),
-            "sonraki" => (now, now.AddDays(30), ""),
-            _ => (now, now.Date.AddDays(1), "Bugün")
-        };
-        var events = await Calendar.EventsAsync(from, to, cancellationToken).ConfigureAwait(false);
-        if (Simplify(day) == "sonraki")
-        {
-            if (events.FirstOrDefault(item => !item.AllDay) is not { } next)
-            {
-                return new QuickReply("Önümüzdeki 30 günde takviminde bir toplantı görünmüyor.");
-            }
-
-            return new QuickReply($"Sıradaki etkinliğin {Friday.Core.Calendar.Describe(next, now)}: {next.Title}" + (next.Location is { } place ? $", {place}." : "."));
+            return new QuickReply("Önümüzdeki 30 günde takviminde bir toplantı görünmüyor.");
         }
 
-        ShowListCard($"Takvim · {(label.Length > 0 ? label.ToLower(Turkish) : "sıradaki")}", "\uE787",
-            events.Select(item => new CardRow(item.Title, Friday.Core.Calendar.Describe(item, now))));
-        if (events.Count == 0)
-        {
-            return new QuickReply(Simplify(day) == "bugun" ? "Bugün için takviminde başka bir şey yok." : $"{label} takviminde bir şey yok.");
-        }
-
-        var listed = events.Take(4).Select(item => item.AllDay
-            ? $"tüm gün {item.Title}"
-            : $"{item.Start.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.TimeSuffix(item.Start)} {item.Title}").ToList();
-        var more = events.Count > 4 ? $" ve {events.Count - 4} etkinlik daha" : "";
-        return new QuickReply($"{label} {events.Count} etkinliğin var: {TurkishGrammar.Join(listed)}{more}.");
+        return new QuickReply($"Sıradaki etkinliğin {Friday.Core.Calendar.Describe(next, now)}: {next.Title}" + (next.Location is { } place ? $", {place}." : "."));
     }
 
     // ---------- İndirilenler ----------
