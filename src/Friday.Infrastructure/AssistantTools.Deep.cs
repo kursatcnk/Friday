@@ -10,10 +10,16 @@ public sealed partial class AssistantTools
     /// <summary>Pomodoro serisini başlatan/durduran asistan işlevi: (adet) → cevap; 0 adet durdurur.</summary>
     public Func<int, string>? PomodoroControl { get; set; }
 
-    private (string Name, List<string> Items, int Index, List<string> Missing)? _checklist;
+    private static readonly TimeSpan ChecklistLife = TimeSpan.FromMinutes(10);
 
-    /// <summary>Sesli kontrol listesi sürüyor mu (bir sonraki cümle cevaptır ve Friday dinlemeye devam eder)?</summary>
-    public bool InChecklist => _checklist is not null;
+    private (string Name, List<string> Items, int Index, List<string> Missing)? _checklist;
+    private DateTime _checklistAt;
+
+    /// <summary>
+    /// Sesli kontrol listesi sürüyor mu (bir sonraki cümle cevaptır ve Friday dinlemeye devam eder)? On dakika cevap
+    /// gelmezse liste kendiliğinden bırakılır; eskiden yarım kalan liste sonraki her cümleyi cevap sanıyordu.
+    /// </summary>
+    public bool InChecklist => _checklist is not null && DateTime.Now - _checklistAt < ChecklistLife;
 
     // ---------------------------------------------------------------- e-posta
 
@@ -165,6 +171,7 @@ public sealed partial class AssistantTools
         }
 
         _checklist = (list, [.. items], 0, []);
+        _checklistAt = DateTime.Now;
         return new QuickReply($"{TurkishGrammar.Capitalize(list)} kontrol listesi, {items.Count} madde. Her birine tamam ya da yok de. İlki: {items[0]}?");
     }
 
@@ -199,6 +206,7 @@ public sealed partial class AssistantTools
         }
 
         _checklist = (state.Name, state.Items, next, state.Missing);
+        _checklistAt = DateTime.Now;
         return new QuickReply($"{state.Items[next]}?");
     }
 

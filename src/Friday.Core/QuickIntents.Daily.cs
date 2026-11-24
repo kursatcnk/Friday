@@ -178,7 +178,8 @@ public static partial class QuickIntents
         };
 
         var from = Code(match.Groups["from"].Value);
-        var to = Code(match.Groups["to"].Value);
+        // "100 dolar ne kadar": hedef söylenmediyse Türk lirası.
+        var to = match.Groups["to"].Success ? Code(match.Groups["to"].Value) : "TRY";
         return from == to
             ? null
             : Command("doviz", ("miktar", amount.ToString("0.##", CultureInfo.InvariantCulture)), ("kaynak", from), ("hedef", to));
@@ -219,6 +220,6 @@ public static partial class QuickIntents
     private static partial Regex CloseRequest();
 
     // "100 dolar kaç lira", "250 euro ne kadar eder", "1000 lira kaç dolar", "50 doları liraya çevir"
-    [GeneratedRegex(@"^(?<a>[\d.,]+|[\p{L}]+(?: [\p{L}]+){0,2}) (?<from>dolar|euro|avro|sterlin|lira|tl|frank|yen|ruble)(?:['’]?(?:ı|i|u|ü|yı|yi|yu|yü))? (?:kaç|ne kadar) (?<to>türk lirası|lira|tl|dolar|euro|avro|sterlin)(?: eder| yapar)?$|^(?<a>[\d.,]+|[\p{L}]+(?: [\p{L}]+){0,2}) (?<from>dolar|euro|avro|sterlin|lira|tl)(?:['’]?(?:ı|i|u|ü|yı|yi|yu|yü))? (?<to>lira|tl|dolar|euro|avro|sterlin)(?:ya|ye|a|e) çevir$")]
+    [GeneratedRegex(@"^(?<a>[\d.,]+|[\p{L}]+(?: [\p{L}]+){0,2}) (?<from>dolar|euro|avro|sterlin|lira|tl|frank|yen|ruble)(?:['’]?(?:ı|i|u|ü|yı|yi|yu|yü))? (?:kaç|ne kadar) (?<to>türk lirası|lira|tl|dolar|euro|avro|sterlin)(?: eder| yapar)?$|^(?<a>[\d.,]+|[\p{L}]+(?: [\p{L}]+){0,2}) (?<from>dolar|euro|avro|sterlin|lira|tl)(?:['’]?(?:ı|i|u|ü|yı|yi|yu|yü))? (?<to>lira|tl|dolar|euro|avro|sterlin)(?:ya|ye|a|e) çevir$|^(?<a>[\d.,]+|[\p{L}]+(?: [\p{L}]+){0,2}) (?<from>dolar|euro|avro|sterlin|frank|yen|ruble)(?:['’]?(?:ı|i|u|ü|yı|yi|yu|yü))? (?:kaç para|kaç|ne kadar)(?: eder| yapar| tutar)?$")]
     private static partial Regex ConversionRequest();
 }

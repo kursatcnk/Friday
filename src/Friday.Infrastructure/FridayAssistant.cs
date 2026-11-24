@@ -261,7 +261,14 @@ public sealed class FridayAssistant : IDisposable
         _ledger = ledger;
         _chats = chats;
         // Panelden başka bir sohbet açıldı, yeni sohbete geçildi ya da açık sohbet silindi: model o sohbetle devam eder.
-        _chats.CurrentChanged += (_, _) => Volatile.Write(ref _reload, _chats.CurrentTurns);
+        // Yarım kalan her şey (kelime çalışması, cevap beklenen soru, kontrol listesi, onay, devam komutu) o sohbetle kalır.
+        _chats.CurrentChanged += (_, _) =>
+        {
+            Volatile.Write(ref _reload, _chats.CurrentTurns);
+            _tools.EndConversation();
+            _lastQuick = null;
+            _lastTurn = null;
+        };
         _wakeWord = wakeWord;
         _wakeWord.Detected += (_, device) => OnWake(device);
         _wakeWord.Problem += (_, problem) => FridayLog.Warn($"Uyandırma kelimesi: {problem}");
@@ -1030,21 +1037,34 @@ public sealed class FridayAssistant : IDisposable
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
         // "Günün nasıl geçti?" gibi serbest cevap bekleyen bir soru varsa söz ona gider; açıkça bir komutsa komut çalışır.
         // "Şimdi değil", "hayır" gibi sözler de soruya gider (yoksa "şimdi değil" mola ertelemesi sanılır).
-        var answering = _tools.AwaitsAnswer
-            && (_tools.AnswerTakesPriority || QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
-                || Quick(text) is not { Tentative: false });
-        var command = _tools.InChecklist
+        // Kelime çalışmasında ve kontrol listesinde cevap komuttan önce gelir ("masa", "tamam"); ama iki sözcükten uzun açık
+        // bir komut ("yeni sohbet", "100 dolar kaç lira") ya da araya giren bir soru ("100 dolar ne kadar", "yarın hava nasıl
+        // olacak") cevap sanılmaz (bkz. QuickIntents.IsAside). Eskiden bir kez başlayan kelime çalışması her şeyi yutuyordu.
+        var matched = Quick(text);
+        var clearCommand = matched is { Tentative: false } && text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2;
+        var checklist = _tools.InChecklist && !clearCommand && !QuickIntents.IsAside(text, shortAnswer: true);
+        var answering = !checklist && _tools.AwaitsAnswer
+            && (_tools.AnswerTakesPriority
+                ? !clearCommand && !QuickIntents.IsAside(text, shortAnswer: true)
+                : QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
+                  || (matched is not { Tentative: false } && !QuickIntents.IsAside(text, shortAnswer: false)));
+        if ((_tools.InChecklist && !checklist) || (_tools.AnswerTakesPriority && !answering))
+        {
+            FridayLog.Info($"Araya giren istek, yarım kalan konuşma bekliyor: \"{text}\"");
+        }
+
+        var command = checklist
             ? new QuickCommand("kontrol_cevap", new Dictionary<string, string> { ["metin"] = text })
             : answering
             ? new QuickCommand("serbest_cevap", new Dictionary<string, string> { ["metin"] = text })
             : _tools.HasPendingConfirmation && (QuickIntents.IsYes(text) || QuickIntents.IsNo(text))
             ? new QuickCommand("onay", new Dictionary<string, string> { ["cevap"] = QuickIntents.IsYes(text) ? "evet" : "hayir" })
-            : Quick(text);
+            : matched;
 
         // "Yanlış anladın": son isteğin kayıt değişiklikleri geri alınır, istek yeniden değerlendirilir (bkz. Reconsider).
         var heard = text;
         var correction = "";
-        if (!answering && !_tools.InChecklist && command is null or { Tentative: true }
+        if (!answering && !checklist && command is null or { Tentative: true }
             && CorrectionBook.Meant(text) is { } meant && _lastTurn is { } last && DateTime.Now - last.At < CorrectionWindow)
         {
             (text, command, correction) = Reconsider(last, text, meant);
@@ -1052,13 +1072,13 @@ public sealed class FridayAssistant : IDisposable
 
         // "Market listeme süt ekle, yarın 9'da dişçiyi hatırlat ve dolar kaç": her parçası tek başına bir hızlı komutsa
         // parçalar sırayla, dil modeli beklenmeden yapılır (bkz. CompoundCommand).
-        var compound = !answering && !_tools.InChecklist && correction.Length == 0 && command is not { Tool: "onay" or "kontrol_cevap" }
+        var compound = !answering && !checklist && correction.Length == 0 && command is not { Tool: "onay" or "kontrol_cevap" }
             ? CompoundCommand.Split(text, command, Quick)
             : null;
 
         // "Dolar kaç"tan sonra "peki euro?", "market listeme süt ekle"den sonra "yumurta da" (bkz. FollowUp).
         var spoken = text;
-        if (command is null && compound is null && !answering && !_tools.InChecklist && correction.Length == 0
+        if (command is null && compound is null && !answering && !checklist && correction.Length == 0
             && _lastQuick is { } previous && DateTime.Now - previous.At < FollowUp.Window
             && FollowUp.Resolve(text, previous.Text, previous.Command, Quick) is { } follow)
         {
@@ -1265,6 +1285,9 @@ public sealed class FridayAssistant : IDisposable
         }
 
         _memory.Clear();
+        _tools.EndConversation();
+        _lastQuick = null;
+        _lastTurn = null;
         Volatile.Write(ref _reload, null);
         _ledger.Record(DataFlow.Local, "Sohbet", action == "temizle" ? "Açık sohbet silindi" : "Yeni sohbet açıldı");
         Report(AssistantState.Speaking, reply);
