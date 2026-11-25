@@ -63,7 +63,9 @@ public static partial class QuickIntents
                 if (pattern.Match(text) is { Success: true } add && LeadingAlso().Replace(add.Groups["i"].Value.Trim(), "") is { Length: > 0 } item
                     && !PointedItem().IsMatch(item) && !item.Contains("liste", StringComparison.Ordinal))
                 {
-                    var name = add.Groups["l"].Success ? add.Groups["l"].Value.Trim() : "market";
+                    // "Önce listeme süt ekle, sonra…": sıra sözcüğü liste adı değildir.
+                    var name = add.Groups["l"].Success ? Sequence().Replace(add.Groups["l"].Value.Trim(), "").Trim() : "market";
+                    name = name.Length == 0 ? "market" : name;
                     return Command("liste", ("islem", "ekle"), ("ad", name), ("oge", item));
                 }
             }
@@ -113,6 +115,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:listeye|listeme|markete|alışverişe) (?<i>.+?) (?:ekle|yaz|koy|at)$")]
     private static partial Regex ListAddUnnamed();
+
+    [GeneratedRegex(@"^(?:(?:önce|sonra|ardından|şimdi|bir de|ayrıca|hemen|en son)(?: |$))+")]
+    private static partial Regex Sequence();
 
     [GeneratedRegex(@"^(?:bir de|ayrıca) ")]
     private static partial Regex LeadingAlso();

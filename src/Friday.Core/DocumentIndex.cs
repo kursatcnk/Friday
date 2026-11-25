@@ -202,7 +202,7 @@ public sealed class DocumentIndex
 }
 
 /// <summary>Birden çok adımlı istekleri tanır: "PDF'i bul, özetle ve notlarıma ekle", "önce sesi kıs sonra müziği aç".</summary>
-public static class AgentPlan
+public static partial class AgentPlan
 {
     /// <summary>Düşünme kapalı turlarda soruya eklenen yönerge (bkz. OllamaChatClient.MaxTokens).</summary>
     public const string NoThinking = "\n(Düşünmeden, hemen cevap ver.)";
@@ -213,6 +213,9 @@ public static class AgentPlan
         "kur", "başlat", "hazırla", "karşılaştır", "topla", "kopyala", "yapıştır", "çalıştır", "göster", "söyle", "anlat",
         "araştır", "planla", "düzenle", "taşı", "not al", "hesapla"
     ];
+
+    /// <summary>Yalnızca bilgi getiren fiiller; tek başlarına çok adımlı bir iş sayılmaz.</summary>
+    private static readonly HashSet<string> Reading = new(StringComparer.Ordinal) { "oku", "özetle", "anlat", "göster", "söyle", "bul", "ara", "listele", "çevir" };
 
     private static readonly string[] Connectors = [" sonra ", "ardından", "sonrasında", " önce ", "en son", "daha sonra"];
 
@@ -285,13 +288,17 @@ public static class AgentPlan
     [
         "aracım yok", "aracım bulunmuyor", "araca sahip değilim", "yapamıyorum", "yapamam", "erişimim yok", "erişemiyorum",
         "imkanım yok", "imkânım yok", "yeteneğim yok", "desteklemiyorum", "bunu yapacak bir", "erişim iznim yok", "kontrol edemiyorum",
-        "göremiyorum", "açamıyorum", "kuramıyorum", "ayarlayamıyorum"
+        "göremiyorum", "açamıyorum", "kuramıyorum", "ayarlayamıyorum", "internete bağlı değilim", "yeteneğim bulunmuyor",
+        "yetkim bulunmuyor", "yetkim yok", "okuyamıyorum", "tarayamıyorum", "erişip",
+        // Model ara sıra İngilizceye kayıp "I am sorry, but I do not have a tool…" diyordu; bu da yetersizlik sayılır.
+        "i do not have", "i don't have", "i cannot", "i can't", "i am unable", "i'm unable", "do not have access", "don't have access"
     ];
 
     /// <summary>Model cevabının ilk cümlesi bir araç eksikliğinden yakınıyor mu ("bunu yapacak bir aracım yok")?</summary>
     public static bool SoundsUnable(string sentence)
     {
-        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        // İngilizce cümlede Türkçe küçük harf "I"yı "ı" yapar ("ı don't have"); iki biçim de denenir.
+        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR")) + " " + sentence.ToLowerInvariant().Replace('’', ''');
         return Unable.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
     }
 
@@ -351,6 +358,28 @@ public static class AgentPlan
     }
 
     /// <summary>Araç çağrılmadan "yaptım" diyen bir cevabın yinelenmesinde soruya eklenen uyarı; iddianın aracı biliniyorsa adıyla.</summary>
+    /// <summary>
+    /// Soru adı geçen bir web sayfasının okunmasını istiyorsa o adres ("haberler.com.tr'deki haberi oku ve özetle",
+    /// "github.com/x/y'de ne yazıyor"); yoksa null. Yalnızca "aç" denmişse okunmaz (tarayıcıda açmak istenmiştir).
+    /// </summary>
+    public static string? PageToRead(string question)
+    {
+        var text = question.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return WebAddress().Match(text) is { Success: true } address && ReadVerb().IsMatch(text)
+            ? address.Value.TrimEnd('.', ',', '\'', '’')
+            : null;
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?:https?://)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|dev|edu|gov|info|co|me|app|ai)(?:\.[a-z]{2})?(?:/[^\s'’]*)?|(?:https?://)?(?:www\.)?[a-z0-9-]+\.tr(?:/[^\s'’]*)?")]
+    private static partial System.Text.RegularExpressions.Regex WebAddress();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(?:oku|özetle|ne yazıyor|ne diyor|ne yazmış|anlat|incele|neler var|haberleri|haberini|içeriğ)")]
+    private static partial System.Text.RegularExpressions.Regex ReadVerb();
+
+    /// <summary>Model "yapamam" dedi ama işe uyan araçları var: onları adıyla hatırlatan not.</summary>
+    public static string UnableNudge(IReadOnlyList<string> tools) =>
+        $"\n[Bu işi yapabilirsin: {string.Join(", ", tools)} araçların var. \"Yapamam\" deme; uygun aracı çağırıp sonucunu kullanarak cevap ver.]";
+
     public static string ClaimNudge(IReadOnlyList<string> tools) =>
         "\n[Az önce bu isteğe hiçbir araç çağırmadan işi yapmış gibi cevap verdin; iş yapılmadı. "
         + (tools.Count > 0 ? $"Şimdi {tools[0]} aracını çağırarak işi gerçekten yap." : "Şimdi uygun aracı çağırarak işi gerçekten yap.")
@@ -360,16 +389,20 @@ public static class AgentPlan
     {
         var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";
         var verbs = 0;
+        var acting = 0;
         foreach (var word in text.Split([' ', ',', '.', ';', '!', '?'], StringSplitOptions.RemoveEmptyEntries))
         {
-            if (Verbs.Any(verb => word == verb || (word.StartsWith(verb, StringComparison.Ordinal) && word.Length <= verb.Length + 3
+            if (Verbs.FirstOrDefault(verb => word == verb || (word.StartsWith(verb, StringComparison.Ordinal) && word.Length <= verb.Length + 3
                     && (word.EndsWith("ip", StringComparison.Ordinal) || word.EndsWith("ıp", StringComparison.Ordinal)
-                        || word.EndsWith("up", StringComparison.Ordinal) || word.EndsWith("üp", StringComparison.Ordinal)))))
+                        || word.EndsWith("up", StringComparison.Ordinal) || word.EndsWith("üp", StringComparison.Ordinal)))) is { } found)
             {
                 verbs++;
+                acting += Reading.Contains(found) ? 0 : 1;
             }
         }
 
-        return verbs >= 2 || (verbs >= 1 && Connectors.Any(connector => text.Contains(connector, StringComparison.Ordinal)));
+        // "Oku ve özetle", "bul ve göster" tek bir iştir: yalnızca okuma ve anlatma fiilleri ajan modu açmaz. Ajan modunda
+        // model sayfayı okuduktan sonra yolunu kaybedip "ne yapayım" aracını çağırıyordu.
+        return acting > 0 && (verbs >= 2 || Connectors.Any(connector => text.Contains(connector, StringComparison.Ordinal)));
     }
 }

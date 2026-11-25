@@ -104,3 +104,72 @@ public sealed class PanelFeatureTests : IDisposable
         _temp.Dispose();
     }
 }
+
+/// <summary>Zincirleme hesap: önceki sonucun üzerine yeni işlem.</summary>
+public class ChainedMathTests
+{
+    [Theory]
+    [InlineData("bunu ikiye böl", "4.858")]
+    [InlineData("sonucu 3 ile çarp", "29.148")]
+    [InlineData("100 ekle", "9.816")]
+    [InlineData("bundan 716 çıkar", "9.000")]
+    [InlineData("yarısı", "4.858")]
+    [InlineData("yüzde 10'u", "971,6")]
+    [InlineData("dörde böl", "2.429")]
+    public void ANewOperationWorksOnThePreviousResult(string said, string expected)
+    {
+        var next = SpokenMath.Continue(said, "347 çarpı 28 kaç");
+        Assert.NotNull(next);
+        Assert.Contains(expected, SpokenMath.Answer(next!), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("bugün hava nasıl")]
+    [InlineData("ikiye böl ama önce bana annemin doğum gününü söyle")]
+    public void OtherSentencesAreNotChained(string said) => Assert.Null(SpokenMath.Continue(said, "347 çarpı 28 kaç"));
+
+    [Fact]
+    public void TheFollowUpGoesThroughTheQuickPath()
+    {
+        var last = QuickIntents.Match("347 çarpı 28 kaç")!;
+        var follow = FollowUp.Resolve("bunu ikiye böl", "347 çarpı 28 kaç", last, text => QuickIntents.Match(text));
+        Assert.Equal("hesap", follow?.Command.Tool);
+        Assert.Contains("4.858", SpokenMath.Answer(follow!.Value.Text), StringComparison.Ordinal);
+    }
+}
+
+/// <summary>Sayfa okuma ve çok adımlı istek ayrımı; sıra sözcükleri liste adı olmaz.</summary>
+public class ReadingRequestTests
+{
+    [Theory]
+    [InlineData("haberler.com.tr'deki son ekonomi haberini oku ve kısaca özetle", "haberler.com.tr")]
+    [InlineData("github.com/dotnet/runtime sayfasında ne yazıyor", "github.com/dotnet/runtime")]
+    [InlineData("https://tr.wikipedia.org/wiki/Ankara oku", "https://tr.wikipedia.org/wiki/ankara")]
+    public void ANamedPageIsReadFirst(string question, string address) => Assert.Equal(address, AgentPlan.PageToRead(question));
+
+    [Theory]
+    [InlineData("youtube.com'u aç")]
+    [InlineData("bugün hava nasıl")]
+    [InlineData("bu sayfayı özetle")]
+    public void OtherRequestsDoNotPreRead(string question) => Assert.Null(AgentPlan.PageToRead(question));
+
+    [Theory]
+    [InlineData("bu makaleyi oku ve özetle", false)]
+    [InlineData("PDF'i bul ve göster", false)]
+    [InlineData("raporu bul, özetle ve notlarıma ekle", true)]
+    [InlineData("önce sesi kıs sonra müziği aç", true)]
+    public void ReadingVerbsAloneAreOneStep(string question, bool multi) => Assert.Equal(multi, AgentPlan.IsMultiStep(question));
+
+    [Fact]
+    public void ASequenceWordIsNotAListName()
+    {
+        var command = QuickIntents.Match("önce listeme süt ekle");
+        Assert.Equal("market", command?.Arguments["ad"]);
+        Assert.Equal("süt", command!.Arguments["oge"]);
+    }
+
+    [Theory]
+    [InlineData("I'm sorry, but I don't have the ability to browse websites.")]
+    [InlineData("Maalesef web sitelerine erişip içerik okuma yetkim bulunmuyor.")]
+    public void RefusalsInEitherLanguageAreNoticed(string sentence) => Assert.True(AgentPlan.SoundsUnable(sentence));
+}

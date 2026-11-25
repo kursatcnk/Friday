@@ -1444,6 +1444,9 @@ public sealed class FridayAssistant : IDisposable
         // Boş dönen tur (gizli düşünme üretim sınırına takıldı) düşünme açık yinelenir: açıkken düşünce görünür ve
         // model kendiliğinden bitirir; kapalı yinelemede aynı kaçak tekrar edebiliyordu.
         var thinkOnRetry = false;
+        // "Yapamam" dendiğinde konuya uyan araçlar bir kez hatırlatılır.
+        var reminded = false;
+        IReadOnlyList<string>? remind = null;
         var toolNames = _tools.Definitions.Select(tool => tool?["function"]?["name"]?.GetValue<string>()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         // Araç çağrılmadan "not ettim" denirse cümle okunmaz; tur bir kez, işi araçla yapması istenerek yinelenir.
         var claimRetried = false;
@@ -1462,6 +1465,21 @@ public sealed class FridayAssistant : IDisposable
             + (smallTalk ? "" : _tools.AgendaContext(question, DateTime.Now) + _tools.WeeklyContext(question, DateTime.Now))
             + reading
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
+
+        // "haberler.com.tr'deki haberi oku ve özetle": sayfa modelden önce okunur ve modelin kendi araç çağrısıymış gibi
+        // sohbete konur. Model bu isteklerde aracı görmezden gelip "web sitelerine erişemiyorum" diyordu. Okunan metin dış
+        // içerik olarak işaretlenir (bkz. ContentTrust).
+        if (!smallTalk && AgentPlan.PageToRead(question) is { } address)
+        {
+            var read = new ToolCall("sayfayi_oku", new Dictionary<string, string> { ["adres"] = address });
+            Report(AssistantState.Thinking, AssistantTools.DescribeActivity(read.Name) + "…");
+            ToolStarted?.Invoke(this, read.Name);
+            RememberTool(read.Name);
+            _turnCalls.Add(read);
+            var page = await _tools.ExecuteAsync(read, cancellationToken).ConfigureAwait(false);
+            _memory.Add(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [read] });
+            _memory.Add(new ChatMessage(ChatRole.Tool, page.Length > 7500 ? page[..7500] + " …(kısaltıldı)" : page) { ToolName = read.Name });
+        }
 
         for (var round = 0; round <= maxRounds; round++)
         {
@@ -1548,6 +1566,16 @@ public sealed class FridayAssistant : IDisposable
                         break;
                     }
 
+                    // Bütün araçlar verilmişken (çok adımlı istek) de "yapamam" diyebiliyor; konusuna uyan aracı varsa
+                    // bir kez o araçlar adıyla anılarak yinelenir ("haberler.com.tr'deki haberi oku ve özetle").
+                    if (!reminded && tools.Count > 0 && AgentPlan.SoundsUnable(sentence) && ToolRouter.Topical(question) is { Count: > 0 } topical
+                        && topical.Any(name => tools.Any(tool => tool?["function"]?["name"]?.GetValue<string>() == name)))
+                    {
+                        unable = true;
+                        remind = topical;
+                        break;
+                    }
+
                     // "Not ettim" gibi bir iş iddiası, araç çağrısı gelene kadar okunmaz (bkz. AgentPlan.ClaimsAction).
                     held |= guardClaims && AgentPlan.ClaimsAction(sentence);
                     if (!held && !textCall)
@@ -1565,6 +1593,18 @@ public sealed class FridayAssistant : IDisposable
                 {
                     Show(reply.ToString());
                 }
+            }
+
+            if (unable && remind is { } named)
+            {
+                FridayLog.Info($"Model yapamam dedi ama aracı var ({string.Join(", ", named)}); tur hatırlatılarak yineleniyor");
+                reminded = true;
+                remind = null;
+                nudge = AgentPlan.UnableNudge(named);
+                reply.Length = replyStart;
+                Show(reply.ToString());
+                round--;
+                continue;
             }
 
             if (unable)

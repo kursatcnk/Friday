@@ -37,6 +37,12 @@ public static partial class FollowUp
     /// <summary>Devam sözünü son komutun üzerine kurar; kurulamazsa null.</summary>
     public static (string Text, QuickCommand Command)? Resolve(string text, string lastText, QuickCommand last, Func<string, QuickCommand?> match)
     {
+        // "347 çarpı 28 kaç" → "bunu ikiye böl": önceki hesabın sonucu üzerinden yeni hesap (bkz. SpokenMath.Continue).
+        if (last.Tool == "hesap" && last.Arguments.TryGetValue("soru", out var question) && SpokenMath.Continue(text, question) is { } next)
+        {
+            return (next, new QuickCommand("hesap", new Dictionary<string, string> { ["soru"] = next }));
+        }
+
         // Whisper "Peki, euro." diye virgül koyuyor, soru işaretini düşürüyor.
         var plain = string.Join(' ', text.Replace(',', ' ').Trim().TrimEnd('?', '.', '!').Split(' ', StringSplitOptions.RemoveEmptyEntries));
         if (!Tools.Contains(last.Tool) || Shape().Match(plain) is not { Success: true } shape)

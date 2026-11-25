@@ -47,6 +47,8 @@ public static class ToolRouter
         (["sınır", "limit", "en fazla", "en çok yarım"], ["sure_siniri", "ekran_suresi"]),
         (["linguaflow", "çeviri", "altyazı", "canlı çevir"], ["linguaflow"]),
         (["okuma listesi", "sonra oku", "sayfa", "makale", "site", "link"], ["sonra_oku", "sayfayi_oku", "web_sitesi_ac", "web_ara"]),
+        // Adı geçen bir web adresi: "haberler.com.tr'deki haberi oku", "x.com'u aç".
+        ([".com", ".net", ".org", ".tr", ".io", "www.", "http"], ["sayfayi_oku", "web_sitesi_ac", "web_ara"]),
         (["kopyala", "pano", "görsel", "resim"], ["pano_gorseli", "ekran_metni", "pano_kaydet"]),
         (["yokken", "bildirim", "kaçırd"], ["kacirdiklarim"]),
         (["ne yap", "başlayayım", "öneri", "sıkıldım", "canım sıkıl"], ["ne_yapayim", "gun_plani"]),
@@ -62,6 +64,13 @@ public static class ToolRouter
         (["konuşmuştuk", "konuştuk", "konuştuğumuz", "demiştin", "dediğin", "söylemiştin", "söylediğin", "sormuştum", "sorduğum", "bahsetmiştin",
           "bahsettiğin", "bahsetmiştik", "önermiştin", "önerdiğin", "anlatmıştın", "geçen sefer", "önceki sohbet", "hatırlıyor musun"], ["gecmis"])
     ];
+
+    /// <summary>Yalnızca sorunun konusundan çıkan araçlar (çekirdek ve son kullanılanlar hariç).</summary>
+    public static IReadOnlyList<string> Topical(string question)
+    {
+        var text = " " + question.ToLower(Turkish) + " ";
+        return [.. Topics.Where(topic => topic.Stems.Any(stem => text.Contains(stem, StringComparison.Ordinal))).SelectMany(topic => topic.Tools).Distinct()];
+    }
 
     /// <summary>Soru için araç adları (çekirdek + konuya göre + son turlarda kullanılanlar); <paramref name="everything"/> ise null (hepsi).</summary>
     public static IReadOnlyCollection<string>? Select(string question, bool everything, IEnumerable<string>? recent = null)

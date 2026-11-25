@@ -72,7 +72,9 @@ void Write(string line)
 foreach (var item in cases)
 {
     world.Chats.NewChat();
+    world.Tools.EndConversation();
     world.TakeUsedTools();
+    var allTools = new List<string>();
     double first = -1, total = 0;
     foreach (var turn in item.Turns)
     {
@@ -90,16 +92,18 @@ foreach (var item in cases)
         }
 
         total = Stopwatch.GetElapsedTime(clock).TotalSeconds;
+        allTools.AddRange(world.TakeUsedTools());
         var said = Interlocked.Read(ref firstAt);
         first = said > 0 ? Stopwatch.GetElapsedTime(clock, said).TotalSeconds : -1;
     }
 
     var reply = lastReply;
-    var tools = world.TakeUsedTools();
+    var tools = allTools;
     var pass = reply.Length > 0 && !reply.StartsWith("HATA", StringComparison.Ordinal)
                && (item.Expect.Length == 0 || Regex.IsMatch(reply, item.Expect))
                && (item.Tools is null || tools.Any(tool => Regex.IsMatch(tool, $@"^(?:{item.Tools})(?:\(|$)")))
-               && (item.Forbid is null || !Regex.IsMatch(reply, item.Forbid));
+               && (item.Forbid is null || !Regex.IsMatch(reply, item.Forbid))
+               && (item.ForbidTools is null || !allTools.Any(tool => Regex.IsMatch(tool, $@"^(?:{item.ForbidTools})(?:\(|$)")));
     results.Add(new Result(item, pass, first, total));
     var shown = reply.ReplaceLineEndings(" ");
     Write($"{(pass ? "OK  " : "FAIL")} [{item.Group}] {string.Join(" → ", item.Turns)} | ilk {first:0.00} sn, toplam {total:0.00} sn | {string.Join(",", tools)} | {(shown.Length > 220 ? shown[..220] + "…" : shown)}");

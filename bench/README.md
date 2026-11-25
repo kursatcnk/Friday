@@ -8,7 +8,7 @@ kullanılmaz.
   çalıştırmada sıfırdan kurulur (`BenchWorld.cs`). Gerçek veriye (`D:\Friday\data`) dokunulmaz.
 - **Araçlar:** Yalnızca ölçümün kendi kayıtlarını okuyup yazanlar gerçekten çalışır. Bilgisayarda iz bırakanlar (uygulama
   açma, ses, pano, ekran, e-posta penceresi) prova edilir: çalıştırılmaz, "yapıldı" döner.
-- **Sorular:** 62 gerçekçi soru, 11 grup (`Cases.cs`). Gruplar: hafıza, uydurmama, kayıtlar, gündem, iş yaptırma, akıl
+- **Sorular:** 64 gerçekçi soru, 12 grup (`Cases.cs`). Gruplar: hafıza, uydurmama, kayıtlar, gündem, iş yaptırma, akıl
   yürütme, bağlam, çok turlu, zor, uzun üretim, sohbet. Her soruda cevapta olması gereken, çağrılması gereken araç ya da
   olmaması gereken şey kontrol edilir.
 
