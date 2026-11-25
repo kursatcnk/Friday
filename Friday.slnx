@@ -4,6 +4,9 @@
     <Project Path="src/Friday.Desktop/Friday.Desktop.csproj" />
     <Project Path="src/Friday.Infrastructure/Friday.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/bench/">
+    <Project Path="bench/Friday.Bench/Friday.Bench.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Friday.UnitTests/Friday.UnitTests.csproj" />
   </Folder>
