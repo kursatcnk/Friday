@@ -4,11 +4,11 @@
         xmlns:local="clr-namespace:Friday.Desktop"
         Title="Friday" Width="660" SizeToContent="Height" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" ShowActivated="True"
-        FontFamily="{StaticResource TextFont}" Foreground="{StaticResource TextBrush}" FontSize="13"
+        FontFamily="{StaticResource TextFont}" Foreground="{DynamicResource TextBrush}" FontSize="13"
         TextOptions.TextFormattingMode="Display">
-    <Border Margin="18" CornerRadius="20" Background="#F0151517" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
+    <Border Margin="18" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.55" Color="Black"/>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.28" Color="Black"/>
         </Border.Effect>
         <StackPanel>
             <Grid Margin="20,16,18,16">
@@ -17,30 +17,22 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Ellipse Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,14,0">
-                    <Ellipse.Fill>
-                        <RadialGradientBrush GradientOrigin="0.35,0.3">
-                            <GradientStop Color="#FFF6E9" Offset="0"/>
-                            <GradientStop Color="#FF8A5B" Offset="0.55"/>
-                            <GradientStop Color="#6B3520" Offset="1"/>
-                        </RadialGradientBrush>
-                    </Ellipse.Fill>
-                </Ellipse>
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="16" Foreground="{DynamicResource FaintBrush}" Margin="0,0,14,0"/>
                 <Grid Grid.Column="1">
                     <TextBox x:Name="Input" FontSize="18" Background="Transparent" BorderThickness="0" Padding="0,4" VerticalContentAlignment="Center"/>
-                    <TextBlock x:Name="Placeholder" Text="Friday'e sor ya da bir komut yaz…" FontSize="18" Foreground="{StaticResource FaintBrush}"
+                    <TextBlock x:Name="Placeholder" Text="Sor ya da yaz…" FontSize="18" Foreground="{DynamicResource FaintBrush}"
                                IsHitTestVisible="False" VerticalAlignment="Center" Margin="2,0,0,0"/>
                 </Grid>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Border CornerRadius="6" BorderThickness="1,1,1,2" BorderBrush="{StaticResource LineStrongBrush}" Background="{StaticResource SurfaceRaisedBrush}" Padding="7,1">
-                        <TextBlock Text="Enter" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                    <Border CornerRadius="6" BorderThickness="1,1,1,2" BorderBrush="{DynamicResource LineStrongBrush}" Background="{DynamicResource SurfaceRaisedBrush}" Padding="7,1">
+                        <TextBlock Text="Enter" FontSize="11" Foreground="{DynamicResource MutedBrush}"/>
                     </Border>
-                    <Border CornerRadius="6" BorderThickness="1,1,1,2" BorderBrush="{StaticResource LineStrongBrush}" Background="{StaticResource SurfaceRaisedBrush}" Padding="7,1" Margin="5,0,0,0">
-                        <TextBlock Text="Esc" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                    <Border CornerRadius="6" BorderThickness="1,1,1,2" BorderBrush="{DynamicResource LineStrongBrush}" Background="{DynamicResource SurfaceRaisedBrush}" Padding="7,1" Margin="5,0,0,0">
+                        <TextBlock Text="Esc" FontSize="11" Foreground="{DynamicResource MutedBrush}"/>
                     </Border>
                 </StackPanel>
             </Grid>
-            <Border x:Name="ListArea" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,6,8,8">
+            <Border x:Name="ListArea" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,6,8,8">
                 <ListBox x:Name="Suggestions" Background="Transparent" BorderThickness="0" MaxHeight="330" Focusable="False"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemContainerStyle>
@@ -55,10 +47,10 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Back" Property="Background" Value="#10FFFFFF"/>
+                                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource HoverWashBrush}"/>
                                             </Trigger>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter TargetName="Back" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -74,7 +66,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="13.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding Kind}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="12,0,0,0"/>
                             </Grid>

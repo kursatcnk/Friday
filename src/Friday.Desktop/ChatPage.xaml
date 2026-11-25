@@ -7,7 +7,7 @@
         <Style x:Key="RowButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -25,7 +25,7 @@
         <DataTemplate DataType="{x:Type local:ChatItemView}">
             <Grid x:Name="Row" Margin="0,1">
                 <Border x:Name="Back" CornerRadius="10" Background="Transparent"/>
-                <Rectangle x:Name="Bar" Width="2" Height="16" RadiusX="1" RadiusY="1" HorizontalAlignment="Left" Fill="{StaticResource AccentBrush}"
+                <Rectangle x:Name="Bar" Width="2" Height="16" RadiusX="1" RadiusY="1" HorizontalAlignment="Left" Fill="{DynamicResource AccentBrush}"
                            Opacity="0" Margin="1,0,0,0"/>
                 <Button Style="{StaticResource RowButton}" Padding="11,8,30,8"
                         Command="{Binding DataContext.OpenChatCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -37,9 +37,9 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <DockPanel>
-                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE718;" FontSize="9" Foreground="{StaticResource AccentBrush}"
+                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE718;" FontSize="9" Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding Pinned, Converter={StaticResource Visible}}"/>
-                                <TextBlock x:Name="Title" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="13" Foreground="{StaticResource MutedBrush}"
+                                <TextBlock x:Name="Title" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="13" Foreground="{DynamicResource MutedBrush}"
                                            ToolTip="{Binding Title}"/>
                             </DockPanel>
                             <TextBlock Grid.Column="1" Text="{Binding Meta}" Style="{StaticResource Caption}" Margin="8,1,0,0"/>
@@ -58,14 +58,14 @@
             </Grid>
             <DataTemplate.Triggers>
                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Back" Property="Background" Value="#10FFFFFF"/>
+                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource HoverWashBrush}"/>
                     <Setter TargetName="Delete" Property="Opacity" Value="1"/>
-                    <Setter TargetName="Title" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                    <Setter TargetName="Title" Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 </Trigger>
                 <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                    <Setter TargetName="Back" Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
+                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
                     <Setter TargetName="Bar" Property="Opacity" Value="1"/>
-                    <Setter TargetName="Title" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                    <Setter TargetName="Title" Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -82,15 +82,15 @@
             <Button DockPanel.Dock="Top" Style="{StaticResource AccentButton}" Command="{Binding NewChatCommand}" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Left" Padding="14,10" ToolTip="Yeni sohbet (sesle: &quot;yeni sohbet&quot;)">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,10,0" Foreground="{StaticResource AccentInkBrush}"/>
-                    <TextBlock Text="Yeni sohbet" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,10,0" Foreground="{DynamicResource AccentInkBrush}"/>
+                    <TextBlock Text="Yeni sohbet" FontWeight="SemiBold" Foreground="{DynamicResource AccentInkBrush}"/>
                 </StackPanel>
             </Button>
             <Grid DockPanel.Dock="Top" Margin="0,12,0,4">
                 <TextBox Text="{Binding ChatSearch, UpdateSourceTrigger=PropertyChanged}" Padding="34,8,30,8" FontSize="12.5"/>
-                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="11" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="11" Foreground="{DynamicResource FaintBrush}" IsHitTestVisible="False"
                            Margin="13,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                <TextBlock Text="Sohbetlerde ara" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False" Margin="35,0,0,0"
+                <TextBlock Text="Sohbetlerde ara" Foreground="{DynamicResource FaintBrush}" IsHitTestVisible="False" Margin="35,0,0,0"
                            VerticalAlignment="Center" FontSize="12.5">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
@@ -142,7 +142,7 @@
             </Grid.RowDefinitions>
 
             <!-- Başlık ve sohbet işlemleri. -->
-            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,12">
+            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,12">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -184,7 +184,7 @@
                                                     <Setter Property="ToolTip" Value="Sabitlemeyi kaldır"/>
                                                     <Setter Property="Content">
                                                         <Setter.Value>
-                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE77A;" FontSize="12" Foreground="{StaticResource AccentBrush}"/>
+                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE77A;" FontSize="12" Foreground="{DynamicResource AccentBrush}"/>
                                                         </Setter.Value>
                                                     </Setter>
                                                 </DataTrigger>
@@ -207,7 +207,7 @@
 
             <!-- Silme onayı ve kısa bildirimler. -->
             <StackPanel Grid.Row="1">
-                <Border CornerRadius="12" Background="#1FFFB86B" BorderBrush="#40FFB86B" BorderThickness="1" Padding="14,10" Margin="0,12,0,0"
+                <Border CornerRadius="6" Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}" BorderThickness="1" Padding="14,10" Margin="0,12,0,0"
                         Visibility="{Binding IsConfirmingChatDelete, Converter={StaticResource Visible}}">
                     <Grid>
                         <TextBlock Text="{Binding ChatDeleteQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,180,0"/>
@@ -217,7 +217,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <TextBlock Text="{Binding ChatMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12" Margin="2,8,0,0">
+                <TextBlock Text="{Binding ChatMessage}" Foreground="{DynamicResource CalmBrush}" FontSize="12" Margin="2,8,0,0">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>
@@ -236,9 +236,9 @@
                 <local:AudioRing x:Name="HeroRing" Width="170" Height="170" Level="{Binding Level}" State="{Binding State}"/>
                 <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" Margin="0,10,0,6"
                            FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding WakeHint}" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" FontSize="13.5"
+                <TextBlock Text="{Binding WakeHint}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" FontSize="13.5"
                            TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520"/>
-                <TextBlock Text="Dinleme, anlama ve düşünme bu bilgisayarda yapılır." Foreground="{StaticResource FaintBrush}"
+                <TextBlock Text="Dinleme, anlama ve düşünme bu bilgisayarda yapılır." Foreground="{DynamicResource FaintBrush}"
                            HorizontalAlignment="Center" Margin="0,4,0,22" FontSize="12"/>
                 <ItemsControl ItemsSource="{Binding Suggestions}" MaxWidth="560">
                     <ItemsControl.ItemsPanel>
@@ -262,8 +262,8 @@
             </ScrollViewer>
 
             <!-- Yazma alanı: yüzen, yumuşak köşeli bir kutu. -->
-            <Border Grid.Row="3" Margin="0,16,0,0" CornerRadius="18" Background="{StaticResource SurfaceRaisedBrush}"
-                    BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
+            <Border Grid.Row="3" Margin="0,16,0,0" CornerRadius="18" Background="{DynamicResource SurfaceRaisedBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                 <Grid>
                     <TextBox x:Name="DraftBox" Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" Padding="18,13,60,13" FontSize="14"
                              Background="Transparent" BorderThickness="0" AutomationProperties.Name="Mesaj">
@@ -271,7 +271,7 @@
                             <KeyBinding Key="Enter" Command="{Binding SendCommand}"/>
                         </TextBox.InputBindings>
                     </TextBox>
-                    <TextBlock Text="Friday'e yaz…" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"
+                    <TextBlock Text="Friday'e yaz…" Foreground="{DynamicResource FaintBrush}" IsHitTestVisible="False"
                                Margin="20,0,0,0" VerticalAlignment="Center" FontSize="14">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">

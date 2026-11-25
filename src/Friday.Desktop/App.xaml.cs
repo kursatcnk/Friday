@@ -31,19 +31,7 @@ public sealed partial class App : Application, IDisposable
     {
         try
         {
-            if (ColorConverter.ConvertFromString(settings.AccentColor) is Color accent)
-            {
-                if (Resources["AccentBrush"] is SolidColorBrush { IsFrozen: false } brush)
-                {
-                    brush.Color = accent;
-                }
-                else
-                {
-                    Resources["AccentBrush"] = new SolidColorBrush(accent);
-                }
-
-                Resources["AccentColor"] = accent;
-            }
+            Theme.Apply(Resources, settings);
         }
         catch (FormatException)
         {
@@ -178,7 +166,8 @@ public sealed partial class App : Application, IDisposable
         base.OnStartup(e);
         if (e.Args is ["--snapshot", var folder, ..])
         {
-            // Tasarım denetimi: arayüzü örnek verilerle PNG olarak çizer, asistanı başlatmaz.
+            // Tasarım denetimi: arayüzü örnek verilerle PNG olarak çizer, asistanı başlatmaz. Üçüncü değer tema: acik ya da koyu.
+            Theme.Apply(Resources, new FridaySettings { Theme = e.Args.Length > 2 ? e.Args[2] : "sistem" });
             Snapshot.RenderAll(folder);
             Shutdown();
             return;

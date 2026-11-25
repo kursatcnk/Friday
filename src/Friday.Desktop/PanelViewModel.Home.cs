@@ -70,7 +70,7 @@ public sealed partial class PanelViewModel
 
     public static IReadOnlyList<(string Name, string Color)> Accents { get; } =
     [
-        ("Turuncu", "#FF8A5B"), ("Altın", "#F2CC8F"), ("Yeşil", "#7FD4B0"), ("Mavi", "#6FB7FF"), ("Mor", "#B9A8FF"), ("Pembe", "#FF7EB6")
+        ("Windows", "sistem"), ("Turuncu", "#FF8A5B"), ("Altın", "#F2CC8F"), ("Yeşil", "#7FD4B0"), ("Mavi", "#6FB7FF"), ("Mor", "#B9A8FF"), ("Pembe", "#FF7EB6")
     ];
 
     public IReadOnlyList<string> AccentOptions { get; } = [.. Accents.Select(accent => accent.Name)];
@@ -78,7 +78,12 @@ public sealed partial class PanelViewModel
     public IReadOnlyList<string> ScaleOptions { get; } = ["Küçük", "Normal", "Büyük", "Çok büyük"];
 
     [ObservableProperty]
-    private string _selectedAccent = "Turuncu";
+    private string _selectedAccent = "Windows";
+
+    public IReadOnlyList<string> ThemeOptions { get; } = ["Windows'a uy", "Açık", "Koyu"];
+
+    [ObservableProperty]
+    private string _selectedTheme = "Windows'a uy";
 
     [ObservableProperty]
     private string _selectedScale = "Normal";

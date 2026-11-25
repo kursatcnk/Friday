@@ -106,6 +106,12 @@ public sealed class JsonSettingsStore(FridayPaths paths) : IRestorableStore
             settings.ConversationMemoryMinutes = 30;
         }
 
+        // Sürüm 4: eski varsayılan turuncu vurgu Windows'un kendi vurgusuna geçer (kullanıcının seçtiği renklere dokunulmaz).
+        if (settings.SettingsVersion < 4 && string.Equals(settings.AccentColor, "#FF8A5B", StringComparison.OrdinalIgnoreCase))
+        {
+            settings.AccentColor = "sistem";
+        }
+
         settings.SettingsVersion = FridaySettings.CurrentVersion;
     }
 

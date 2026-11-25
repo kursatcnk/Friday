@@ -96,51 +96,40 @@ public sealed class AudioRing : FrameworkElement
         };
         _energy = frozen ? wanted : (_energy * 0.85) + (wanted * 0.15);
 
-        var center = new Point(ActualWidth / 2, ActualHeight / 2);
-        var core = size * 0.27;
-
-        // Yumuşak hale.
-        var halo = size * (0.46 + (_energy * 0.03));
-        var glow = new RadialGradientBrush(
-            [new GradientStop(WithAlpha(_color, (byte)(40 + (_energy * 50))), 0.45), new GradientStop(WithAlpha(_color, 0), 1)]);
-        glow.Freeze();
-        drawingContext.DrawEllipse(glow, null, center, halo, halo);
-
-        // Akışkan çizgiler: her biri farklı hızda ve evrede dönen birkaç sinüsün toplamı.
-        var speed = State == AssistantState.Thinking ? 1.9 : 0.8;
-        for (var layer = 0; layer < 3; layer++)
+        // Sade bir ses göstergesi: beş ince, yuvarlak uçlu çubuk. Boşta neredeyse durgun ve soluk, dinlerken ve konuşurken
+        // sesin gücüyle, düşünürken sırayla yavaşça dalgalanır. Eskiden burada parlayan bir küre ve hâle vardı; "yapay
+        // zekâ uygulaması" görüntüsünün en belirgin parçasıydı.
+        var color = State switch
         {
-            var radius = core * (1.2 + (layer * 0.07));
-            var amplitude = core * (0.035 + (_energy * 0.16)) * (1 - (layer * 0.18));
-            var geometry = Blob(center, radius, amplitude, (time * speed * (1 + (layer * 0.37))) + (layer * 2.1), layer);
-            var alpha = (byte)(layer switch { 0 => 210, 1 => 130, _ => 80 });
-            var stroke = layer == 2 ? Lerp(_color, Colors.White, 0.5) : _color;
-            var pen = new Pen(new SolidColorBrush(WithAlpha(stroke, alpha)), Math.Max(1.1, size / (layer == 0 ? 70 : 95)));
-            pen.Freeze();
-            drawingContext.DrawGeometry(null, pen, geometry);
+            AssistantState.Listening => Brush("AccentBrush", _color),
+            AssistantState.Speaking => Brush("TextBrush", _color),
+            AssistantState.Thinking => Brush("MutedBrush", _color),
+            AssistantState.Error => Brush("DangerBrush", _color),
+            _ => Brush("FaintBrush", _color)
+        };
+        const int bars = 5;
+        var width = Math.Max(2, size * 0.075);
+        var gap = width * 1.15;
+        var total = (bars * width) + ((bars - 1) * gap);
+        var left = (ActualWidth - total) / 2;
+        var middle = ActualHeight / 2;
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        for (var bar = 0; bar < bars; bar++)
+        {
+            // Ortadaki çubuk en uzun; dalga her çubukta biraz gecikir.
+            var shape = 1 - (Math.Abs(bar - ((bars - 1) / 2.0)) * 0.18);
+            var wave = State == AssistantState.Thinking
+                ? 0.5 + (0.5 * Math.Sin((time * 4.2) - (bar * 0.9)))
+                : 0.6 + (0.4 * Math.Sin((time * 7.5) + (bar * 1.7)));
+            var height = size * Math.Clamp(0.12 + (_energy * 0.62 * shape * wave), 0.1, 0.78);
+            var rect = new Rect(left + (bar * (width + gap)), middle - (height / 2), width, height);
+            drawingContext.DrawRoundedRectangle(brush, null, rect, width / 2, width / 2);
         }
-
-        // Cam çekirdek: içten aydınlık, kenara doğru koyulaşan bir küre ve sol üstte yumuşak bir yansıma.
-        var breathing = State == AssistantState.Idle ? Math.Sin(time * 1.3) * 0.025 : 0;
-        var coreRadius = core * (1 + breathing + (_smoothedLevel * 0.07));
-        var sphere = new RadialGradientBrush(
-        [
-            new GradientStop(Lerp(_color, Colors.White, 0.55), 0),
-            new GradientStop(_color, 0.42),
-            new GradientStop(Darken(_color, 0.78), 1)
-        ])
-        { GradientOrigin = new Point(0.36, 0.3), Center = new Point(0.45, 0.42), RadiusX = 0.62, RadiusY = 0.62 };
-        sphere.Freeze();
-        drawingContext.DrawEllipse(sphere, null, center, coreRadius, coreRadius);
-
-        var shine = new RadialGradientBrush([new GradientStop(Color.FromArgb(90, 255, 255, 255), 0), new GradientStop(Color.FromArgb(0, 255, 255, 255), 1)]);
-        shine.Freeze();
-        drawingContext.DrawEllipse(shine, null, new Point(center.X - (coreRadius * 0.32), center.Y - (coreRadius * 0.38)), coreRadius * 0.45, coreRadius * 0.32);
-
-        var rim = new Pen(new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), 1);
-        rim.Freeze();
-        drawingContext.DrawEllipse(null, rim, center, coreRadius, coreRadius);
     }
+
+    /// <summary>Temadaki fırçanın rengi; bulunamazsa verilen renk.</summary>
+    private Color Brush(string key, Color fallback) => TryFindResource(key) is SolidColorBrush brush ? brush.Color : fallback;
 
     /// <summary>Kapalı, yumuşak bir eğri: yarıçapı açıya göre birkaç sinüsle dalgalanır.</summary>
     private static StreamGeometry Blob(Point center, double radius, double amplitude, double phase, int layer)

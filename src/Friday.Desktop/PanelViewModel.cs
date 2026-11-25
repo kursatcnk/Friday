@@ -293,16 +293,11 @@ public sealed partial class PanelViewModel : ObservableObject
     public string PageTitle => IsToday ? "Bugün" : IsAgenda ? "Ajanda" : IsMemory ? "Hafıza" : IsLearned ? "Öğrendikleri" : IsRhythm ? "Ritim"
         : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
 
+    /// <summary>Başlığın altındaki satır: yalnızca Bugün (tarih) ve Sohbet (durum); diğer sayfalar başlığı tekrar etmez.</summary>
     public string PageSubtitle =>
-        IsToday ? $"{DateTime.Now.ToString("d MMMM dddd", Turkish)} · {StatusText}"
-        : IsAgenda ? "Önümüzdeki 7 gün: hatırlatmalar, son günlü işler, özel günler ve haftalık düzenin."
-        : IsLearned ? "Konuştukça kendi kendine öğrendikleri; yanlış olanı sil."
-        : IsMemory ? "Senin hakkında bildikleri; yalnızca bu bilgisayarda durur."
-        : IsRhythm ? "Çalışma ritmin, molaların ve odak oturumların."
-        : IsPrivacy ? "Bugün neyin bilgisayarda kaldığı, neyin dışarı çıktığı."
-        : IsRoutines ? "Tek cümleyle başlayan alışkanlıkların; ekle, düzenle, sil."
-        : IsSettings ? "Kısayollar, ses, uyandırma, ritim, sohbet ve verilerin."
-        : StatusText;
+        IsToday ? DateTime.Now.ToString("d MMMM dddd", Turkish)
+        : IsChat ? StatusText
+        : "";
 
     public string Greeting => string.IsNullOrWhiteSpace(_settings.UserName) ? "Merhaba." : $"Merhaba {_settings.UserName.Trim()}.";
 
@@ -595,7 +590,7 @@ public sealed partial class PanelViewModel : ObservableObject
                      .OrderBy(entry => entry.Left is null ? 1 : 0)
                      .ThenBy(entry => entry.Left is null ? 0 : entry.Next!.Value.DayNumber))
         {
-            Memories.Add(new MemoryView(entry.Item.Id, entry.Item.Text, entry.Item.Created.ToLocalTime().ToString("d MMMM yyyy", Turkish),
+            Memories.Add(new MemoryView(entry.Item.Id, MemoryText.ForDisplay(entry.Item.Text), entry.Item.Created.ToLocalTime().ToString("d MMMM yyyy", Turkish),
                 entry.Item.Source, entry.Left));
         }
 
@@ -619,7 +614,7 @@ public sealed partial class PanelViewModel : ObservableObject
                 .Select(item => (Item: item, Next: MemoryDates.NextOccurrence(item.Text, today)))
                 .Where(entry => entry.Next is { } next && next.DayNumber - today.DayNumber <= 30)
                 .Select(entry => (Sort: entry.Next!.Value.ToDateTime(TimeOnly.MinValue),
-                    View: new UpcomingView(null, MemoryDates.Countdown(entry.Item.Text, today) ?? "", entry.Item.Text))))
+                    View: new UpcomingView(null, MemoryDates.Countdown(entry.Item.Text, today) ?? "", MemoryText.ForDisplay(entry.Item.Text)))))
             .OrderBy(entry => entry.Sort)
             .Take(8);
         foreach (var (_, view) in items)

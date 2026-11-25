@@ -5,8 +5,6 @@
     <Grid Margin="36,4,24,24">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,12,0">
-                <TextBlock Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,0,0,12"
-                           Text="Sesle sorduğun &quot;bu hafta neler var&quot; ile aynı yerden gelir: hatırlatmalar, son günü gelen işler, doğum günleri, ödemeler ve hafızadaki haftalık düzenin. Takvimin bağlıysa toplantıların da burada."/>
 
                 <!-- Hızlı ekleme: "yarın 9'da dişçi" hatırlatma, "cuma sunumu bitir" iş olur. -->
                 <Grid Margin="0,0,0,8">
@@ -15,7 +13,7 @@
                             <KeyBinding Key="Enter" Command="{Binding AddAgendaItemCommand}"/>
                         </TextBox.InputBindings>
                     </TextBox>
-                    <TextBlock Text="Ekle: ör. yarın 9'da dişçi · cuma sunumu bitir · her pazartesi 8'de spor" Foreground="{StaticResource FaintBrush}"
+                    <TextBlock Text="Ekle: ör. yarın 9'da dişçi · cuma sunumu bitir · her pazartesi 8'de spor" Foreground="{DynamicResource FaintBrush}"
                                IsHitTestVisible="False" Margin="18,0,0,0" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -30,14 +28,14 @@
                     </TextBlock>
                     <Button Style="{StaticResource AccentButton}" HorizontalAlignment="Right" Margin="0,0,6,0" Padding="14,6" Command="{Binding AddAgendaItemCommand}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="11" Margin="0,0,7,0" Foreground="{StaticResource AccentInkBrush}"/>
-                            <TextBlock Text="Ekle" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="11" Margin="0,0,7,0" Foreground="{DynamicResource AccentInkBrush}"/>
+                            <TextBlock Text="Ekle" FontWeight="SemiBold" Foreground="{DynamicResource AccentInkBrush}"/>
                         </StackPanel>
                     </Button>
                 </Grid>
 
                 <DockPanel Margin="2,4,0,14">
-                    <TextBlock DockPanel.Dock="Right" Text="{Binding AgendaMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12"
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding AgendaMessage}" Foreground="{DynamicResource CalmBrush}" FontSize="12"
                                TextTrimming="CharacterEllipsis" MaxWidth="520"/>
                     <TextBlock Text="{Binding AgendaSummary}" Style="{StaticResource Caption}"/>
                 </DockPanel>
@@ -57,12 +55,11 @@
                                             <TextBlock Text="{Binding Title}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding Date}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
                                         </StackPanel>
-                                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="8" Padding="8,2"
-                                                Background="{StaticResource AccentSoftBrush}" Visibility="{Binding Count, Converter={StaticResource TextVisible}}">
-                                            <TextBlock Text="{Binding Count}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" Visibility="{Binding Count, Converter={StaticResource TextVisible}}">
+                                            <TextBlock Text="{Binding Count}" Foreground="{DynamicResource FaintBrush}" FontSize="12"/>
                                         </Border>
                                     </Grid>
-                                    <TextBlock Text="Boş bir gün." Style="{StaticResource Caption}" Foreground="{StaticResource FaintBrush}"
+                                    <TextBlock Text="Boş bir gün." Style="{StaticResource Caption}" Foreground="{DynamicResource FaintBrush}"
                                                Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}"/>
                                     <ItemsControl ItemsSource="{Binding Items}">
                                         <ItemsControl.ItemTemplate>
@@ -74,11 +71,11 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock x:Name="Glyph" Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="12"
-                                                               Foreground="{StaticResource FaintBrush}" VerticalAlignment="Top" Margin="0,3,0,0"/>
+                                                               Foreground="{DynamicResource FaintBrush}" VerticalAlignment="Top" Margin="0,3,0,0"/>
                                                     <StackPanel Grid.Column="1">
-                                                        <TextBlock Text="{Binding Time}" FontFamily="{StaticResource MonoFont}" FontSize="11"
-                                                                   Foreground="{StaticResource AccentBrush}" Visibility="{Binding HasTime, Converter={StaticResource Visible}}"/>
-                                                        <TextBlock x:Name="What" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="18" Foreground="{StaticResource TextBrush}"/>
+                                                        <TextBlock Text="{Binding Time}" FontSize="12" Typography.NumeralAlignment="Tabular"
+                                                                   Foreground="{DynamicResource AccentBrush}" Visibility="{Binding HasTime, Converter={StaticResource Visible}}"/>
+                                                        <TextBlock x:Name="What" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="18" Foreground="{DynamicResource TextBrush}"/>
                                                     </StackPanel>
                                                     <StackPanel x:Name="Tools" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Opacity="0.35">
                                                         <Button Style="{StaticResource IconButton}" ToolTip="Tamamlandı" Width="26" Height="26"
@@ -100,11 +97,11 @@
                                                         <Setter TargetName="Tools" Property="Opacity" Value="1"/>
                                                     </Trigger>
                                                     <DataTrigger Binding="{Binding IsOverdue}" Value="True">
-                                                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource WarningBrush}"/>
-                                                        <Setter TargetName="What" Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                                                        <Setter TargetName="What" Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsRoutine}" Value="True">
-                                                        <Setter TargetName="What" Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                                        <Setter TargetName="What" Property="Foreground" Value="{DynamicResource MutedBrush}"/>
                                                     </DataTrigger>
                                                 </DataTemplate.Triggers>
                                             </DataTemplate>
@@ -114,7 +111,7 @@
                             </Border>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                    <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>

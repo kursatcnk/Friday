@@ -72,7 +72,6 @@ public partial class PanelView : UserControl
     public void FreezeAnimation(double time)
     {
         NavRing.FrozenTime = time;
-        TodayRing.FrozenTime = time;
         ChatView.FreezeAnimation(time);
     }
 }

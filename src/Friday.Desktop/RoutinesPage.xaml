@@ -25,16 +25,16 @@
             <StackPanel Margin="0,0,12,0">
                 <Grid Margin="0,0,0,14">
                     <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0,0,170,0" TextWrapping="Wrap"
-                               Text="Bir rutin, tek cümleyle sırayla yapılan işlerdir: uygulama aç, sesi ayarla, odak başlat, bir şey söyle. Adını söylemen yeter. Özel komutlar cümlenin içinde geçince çalışır; sesle de eklenir: &quot;Baha dediğimde 'hoş geldin' de&quot;."/>
+                               Text=""/>
                     <Button Style="{StaticResource AccentButton}" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding NewRoutineCommand}" Padding="14,9">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" Foreground="{StaticResource AccentInkBrush}"/>
-                            <TextBlock Text="Yeni rutin" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" Foreground="{DynamicResource AccentInkBrush}"/>
+                            <TextBlock Text="Yeni rutin" FontWeight="SemiBold" Foreground="{DynamicResource AccentInkBrush}"/>
                         </StackPanel>
                     </Button>
                 </Grid>
 
-                <Border CornerRadius="12" Background="#1FFFB86B" BorderBrush="#40FFB86B" BorderThickness="1" Padding="14,10" Margin="0,0,0,14"
+                <Border CornerRadius="6" Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}" BorderThickness="1" Padding="14,10" Margin="0,0,0,14"
                         Visibility="{Binding IsConfirmingRoutineDelete, Converter={StaticResource Visible}}">
                     <Grid>
                         <TextBlock Text="{Binding RoutineDeleteQuestion}" VerticalAlignment="Center"/>
@@ -44,7 +44,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <TextBlock Text="{Binding RoutineMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12" Margin="2,0,0,10">
+                <TextBlock Text="{Binding RoutineMessage}" Foreground="{DynamicResource CalmBrush}" FontSize="12" Margin="2,0,0,10">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>
@@ -71,7 +71,7 @@
                                                 Command="{Binding DataContext.RunRoutineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="10" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,0,8,0"/>
                                                 <TextBlock Text="Çalıştır"/>
                                             </StackPanel>
                                         </Button>
@@ -92,26 +92,26 @@
                                         <Grid>
                                             <TextBlock Text="{Binding Name}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis" Margin="0,0,90,0"/>
-                                            <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="8,2" Background="{StaticResource AccentSoftBrush}"
+                                            <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="8,2" Background="{DynamicResource AccentSoftBrush}"
                                                     Visibility="{Binding IsTrigger, Converter={StaticResource Visible}}">
-                                                <TextBlock Text="Özel komut" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Özel komut" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
                                             </Border>
                                         </Grid>
                                         <TextBlock Text="{Binding Phrase}" Style="{StaticResource Caption}" Margin="0,3,0,4"/>
-                                        <TextBlock Text="{Binding When}" Style="{StaticResource Caption}" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,10"
+                                        <TextBlock Text="{Binding When}" Style="{StaticResource Caption}" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,10"
                                                    Visibility="{Binding When, Converter={StaticResource TextVisible}}"/>
                                         <ItemsControl ItemsSource="{Binding Steps}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type local:RoutineStepView}">
                                                     <StackPanel Orientation="Horizontal" Margin="0,4">
-                                                        <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="12" Foreground="{StaticResource FaintBrush}"
+                                                        <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="12" Foreground="{DynamicResource FaintBrush}"
                                                                    Width="18" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                                        <TextBlock x:Name="StepText" Text="{Binding Text}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"
+                                                        <TextBlock x:Name="StepText" Text="{Binding Text}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
                                                                    MaxWidth="190" Margin="8,0,0,0" LineHeight="19"/>
                                                     </StackPanel>
                                                     <DataTemplate.Triggers>
                                                         <DataTrigger Binding="{Binding IsValid}" Value="False">
-                                                            <Setter TargetName="StepText" Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                            <Setter TargetName="StepText" Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                         </DataTrigger>
                                                     </DataTemplate.Triggers>
                                                 </DataTemplate>
@@ -139,7 +139,7 @@
                                     CommandParameter="{Binding}">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="10" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,0,8,0"
                                                    VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
                                     </StackPanel>
@@ -195,7 +195,7 @@
                     <ItemsControl ItemsSource="{Binding EditorSteps}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:RoutineStepEditor}">
-                                <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="12"
+                                <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="12"
                                         Padding="12,8" Margin="0,0,0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -204,11 +204,11 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         <Grid Grid.Column="2" Visibility="{Binding NeedsValue, Converter={StaticResource Visible}}">
-                                            <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Background="#141416" Padding="10,7"/>
-                                            <TextBlock Text="{Binding Hint}" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False" Margin="12,0,0,0"
+                                            <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource SurfaceBrush}" Padding="10,7"/>
+                                            <TextBlock Text="{Binding Hint}" Foreground="{DynamicResource FaintBrush}" IsHitTestVisible="False" Margin="12,0,0,0"
                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
@@ -262,7 +262,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="{Binding RoutineError}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" Margin="2,14,0,0">
+                    <TextBlock Text="{Binding RoutineError}" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" Margin="2,14,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
@@ -282,12 +282,12 @@
                         <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Command="{Binding DeleteEditedRoutineCommand}" Padding="14,9"
                                 Visibility="{Binding CanDeleteEditedRoutine, Converter={StaticResource Visible}}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="11" Margin="0,0,8,0" Foreground="{StaticResource WarningBrush}"/>
-                                <TextBlock Text="Rutini sil" Foreground="{StaticResource WarningBrush}"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="11" Margin="0,0,8,0" Foreground="{DynamicResource WarningBrush}"/>
+                                <TextBlock Text="Rutini sil" Foreground="{DynamicResource WarningBrush}"/>
                             </StackPanel>
                         </Button>
                     </Grid>
-                    <Border CornerRadius="12" Background="#1FFFB86B" BorderBrush="#40FFB86B" BorderThickness="1" Padding="14,10" Margin="0,14,0,0"
+                    <Border CornerRadius="6" Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}" BorderThickness="1" Padding="14,10" Margin="0,14,0,0"
                             Visibility="{Binding IsConfirmingRoutineDelete, Converter={StaticResource Visible}}">
                         <Grid>
                             <TextBlock Text="{Binding RoutineDeleteQuestion}" VerticalAlignment="Center"/>

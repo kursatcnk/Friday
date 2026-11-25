@@ -4,7 +4,7 @@ namespace Friday.Core;
 public sealed class FridaySettings
 {
     /// <summary>En güncel ayar sürümü. Eski dosyalar açılışta bu sürüme taşınır (yeni rutinler, yeni varsayılanlar).</summary>
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     /// <summary>Dosyanın ayar sürümü; sürümsüz eski dosyalar 0 sayılır.</summary>
     public int SettingsVersion { get; set; }
@@ -164,8 +164,11 @@ public sealed class FridaySettings
     /// <summary>Bugün ekranında gizlenen kartlar.</summary>
     public List<string> HomeHidden { get; set; } = [];
 
-    /// <summary>Arayüzün vurgu rengi (#RRGGBB).</summary>
-    public string AccentColor { get; set; } = "#FF8A5B";
+    /// <summary>Arayüzün vurgu rengi (#RRGGBB) ya da "sistem" (Windows'un vurgusu).</summary>
+    public string AccentColor { get; set; } = "sistem";
+
+    /// <summary>"sistem" (Windows'un açık/koyu ayarı), "acik" ya da "koyu".</summary>
+    public string Theme { get; set; } = "sistem";
 
     /// <summary>Arayüz boyutu (0.9 küçük, 1 normal, 1.1 büyük, 1.25 çok büyük).</summary>
     public double UiScale { get; set; } = 1.0;

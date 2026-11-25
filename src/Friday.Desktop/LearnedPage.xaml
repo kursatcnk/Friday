@@ -5,10 +5,8 @@
     <Grid Margin="36,4,24,24">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,12,0" MaxWidth="1000" HorizontalAlignment="Left">
-                <TextBlock Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,0,0,10"
-                           Text="Friday konuştukça kendi kendine öğrenir: aynı isteği iki kez söylersen kısayol olur, &quot;yanlış anladın&quot; dersen o sözü bir daha komut sanmaz, söylediğin adları duymayı ve kelimeleri okumayı öğrenir, cevap ve yazı üslubunu sana göre ayarlar. Yanlış öğrendiğini buradan sil."/>
                 <DockPanel Margin="2,0,0,14">
-                    <TextBlock DockPanel.Dock="Right" Text="{Binding LearnedMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12"
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding LearnedMessage}" Foreground="{DynamicResource CalmBrush}" FontSize="12"
                                TextTrimming="CharacterEllipsis" MaxWidth="560"/>
                     <TextBlock Text="{Binding LearnedSummary}" Style="{StaticResource Caption}"/>
                 </DockPanel>
@@ -25,16 +23,16 @@
                                 <StackPanel>
                                     <Grid>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="14" Foreground="{StaticResource AccentBrush}"
+                                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="14" Foreground="{DynamicResource FaintBrush}"
                                                        VerticalAlignment="Center" Margin="0,0,10,0"/>
                                             <TextBlock Text="{Binding Title}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
-                                        <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="8,2" Background="{StaticResource AccentSoftBrush}">
-                                            <TextBlock Text="{Binding Count}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                        <Border HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Count}" Foreground="{DynamicResource FaintBrush}" FontSize="12"/>
                                         </Border>
                                     </Grid>
                                     <TextBlock Text="{Binding Hint}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,8"/>
-                                    <TextBlock Text="Henüz yok." Foreground="{StaticResource FaintBrush}" FontSize="12"
+                                    <TextBlock Text="Henüz yok." Foreground="{DynamicResource FaintBrush}" FontSize="12"
                                                Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}"/>
                                     <ItemsControl ItemsSource="{Binding Items}">
                                         <ItemsControl.ItemTemplate>

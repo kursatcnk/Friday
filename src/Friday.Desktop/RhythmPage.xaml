@@ -54,8 +54,8 @@
                         <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
                             <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver" Padding="16,9">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="12" Margin="0,0,8,0" Foreground="{StaticResource AccentInkBrush}"/>
-                                    <TextBlock Text="Mola ver" FontWeight="SemiBold" Foreground="{StaticResource AccentInkBrush}"/>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="12" Margin="0,0,8,0" Foreground="{DynamicResource AccentInkBrush}"/>
+                                    <TextBlock Text="Mola ver" FontWeight="SemiBold" Foreground="{DynamicResource AccentInkBrush}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım" Content="25 dk odak"/>
@@ -63,7 +63,7 @@
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="90 dakika odaklanacağım" Content="90 dk odak"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="4 pomodoro yap" Content="4 pomodoro"
                                     ToolTip="25 dk odak + 5 dk mola, dört tur"/>
-                            <Border Margin="4" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SurfaceRaisedBrush}">
+                            <Border Margin="4" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource LineBrush}" Background="{DynamicResource SurfaceRaisedBrush}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBox Text="{Binding CustomFocusMinutes, UpdateSourceTrigger=PropertyChanged}" Width="44" BorderThickness="0" Background="Transparent"
                                              VerticalAlignment="Center" HorizontalContentAlignment="Center" ToolTip="Dakika (5–240)"/>
@@ -110,8 +110,8 @@
                         <TextBlock Text="Günlük odak hedefi" Style="{StaticResource SectionTitle}"/>
                         <TextBlock Text="{Binding GoalText}" Style="{StaticResource Body}" Margin="0,6,0,10"/>
                         <Grid Height="10" Margin="0,0,0,10">
-                            <Border CornerRadius="5" Background="{StaticResource LineBrush}"/>
-                            <Border CornerRadius="5" HorizontalAlignment="Left" Background="{StaticResource AccentBrush}">
+                            <Border CornerRadius="5" Background="{DynamicResource LineBrush}"/>
+                            <Border CornerRadius="5" HorizontalAlignment="Left" Background="{DynamicResource AccentBrush}">
                                 <Border.Width>
                                     <MultiBinding Converter="{StaticResource Fraction}">
                                         <Binding Path="GoalFraction"/>
@@ -124,7 +124,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" MinWidth="230">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="16" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="16" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="Seri" Style="{StaticResource SectionTitle}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding StreakText}" Style="{StaticResource Body}" Margin="0,6,0,14" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left"/>
@@ -153,13 +153,13 @@
                 <Border Style="{StaticResource StatTile}">
                     <StackPanel>
                         <TextBlock Text="Odak" Style="{StaticResource Caption}"/>
-                        <TextBlock Text="{Binding RhythmFocus}" Style="{StaticResource StatValue}" Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text="{Binding RhythmFocus}" Style="{StaticResource StatValue}" Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatTile}">
                     <StackPanel>
                         <TextBlock Text="Mola" Style="{StaticResource Caption}"/>
-                        <TextBlock Text="{Binding RhythmBreaks}" Style="{StaticResource StatValue}" Foreground="{StaticResource CalmBrush}"/>
+                        <TextBlock Text="{Binding RhythmBreaks}" Style="{StaticResource StatValue}" Foreground="{DynamicResource CalmBrush}"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatTile}">
@@ -189,11 +189,11 @@
                     <TextBlock Style="{StaticResource Body}" FontSize="12" Text="Bilgisayar başında geçen her aralık bir çubuk; aradaki boşluklar molaların."/>
                     <local:RhythmTimeline Segments="{Binding RhythmSegments}" Now="{Binding RhythmNow}" Margin="0,16,0,4"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="#6E6A62" VerticalAlignment="Center"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{DynamicResource FaintBrush}" VerticalAlignment="Center"/>
                         <TextBlock Text="Çalışma" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
-                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                         <TextBlock Text="Odak oturumu" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
-                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Stroke="#3A3936" StrokeThickness="1" VerticalAlignment="Center"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Stroke="{DynamicResource LineStrongBrush}" StrokeThickness="1" VerticalAlignment="Center"/>
                         <TextBlock Text="Boşluk = mola ya da uzakta" Style="{StaticResource Caption}" Margin="6,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
@@ -218,14 +218,14 @@
                                 <StackPanel Margin="8,0">
                                     <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                     <Grid Height="110">
-                                        <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="7" Background="#3A3936"/>
+                                        <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="3" Background="{DynamicResource TrackBrush}"/>
                                     </Grid>
                                     <TextBlock x:Name="Day" Text="{Binding Day}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                 </StackPanel>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                        <Setter TargetName="Bar" Property="Background" Value="{StaticResource AccentBrush}"/>
-                                        <Setter TargetName="Day" Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                        <Setter TargetName="Bar" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter TargetName="Day" Property="Foreground" Value="{DynamicResource TextBrush}"/>
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
@@ -257,25 +257,25 @@
                     <StackPanel Visibility="{Binding ShowRhythmHelp, Converter={StaticResource Visible}}" Margin="0,8,0,0">
                     <UniformGrid Columns="3" Margin="-8,0">
                         <StackPanel Margin="8,0">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="18" Foreground="{StaticResource SpeakingBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="18" Foreground="{DynamicResource SpeakingBrush}" HorizontalAlignment="Left"/>
                             <TextBlock Text="1 · Ölçer" Style="{StaticResource HowTitle}"/>
                             <TextBlock Style="{StaticResource Body}" FontSize="12"
                                        Text="Yalnızca son klavye ya da fare kullanımının ne zaman olduğuna bakar. Tuşları, ekranı ya da pencereleri okumaz. 3 dakika dokunmazsan uzakta sayılırsın."/>
                         </StackPanel>
                         <StackPanel Margin="8,0">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="18" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="18" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Left"/>
                             <TextBlock Text="2 · Önerir" Style="{StaticResource HowTitle}"/>
                             <TextBlock Style="{StaticResource Body}" FontSize="12"
                                        Text="Ayarladığın süre boyunca ara vermeden çalışınca, yazmayı bıraktığın bir anda mola önerir. Tam ekran oyun, film ya da sunumda araya girmez; odaktayken susar."/>
                         </StackPanel>
                         <StackPanel Margin="8,0">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE823;" FontSize="18" Foreground="{StaticResource CalmBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE823;" FontSize="18" Foreground="{DynamicResource CalmBrush}" HorizontalAlignment="Left"/>
                             <TextBlock Text="3 · Hatırlatır" Style="{StaticResource HowTitle}"/>
                             <TextBlock Style="{StaticResource Body}" FontSize="12"
                                        Text="Moladan dönünce hangi pencerede kaldığını söyler. Odak oturumu bitince günün özetini verir; her şey bu bilgisayarda kalır."/>
                         </StackPanel>
                     </UniformGrid>
-                    <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="{StaticResource FaintBrush}" Margin="0,16,0,0" TextWrapping="Wrap"
+                    <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="{DynamicResource FaintBrush}" Margin="0,16,0,0" TextWrapping="Wrap"
                                Text="Sesle: &quot;Mola ver&quot;, &quot;25 dakika odaklanacağım&quot;, &quot;Moladan döndüm&quot;, &quot;Nerede kalmıştım?&quot;, &quot;Bugün ne kadar çalıştım?&quot;, &quot;Bu hafta nasıl geçti?&quot;, &quot;Odak hedefim 3 saat&quot;, &quot;Hedefime ne kadar kaldı?&quot;"/>
                     </StackPanel>
                 </StackPanel>

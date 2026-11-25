@@ -5,6 +5,11 @@
              Width="680"
              FontFamily="{StaticResource TextFont}">
     <UserControl.Resources>
+        <!-- Balon temadan bağımsız olarak her zaman koyu camın üzerindedir: yazı renkleri burada sabitlenir. -->
+        <SolidColorBrush x:Key="TextBrush" Color="#ECEBE7"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#A7A49E"/>
+        <SolidColorBrush x:Key="FaintBrush" Color="#7C7973"/>
+        <SolidColorBrush x:Key="SpeakingBrush" Color="#ECEBE7"/>
         <BooleanToVisibilityConverter x:Key="Visible"/>
     </UserControl.Resources>
 
@@ -29,13 +34,13 @@
             </Border.Effect>
             <StackPanel DataContext="{Binding Card}" Margin="22,16,22,18">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="13" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" Margin="9,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding HasBig, Converter={StaticResource Visible}}">
                     <TextBlock Text="{Binding Big}" FontFamily="{StaticResource DisplayFont}" FontSize="44" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextBrush}" Typography.NumeralAlignment="Tabular"/>
-                    <TextBlock Text="{Binding BigCaption}" FontSize="14" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Bottom" Margin="14,0,0,11"/>
+                               Foreground="{DynamicResource TextBrush}" Typography.NumeralAlignment="Tabular"/>
+                    <TextBlock Text="{Binding BigCaption}" FontSize="14" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Bottom" Margin="14,0,0,11"/>
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding Gauges}" Margin="0,10,0,0" Visibility="{Binding HasGauges, Converter={StaticResource Visible}}">
                     <ItemsControl.ItemTemplate>
@@ -46,16 +51,16 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="104"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Label}" FontSize="12.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Label}" FontSize="12.5" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                 <Grid Grid.Column="1" Height="6" VerticalAlignment="Center">
                                     <Border CornerRadius="3" Background="#24FFFFFF"/>
-                                    <Border CornerRadius="3" RenderTransformOrigin="0,0.5" Background="{StaticResource SpeakingBrush}">
+                                    <Border CornerRadius="3" RenderTransformOrigin="0,0.5" Background="{DynamicResource SpeakingBrush}">
                                         <Border.RenderTransform>
                                             <ScaleTransform ScaleX="{Binding Value}"/>
                                         </Border.RenderTransform>
                                     </Border>
                                 </Grid>
-                                <TextBlock Grid.Column="2" Text="{Binding Text}" FontSize="12.5" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"
+                                <TextBlock Grid.Column="2" Text="{Binding Text}" FontSize="12.5" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Right"
                                            VerticalAlignment="Center" Typography.NumeralAlignment="Tabular"/>
                             </Grid>
                         </DataTemplate>
@@ -69,8 +74,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Label}" FontSize="13.5" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" LineHeight="19"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="16,0,0,0"
+                                <TextBlock Text="{Binding Label}" FontSize="13.5" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" LineHeight="19"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="13" Foreground="{DynamicResource MutedBrush}" Margin="16,0,0,0"
                                            VerticalAlignment="Top" Typography.NumeralAlignment="Tabular"/>
                             </Grid>
                         </DataTemplate>
@@ -108,12 +113,12 @@
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,16,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
                         <TextBlock Text="{Binding StatusLabel}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding StateBrush}" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding UserText, StringFormat='  “{0}”'}" FontSize="12" Foreground="{StaticResource FaintBrush}"
+                        <TextBlock Text="{Binding UserText, StringFormat='  “{0}”'}" FontSize="12" Foreground="{DynamicResource FaintBrush}"
                                    TextTrimming="CharacterEllipsis" MaxWidth="380" VerticalAlignment="Center"
                                    Visibility="{Binding HasUserText, Converter={StaticResource Visible}}"/>
                     </StackPanel>
                     <TextBlock Text="{Binding Caption}" FontFamily="{StaticResource DisplayFont}" FontSize="16" LineHeight="22"
-                               Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis"
                                Visibility="{Binding HasCaption, Converter={StaticResource Visible}}"/>
                 </StackPanel>
 
@@ -123,15 +128,15 @@
                             Visibility="{Binding HasTool, Converter={StaticResource Visible}}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" Text="{Binding ToolGlyph}" FontSize="12" Foreground="{Binding StateBrush}" Margin="0,0,7,0"/>
-                            <TextBlock Text="{Binding ToolLabel}" FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ToolLabel}" FontSize="12" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                     <!-- Mikrofon gerçekten açıkken. -->
                     <Border CornerRadius="10" Padding="10,5" Background="#1FFF8A5B" Margin="0,2"
                             Visibility="{Binding IsMicOpen, Converter={StaticResource Visible}}">
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="6" Height="6" Fill="{StaticResource ListeningBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
-                            <TextBlock Text="Mikrofon açık" FontSize="12" Foreground="{StaticResource ListeningBrush}" VerticalAlignment="Center"/>
+                            <Ellipse Width="6" Height="6" Fill="{DynamicResource ListeningBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock Text="Mikrofon açık" FontSize="12" Foreground="{DynamicResource ListeningBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

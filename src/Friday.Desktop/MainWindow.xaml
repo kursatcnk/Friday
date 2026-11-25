@@ -5,6 +5,6 @@
         Title="Friday"
         Width="1140" Height="760" MinWidth="780" MinHeight="520"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource AppBackgroundBrush}">
+        Background="{DynamicResource AppBackgroundBrush}">
     <local:PanelView x:Name="Panel"/>
 </Window>

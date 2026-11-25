@@ -173,3 +173,15 @@ public class ReadingRequestTests
     [InlineData("Maalesef web sitelerine erişip içerik okuma yetkim bulunmuyor.")]
     public void RefusalsInEitherLanguageAreNoticed(string sentence) => Assert.True(AgentPlan.SoundsUnable(sentence));
 }
+
+/// <summary>Hafıza bilgilerinin ekrandaki hali: makinenin üçüncü kişi notu değil, sana hitap.</summary>
+public class MemoryTextTests
+{
+    [Theory]
+    [InlineData("Kullanıcının arabasının muayenesi 28 Kasım'da.", "Arabanın muayenesi 28 Kasım'da.")]
+    [InlineData("Kullanıcının kızının adı Ela, 7 yaşında.", "Kızının adı Ela, 7 yaşında.")]
+    [InlineData("Kullanıcının annesi Ayşe.", "Annen Ayşe.")]
+    [InlineData("Kullanıcı kahveyi şekersiz içer.", "Kahveyi şekersiz içer.")]
+    [InlineData("Arabamın muayenesi 28 Kasım'da.", "Arabamın muayenesi 28 Kasım'da.")]
+    public void MemoryIsShownInPlainLanguage(string stored, string shown) => Assert.Equal(shown, MemoryText.ForDisplay(stored));
+}

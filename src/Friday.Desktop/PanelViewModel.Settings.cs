@@ -450,7 +450,8 @@ public sealed partial class PanelViewModel
         _settings.GpuRendering = GpuRendering;
         _settings.ScreenTime = ScreenTimeEnabled;
         _settings.FocusGuard = FocusGuard;
-        _settings.AccentColor = Accents.FirstOrDefault(accent => accent.Name == SelectedAccent).Color ?? "#FF8A5B";
+        _settings.AccentColor = Accents.FirstOrDefault(accent => accent.Name == SelectedAccent).Color ?? "sistem";
+        _settings.Theme = SelectedTheme switch { "Açık" => "acik", "Koyu" => "koyu", _ => "sistem" };
         _settings.UiScale = ScaleValue(SelectedScale);
         _settings.DocumentMemory = DocumentMemory;
         _settings.ReadingMemory = ReadingMemory;
@@ -552,7 +553,8 @@ public sealed partial class PanelViewModel
         GpuRendering = _settings.GpuRendering;
         ScreenTimeEnabled = _settings.ScreenTime;
         FocusGuard = _settings.FocusGuard;
-        SelectedAccent = Accents.FirstOrDefault(accent => string.Equals(accent.Color, _settings.AccentColor, StringComparison.OrdinalIgnoreCase)).Name ?? "Turuncu";
+        SelectedAccent = Accents.FirstOrDefault(accent => string.Equals(accent.Color, _settings.AccentColor, StringComparison.OrdinalIgnoreCase)).Name ?? "Windows";
+        SelectedTheme = _settings.Theme switch { "acik" => "Açık", "koyu" => "Koyu", _ => "Windows'a uy" };
         SelectedScale = ScaleName(_settings.UiScale);
         LoadHome();
         DocumentMemory = _settings.DocumentMemory;
