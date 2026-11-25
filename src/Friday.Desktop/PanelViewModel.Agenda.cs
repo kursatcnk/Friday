@@ -135,6 +135,15 @@ public sealed partial class PanelViewModel
         }
     }
 
+    /// <summary>Sohbet kutusuna ilk harf yazıldı: model ısıtılır (bkz. FridayAssistant.WarmForTyping).</summary>
+    partial void OnDraftChanged(string? oldValue, string newValue)
+    {
+        if (string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
+        {
+            _actions.WarmForTyping();
+        }
+    }
+
     partial void OnIsAgendaChanged(bool value)
     {
         if (value)

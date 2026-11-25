@@ -103,6 +103,9 @@ public sealed class PanelActions
 
     public Action<string> DeleteReminder { get; init; } = _ => { };
 
+    /// <summary>Kullanıcı yazmaya başladı: dil modeli soru gelmeden ısıtılır.</summary>
+    public Action WarmForTyping { get; init; } = () => { };
+
     /// <summary>Bugünden başlayan 7 günün gündemi (bkz. <see cref="DayAgenda"/>).</summary>
     public Func<DateTime, IReadOnlyList<AgendaItem>> Agenda { get; init; } = _ => [];
 

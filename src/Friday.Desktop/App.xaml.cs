@@ -352,6 +352,7 @@ public sealed partial class App : Application, IDisposable
             }),
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
+            WarmForTyping = assistant.WarmForTyping,
             Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
                 tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
             AddToAgenda = async text =>
@@ -627,7 +628,12 @@ public sealed partial class App : Application, IDisposable
         var candidates = new[] { requested }
             .Concat(FallbackHotkeys.Select(HotkeyGesture.Parse).Where(gesture => gesture != requested))
             .ToList();
-        _quickAsk = new QuickAskWindow(() => QuickAskItems(settings, chats), assistant.SubmitText);
+        _quickAsk = new QuickAskWindow(() =>
+        {
+            // Kutu açılırken model ısınmaya başlar; soru yazılana kadar hazır olur.
+            assistant.WarmForTyping();
+            return QuickAskItems(settings, chats);
+        }, assistant.SubmitText);
         HotkeyGesture? quickGesture = null;
         if (settings.QuickAskHotkey.Length > 0)
         {

@@ -630,7 +630,7 @@ public sealed class FridayAssistant : IDisposable
             {
                 // İlk açılışta dil modeli zaten yükleniyorsa ikinci bir yükleme başlatılmaz.
                 await Task.WhenAll(
-                    _brainReady.IsCompleted ? _chat.WarmUpAsync(_settings.OllamaModel, CancellationToken.None) : Task.CompletedTask,
+                    _brainReady.IsCompleted ? WarmBrainAsync() : Task.CompletedTask,
                     _whisper.EnsureLoadedAsync(CancellationToken.None)).ConfigureAwait(false);
             }
             catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
@@ -640,7 +640,67 @@ public sealed class FridayAssistant : IDisposable
         });
     }
 
-    /// <summary>Boşta kalınca Whisper'ı GPU'dan çıkarır; dil modelini Ollama keep_alive süresi dolunca kendisi çıkarır.</summary>
+    /// <summary>
+    /// Dil modeli GPU'da değilse yüklenir ve sistem talimatı önbelleğe yeniden işlenir. Model boşta kalıp çıkarıldıysa
+    /// yeniden yükleme ~2,7 sn, talimatın baştan işlenmesi ~1 sn sürüyordu; ön ısıtmada ikisi de soru gelmeden biter.
+    /// </summary>
+    private async Task WarmBrainAsync()
+    {
+        var cold = DateTime.Now - _brainUsedAt > TimeSpan.FromMinutes(Math.Max(1, _settings.GpuIdleMinutes));
+        await _chat.WarmUpAsync(_settings.OllamaModel, CancellationToken.None).ConfigureAwait(false);
+        if (cold)
+        {
+            await PrimeAsync(_settings.OllamaModel).ConfigureAwait(false);
+        }
+
+        _brainUsedAt = DateTime.Now;
+    }
+
+    /// <summary>Dil modelinin en son kullanıldığı ya da ısıtıldığı an.</summary>
+    private DateTime _brainUsedAt = DateTime.MinValue;
+
+    private long _typingWarmAt;
+
+    /// <summary>
+    /// Kullanıcı yazmaya başladı (hızlı soru kutusu açıldı ya da sohbet kutusuna ilk harf yazıldı): yalnızca dil modeli
+    /// ısıtılır, mikrofon ve ses modelleri yüklenmez. Yazmak birkaç saniye sürdüğü için yükleme soru gönderilmeden biter.
+    /// En fazla 30 sn'de bir çalışır.
+    /// </summary>
+    public void WarmForTyping()
+    {
+        var now = Stopwatch.GetTimestamp();
+        if (!_brainReady.IsCompleted || Stopwatch.GetElapsedTime(Interlocked.Read(ref _typingWarmAt), now) < TimeSpan.FromSeconds(30))
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _typingWarmAt, now);
+        lock (_gate)
+        {
+            if (State is not (AssistantState.Idle or AssistantState.Error))
+            {
+                return;
+            }
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await WarmBrainAsync().ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or TaskCanceledException)
+            {
+                // Asıl soru hatayı yeniden yakalar.
+            }
+        });
+    }
+
+    /// <summary>
+    /// Boşta kalınca Whisper'ı GPU'dan çıkarır; dil modelini Ollama keep_alive süresi dolunca kendisi çıkarır. Kullanıcı
+    /// bilgisayar başındaysa ve Friday'le yakın zamanda konuştuysa (bir konuşma oturumu sürüyorsa) modeller hemen
+    /// çıkarılmaz: süre bir tur daha uzatılır. Tam ekran bir uygulama açıksa ya da kullanıcı uzaklaştıysa beklenmez.
+    /// </summary>
     private async Task SleepModelsAsync()
     {
         lock (_gate)
@@ -649,6 +709,23 @@ public sealed class FridayAssistant : IDisposable
             {
                 return;
             }
+        }
+
+        if (KeepsSession(DateTime.Now))
+        {
+            var minutes = Math.Max(1, _settings.GpuIdleMinutes);
+            _idleTimer?.Change(TimeSpan.FromMinutes(minutes), Timeout.InfiniteTimeSpan);
+            try
+            {
+                // Ollama'nın kendi süresi de uzar; model GPU'da kalır.
+                await _chat.WarmUpAsync(_settings.OllamaModel, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or TaskCanceledException)
+            {
+                // Uzatılamadıysa model süresi dolunca çıkar; bir sonraki soru yeniden yükler.
+            }
+
+            return;
         }
 
         await Task.WhenAll(_whisper.UnloadAsync(), _speaker.SleepAsync()).ConfigureAwait(false);
@@ -1038,6 +1115,7 @@ public sealed class FridayAssistant : IDisposable
     /// <summary>Yazıya dökülmüş bir soruyu cevaplar ve cevabın okunması bitene kadar bekler.</summary>
     public async Task AskAsync(string text, CancellationToken cancellationToken)
     {
+        _lastAskedAt = DateTime.Now;
         if (Interlocked.CompareExchange(ref _turnStart, Stopwatch.GetTimestamp(), 0) == 0)
         {
             _transcribeMs = -1;
@@ -1438,6 +1516,7 @@ public sealed class FridayAssistant : IDisposable
             var thinking = 0;
             var truncated = false;
             var textCall = false;
+            _brainUsedAt = DateTime.Now;
             await foreach (var delta in _chat.StreamAsync(_settings.OllamaModel, messages, tools, cancellationToken, think).ConfigureAwait(false))
             {
                 thinking += delta.ThinkingLength;
@@ -2530,6 +2609,14 @@ public sealed class FridayAssistant : IDisposable
     }
 
     /// <summary>Oyun, tam ekran video ya da sunum açık mı (ve ayar açık mı)?</summary>
+    /// <summary>Konuşma oturumu sürüyor mu: son 15 dakikada Friday'e soru soruldu, kullanıcı son 2 dakikada bilgisayarı kullandı ve tam ekran bir iş yok.</summary>
+    private bool KeepsSession(DateTime now) =>
+        now - _lastAskedAt < SessionLife && RhythmCoach.IdleTime() < TimeSpan.FromMinutes(2) && !YieldsResources();
+
+    private static readonly TimeSpan SessionLife = TimeSpan.FromMinutes(15);
+
+    private DateTime _lastAskedAt = DateTime.MinValue;
+
     private bool YieldsResources()
     {
         var busy = _settings.YieldToFullScreen && FullScreenDetector.IsBusy();
