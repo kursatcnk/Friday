@@ -45,6 +45,13 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Bugün ekranında bölümler kart değil: üstte ince bir çizgi, sayfanın zemininde. -->
+        <Style x:Key="TodaySection" TargetType="Border">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="Padding" Value="2,18,2,20"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -155,7 +162,7 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-                        <local:CardFlowPanel x:Name="TodayCards" Gap="14">
+                        <local:CardFlowPanel x:Name="TodayCards" Gap="0" MaxWidth="780" HorizontalAlignment="Left">
                         <!-- Selam ve hava. -->
                         <Border local:CardFlowPanel.Key="greeting" local:CardFlowPanel.Wide="True" Padding="2,6,2,10">
                             <Grid>
@@ -189,7 +196,7 @@
                         </Border>
 
                         <!-- İlk açılış: tanışma. -->
-                        <Border local:CardFlowPanel.Key="intro" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}" Visibility="{Binding NeedsIntro, Converter={StaticResource Visible}}"
+                        <Border local:CardFlowPanel.Key="intro" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding NeedsIntro, Converter={StaticResource Visible}}"
                                 BorderBrush="{DynamicResource SelectedLineBrush}">
                             <StackPanel>
                                 <TextBlock Text="Tanışalım" Style="{StaticResource SectionTitle}"/>
@@ -223,7 +230,7 @@
                         </Border>
 
                             <!-- Yaklaşanlar. -->
-                            <Border local:CardFlowPanel.Key="upcoming" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="upcoming" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <TextBlock Text="Yaklaşanlar" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
                                     <TextBlock Style="{StaticResource Body}" FontSize="12" Visibility="{Binding HasUpcoming, Converter={StaticResource Hidden}}"
@@ -258,7 +265,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Günün planı: takvim, işler ve alışkanlıklar saat saat (dil modelsiz, anında). -->
-                            <Border local:CardFlowPanel.Key="plan" Style="{StaticResource Card}" Visibility="{Binding HasPlan, Converter={StaticResource Visible}}">
+                            <Border local:CardFlowPanel.Key="plan" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding HasPlan, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Günün planı" Style="{StaticResource SectionTitle}"/>
@@ -303,7 +310,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Ritim. -->
-                            <Border local:CardFlowPanel.Key="rhythm" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="rhythm" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Ritim" Style="{StaticResource SectionTitle}"/>
@@ -336,7 +343,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Yapılacaklar. -->
-                            <Border local:CardFlowPanel.Key="todos" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="todos" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Yapılacaklar" Style="{StaticResource SectionTitle}"/>
@@ -403,7 +410,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Alışkanlıklar: bugünün işareti, son 7 gün ve seri. -->
-                            <Border local:CardFlowPanel.Key="habits" Style="{StaticResource Card}" Visibility="{Binding HasHabits, Converter={StaticResource Visible}}">
+                            <Border local:CardFlowPanel.Key="habits" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding HasHabits, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Alışkanlıklar" Style="{StaticResource SectionTitle}"/>
@@ -486,7 +493,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Harcamalar: bu ayın toplamı, bütçe ve kategoriler. -->
-                            <Border local:CardFlowPanel.Key="spending" Style="{StaticResource Card}" Visibility="{Binding ShowSpendingCard, Converter={StaticResource Visible}}">
+                            <Border local:CardFlowPanel.Key="spending" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding ShowSpendingCard, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Harcamalar" Style="{StaticResource SectionTitle}"/>
@@ -584,7 +591,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Kelime pratiği: bugün bekleyen tekrarlar ve öğrenilenler. -->
-                            <Border local:CardFlowPanel.Key="vocabulary" Style="{StaticResource Card}" Visibility="{Binding HasVocabulary, Converter={StaticResource Visible}}">
+                            <Border local:CardFlowPanel.Key="vocabulary" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding HasVocabulary, Converter={StaticResource Visible}}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Kelime pratiği" Style="{StaticResource SectionTitle}"/>
@@ -605,7 +612,7 @@
                                 </StackPanel>
                             </Border>
                             <!-- Notlar. -->
-                            <Border local:CardFlowPanel.Key="notes" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="notes" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <Grid>
                                         <TextBlock Text="Notlar" Style="{StaticResource SectionTitle}"/>
@@ -633,7 +640,7 @@
                                 </StackPanel>
                             </Border>
                         <!-- Ekran süresi: en çok kullanılan uygulamalar ve siteler. -->
-                        <Border local:CardFlowPanel.Key="screentime" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}">
+                        <Border local:CardFlowPanel.Key="screentime" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                             <StackPanel>
                                 <Grid Margin="0,0,0,10">
                                     <TextBlock Text="Ekran süresi" Style="{StaticResource SectionTitle}"/>
@@ -659,7 +666,7 @@
                             </StackPanel>
                         </Border>
                             <!-- Söyleyebileceklerin. -->
-                            <Border local:CardFlowPanel.Key="ideas" local:CardFlowPanel.Wide="True" Style="{StaticResource Card}">
+                            <Border local:CardFlowPanel.Key="ideas" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <TextBlock Text="Dene" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
                                     <ItemsControl ItemsSource="{Binding TodayIdeas}">
@@ -679,7 +686,7 @@
                                 </StackPanel>
                             </Border>
                         <!-- Rutinler: tek tıkla çalıştır. -->
-                        <Border local:CardFlowPanel.Key="routines" Style="{StaticResource Card}">
+                        <Border local:CardFlowPanel.Key="routines" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                             <StackPanel>
                                 <Grid Margin="0,0,0,8">
                                     <TextBlock Text="Rutinler" Style="{StaticResource SectionTitle}"/>
@@ -713,7 +720,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Sistem: işlemci, bellek, ekran kartı, disk. -->
-                        <Border local:CardFlowPanel.Key="system" Style="{StaticResource Card}">
+                        <Border local:CardFlowPanel.Key="system" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                             <StackPanel>
                                 <TextBlock Text="Sistem" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
                                 <ItemsControl ItemsSource="{Binding SystemRows}">

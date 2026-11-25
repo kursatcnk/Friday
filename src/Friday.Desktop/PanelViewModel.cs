@@ -206,6 +206,7 @@ public sealed partial class PanelViewModel : ObservableObject
         _settings = settings;
         _actions = actions;
         AssistantName = settings.AssistantName;
+        WatchSettings();
         LoadSettingsFields();
         LoadRoutines();
     }
@@ -896,6 +897,19 @@ public sealed partial class PanelViewModel : ObservableObject
     }
 
     private void LoadSettingsFields()
+    {
+        _loadingSettings = true;
+        try
+        {
+            LoadSettingsFieldsCore();
+        }
+        finally
+        {
+            _loadingSettings = false;
+        }
+    }
+
+    private void LoadSettingsFieldsCore()
     {
         var engine = _settings.SpeechEngine.Trim().ToLowerInvariant();
         EngineAzure = engine == "azure";

@@ -3,9 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Friday.Desktop">
     <UserControl.Resources>
-        <Style x:Key="SettingsCard" TargetType="Border" BasedOn="{StaticResource Card}">
-            <Setter Property="Margin" Value="0,0,0,14"/>
-            <Setter Property="Padding" Value="22,20"/>
+        <Style x:Key="SettingsCard" TargetType="Border">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Padding" Value="2,20,2,8"/>
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource Body}">
             <Setter Property="FontSize" Value="12"/>
@@ -659,12 +662,8 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Her zaman görünen kaydet çubuğu. -->
-        <Border Grid.Row="2" Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="36,12,36,16">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource AccentButton}" Content="Kaydet ve uygula" Command="{Binding SaveSettingsCommand}" Padding="18,9"/>
-                <TextBlock Text="{Binding SavedMessage}" Foreground="{DynamicResource CalmBrush}" VerticalAlignment="Center" Margin="14,0,0,0"/>
-            </StackPanel>
-        </Border>
+        <!-- Değişiklikler anında kaydedilir; burada yalnızca sonucu yazılır. -->
+        <TextBlock Grid.Row="2" Text="{Binding SavedMessage}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="38,6,36,12"
+                   Visibility="{Binding SavedMessage, Converter={StaticResource TextVisible}}"/>
     </Grid>
 </UserControl>
