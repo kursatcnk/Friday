@@ -298,7 +298,7 @@ public static partial class AgentPlan
     public static bool SoundsUnable(string sentence)
     {
         // İngilizce cümlede Türkçe küçük harf "I"yı "ı" yapar ("ı don't have"); iki biçim de denenir.
-        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR")) + " " + sentence.ToLowerInvariant().Replace('’', ''');
+        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR")) + " " + sentence.ToLowerInvariant().Replace('’', '\'');
         return Unable.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
     }
 
