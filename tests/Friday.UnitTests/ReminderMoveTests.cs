@@ -51,7 +51,7 @@ public class ReminderMoveTests
     [Fact]
     public void TheStoreMovesTheMatchingReminder()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "friday-move-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppContext.BaseDirectory, "friday-move-" + Guid.NewGuid().ToString("N"));
         try
         {
             var store = new ReminderStore(Path.Combine(folder, "reminders.json"));

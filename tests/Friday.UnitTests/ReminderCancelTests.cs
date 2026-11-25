@@ -23,7 +23,7 @@ public class ReminderCancelTests
     [Fact]
     public void FindsTheReminderByWordStems()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "friday-cancel-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppContext.BaseDirectory, "friday-cancel-" + Guid.NewGuid().ToString("N"));
         try
         {
             var now = new DateTime(2026, 11, 21, 14, 0, 0);

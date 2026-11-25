@@ -5,7 +5,7 @@ namespace Friday.UnitTests;
 public sealed class UndoTests : IDisposable
 {
     private static readonly DateTime Now = new(2026, 11, 19, 14, 0, 0);
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "friday-undo-" + Guid.NewGuid().ToString("N"));
+    private readonly string _folder = Path.Combine(AppContext.BaseDirectory, "friday-undo-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {

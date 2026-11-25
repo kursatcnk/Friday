@@ -4,7 +4,7 @@ namespace Friday.UnitTests;
 
 public sealed class LearnedShortcutsTests : IDisposable
 {
-    private readonly string _file = Path.Combine(Path.GetTempPath(), "friday-shortcuts-" + Guid.NewGuid().ToString("N") + ".json");
+    private readonly string _file = Path.Combine(AppContext.BaseDirectory, "friday-shortcuts-" + Guid.NewGuid().ToString("N") + ".json");
 
     public void Dispose() => File.Delete(_file);
 

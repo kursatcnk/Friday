@@ -4,7 +4,7 @@ namespace Friday.UnitTests;
 
 public sealed class CorrectionTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "friday-corrections-" + Guid.NewGuid().ToString("N"));
+    private readonly string _folder = Path.Combine(AppContext.BaseDirectory, "friday-corrections-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {

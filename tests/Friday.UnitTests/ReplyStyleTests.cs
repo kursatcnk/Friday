@@ -4,7 +4,7 @@ namespace Friday.UnitTests;
 
 public sealed class ReplyStyleTests : IDisposable
 {
-    private readonly string _file = Path.Combine(Path.GetTempPath(), "friday-style-" + Guid.NewGuid().ToString("N") + ".json");
+    private readonly string _file = Path.Combine(AppContext.BaseDirectory, "friday-style-" + Guid.NewGuid().ToString("N") + ".json");
 
     public void Dispose() => File.Delete(_file);
 

@@ -5,7 +5,7 @@ namespace Friday.UnitTests;
 
 public sealed class SettingsUndoTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "friday-settings-" + Guid.NewGuid().ToString("N"));
+    private readonly string _home = Path.Combine(AppContext.BaseDirectory, "friday-settings-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {

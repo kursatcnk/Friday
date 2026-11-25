@@ -30,7 +30,7 @@ public class MemoryAnchorTests
     [Fact]
     public void AnchoredMemoriesShowUpAsUpcoming()
     {
-        var file = Path.Combine(Path.GetTempPath(), "friday-anchor-" + Guid.NewGuid().ToString("N") + ".json");
+        var file = Path.Combine(AppContext.BaseDirectory, "friday-anchor-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
             var memory = new MemoryStore(file);

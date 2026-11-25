@@ -18,7 +18,7 @@ public class BoughtTests
     [Fact]
     public void TheListLosesWhatWasBought()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "friday-bought-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppContext.BaseDirectory, "friday-bought-" + Guid.NewGuid().ToString("N"));
         try
         {
             var lists = new ListStore(Path.Combine(folder, "lists.json"));

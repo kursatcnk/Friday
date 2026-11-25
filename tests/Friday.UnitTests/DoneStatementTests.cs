@@ -49,7 +49,7 @@ public class DoneStatementTests
     [Fact]
     public void TheStoreFindsTheTaskThatWasDone()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "friday-done-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppContext.BaseDirectory, "friday-done-" + Guid.NewGuid().ToString("N"));
         try
         {
             var now = new DateTime(2026, 11, 23, 10, 0, 0);

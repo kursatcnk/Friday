@@ -10,7 +10,7 @@ public class PhraseTemplateTests
 
     private static PhraseTemplates Fresh(out string folder)
     {
-        folder = Path.Combine(Path.GetTempPath(), "friday-templates-" + Guid.NewGuid().ToString("N"));
+        folder = Path.Combine(AppContext.BaseDirectory, "friday-templates-" + Guid.NewGuid().ToString("N"));
         return new PhraseTemplates(Path.Combine(folder, "templates.json"));
     }
 

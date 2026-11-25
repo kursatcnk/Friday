@@ -77,7 +77,7 @@ public class FactKeyTests
     [Fact]
     public void TheStoreReplacesAnUpdatedFactAndSaysWhatChanged()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "friday-factkey-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppContext.BaseDirectory, "friday-factkey-" + Guid.NewGuid().ToString("N"));
         try
         {
             var store = new MemoryStore(Path.Combine(folder, "memory.json"));
