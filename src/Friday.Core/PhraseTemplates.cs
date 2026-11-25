@@ -255,6 +255,22 @@ public sealed partial class PhraseTemplates(string file)
         }
     }
 
+    /// <summary>Öğrenilmiş bir kalıbı adıyla unutur ("{metin} {zaman} bana bildir"); vardıysa true.</summary>
+    public bool Remove(string pattern)
+    {
+        lock (_gate)
+        {
+            var templates = Load();
+            if (!templates.Remove(pattern))
+            {
+                return false;
+            }
+
+            Save(templates);
+            return true;
+        }
+    }
+
     public int Clear()
     {
         lock (_gate)

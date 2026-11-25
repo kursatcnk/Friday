@@ -54,6 +54,25 @@ public static partial class PrivacyShield
             : null;
     }
 
+    /// <summary>
+    /// Tek parça, boşluksuz ve karışık karakterli bir metin: parola, API anahtarı ya da erişim kodu olabilir
+    /// ("P@ssw0rd!2024", "sk-4f9a…", "ghp_x7Q…"). Adres, dosya yolu, e-posta ve düz sözcükler sayılmaz.
+    /// </summary>
+    public static bool LooksLikeCredential(string text)
+    {
+        var token = text.Trim();
+        if (token.Length is < 8 or > 200 || token.Any(char.IsWhiteSpace) || token.Contains("://", StringComparison.Ordinal)
+            || token.StartsWith("www.", StringComparison.OrdinalIgnoreCase) || token.Contains('\\', StringComparison.Ordinal)
+            || EmailAddress().IsMatch(token))
+        {
+            return false;
+        }
+
+        var kinds = (token.Any(char.IsAsciiLetterUpper) ? 1 : 0) + (token.Any(char.IsAsciiLetterLower) ? 1 : 0)
+                    + (token.Any(char.IsAsciiDigit) ? 1 : 0) + (token.Any(c => !char.IsLetterOrDigit(c)) ? 1 : 0);
+        return kinds >= 3 || (token.Length >= 20 && kinds >= 2 && token.Any(char.IsAsciiDigit));
+    }
+
     /// <summary>TC kimlik numarası: 11 hane, ilk hane sıfır değil, 10. ve 11. haneler sağlama.</summary>
     public static bool IsTurkishId(string digits)
     {
@@ -125,4 +144,7 @@ public static partial class PrivacyShield
 
     [GeneratedRegex(@"\s{2,}")]
     private static partial Regex Spaces();
+
+    [GeneratedRegex(@"^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$")]
+    private static partial Regex EmailAddress();
 }

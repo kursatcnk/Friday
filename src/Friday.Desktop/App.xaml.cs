@@ -352,6 +352,17 @@ public sealed partial class App : Application, IDisposable
             }),
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
+            Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
+                tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
+            AddToAgenda = async text =>
+            {
+                using (tools.Changes.Begin(UndoLog.PanelPrefix + $"ajandaya \"{text}\" ekleme"))
+                {
+                    return await tools.AddToAgendaAsync(text, CancellationToken.None);
+                }
+            },
+            Learned = () => [.. tools.Learned(DateTime.Now).Select(LearnedView)],
+            ForgetLearned = (group, key) => RecordedValue("öğrenilen bir şeyi unutma", () => tools.ForgetLearned(group, key)),
             OpenNotes = () =>
             {
                 if (!File.Exists(notes.File))
@@ -497,6 +508,12 @@ public sealed partial class App : Application, IDisposable
         tools.Calendar.Changed += (_, _) => Ui(ShowToday);
         reminders.Changed += (_, _) => Ui(ShowToday);
         memory.Changed += (_, _) => Ui(ShowToday);
+        // Ajanda açıksa kayıtlar değişince yenilenir (sesle eklenen hatırlatma da hemen görünür).
+        tools.Calendar.Changed += (_, _) => Ui(panel.RefreshAgenda);
+        reminders.Changed += (_, _) => Ui(panel.RefreshAgenda);
+        todos.Changed += (_, _) => Ui(panel.RefreshAgenda);
+        memory.Changed += (_, _) => Ui(panel.RefreshAgenda);
+        expenses.Changed += (_, _) => Ui(panel.RefreshAgenda);
         notes.Changed += (_, _) => Ui(() => panel.ShowNotes(notes.All));
         todos.Changed += (_, _) => Ui(() => panel.ShowTodos(todos.Visible(DateTime.Now)));
         panel.ShowTodos(todos.Visible(DateTime.Now));
@@ -811,6 +828,19 @@ public sealed partial class App : Application, IDisposable
         var name = parts[0].Contains('/', StringComparison.Ordinal) ? parts[0] : $"library/{parts[0]}";
         return File.Exists(Path.Combine(paths.OllamaModels, "manifests", "registry.ollama.ai", name.Replace('/', '\\'), parts.Length > 1 ? parts[1] : "latest"));
     }
+
+    /// <summary>Öğrenilenlerden bir grup → "Öğrendikleri" sayfasındaki kart (simgesiyle).</summary>
+    private static LearnedGroupView LearnedView(LearnedGroup group) => new(group.Key, group.Title, group.Key switch
+    {
+        "kisayol" => "",
+        "kalip" => "",
+        "duzeltme" => "",
+        "ad" => "",
+        "okunus" => "",
+        "uslup" => "",
+        "susturulan" => "",
+        _ => ""
+    }, group.Hint, [.. group.Items.Select(item => new LearnedItemView(group.Key, item.Key, item.Text, item.Detail))]);
 
     private static IReadOnlyList<VoiceOption> PiperVoices(FridayPaths paths)
     {

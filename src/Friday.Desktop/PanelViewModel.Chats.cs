@@ -292,7 +292,7 @@ public sealed partial class PanelViewModel
 
     private void GoToChat()
     {
-        IsToday = IsMemory = IsRhythm = IsPrivacy = IsRoutines = IsSettings = false;
+        IsToday = IsMemory = IsRhythm = IsPrivacy = IsRoutines = IsSettings = IsAgenda = IsLearned = false;
         IsChat = true;
     }
 

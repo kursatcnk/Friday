@@ -17,5 +17,7 @@ public sealed partial class AssistantTools
         _pendingAction = null;
         _front = null;
         _draft = null;
+        // Okunan içerik yeni sohbete taşınmaz.
+        _untrustedAt = DateTime.MinValue;
     }
 }

@@ -60,8 +60,10 @@
                 <StackPanel Margin="6,0,0,0">
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE80F;" Content="Bugün" IsChecked="{Binding IsToday}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8BD;" Content="Sohbet" IsChecked="{Binding IsChat}"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE787;" Content="Ajanda" IsChecked="{Binding IsAgenda}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE9D9;" Content="Ritim" IsChecked="{Binding IsRhythm}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8F1;" Content="Hafıza" IsChecked="{Binding IsMemory}"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xEA80;" Content="Öğrendi" IsChecked="{Binding IsLearned}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE945;" Content="Rutinler" IsChecked="{Binding IsRoutines}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xEA18;" Content="Gizlilik" IsChecked="{Binding IsPrivacy}"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Ayarlar" IsChecked="{Binding IsSettings}"/>
@@ -990,6 +992,8 @@
 
                 <!-- ================= Rutinler ================= -->
                 <local:RoutinesPage Visibility="{Binding IsRoutines, Converter={StaticResource Visible}}"/>
+                <local:AgendaPage Visibility="{Binding IsAgenda, Converter={StaticResource Visible}}"/>
+                <local:LearnedPage Visibility="{Binding IsLearned, Converter={StaticResource Visible}}"/>
 
                 <!-- ================= Ayarlar ================= -->
                 <local:SettingsPage x:Name="SettingsView" Visibility="{Binding IsSettings, Converter={StaticResource Visible}}"/>

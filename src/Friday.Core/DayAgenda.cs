@@ -4,7 +4,8 @@ using System.Text.RegularExpressions;
 namespace Friday.Core;
 
 /// <summary>Gündemde bir satır: hangi gün, varsa saati, nereden geldiği ve metni.</summary>
-public sealed record AgendaItem(DateOnly Day, TimeOnly? Time, AgendaKind Kind, string Text);
+/// <param name="Id">Hatırlatmanın ya da işin kimliği (silmek, tamamlamak için); diğerlerinde null.</param>
+public sealed record AgendaItem(DateOnly Day, TimeOnly? Time, AgendaKind Kind, string Text, string? Id = null);
 
 public enum AgendaKind
 {
@@ -151,7 +152,7 @@ public static partial class DayAgenda
                 if (DateOnly.FromDateTime(due) >= from && due >= now.AddMinutes(-1))
                 {
                     items.Add(new AgendaItem(DateOnly.FromDateTime(due), TimeOnly.FromDateTime(due), AgendaKind.Reminder,
-                        reminder.Text.Length > 0 ? reminder.Text : "zamanlayıcı"));
+                        reminder.Text.Length > 0 ? reminder.Text : "zamanlayıcı", reminder.Id));
                 }
 
                 if (reminder.Repeat is not { } rule)
@@ -168,11 +169,11 @@ public static partial class DayAgenda
             var due = todo.Due!.Value;
             if (due >= from && due < to)
             {
-                items.Add(new AgendaItem(due, null, AgendaKind.Deadline, todo.Text));
+                items.Add(new AgendaItem(due, null, AgendaKind.Deadline, todo.Text, todo.Id));
             }
             else if (due < today && from <= today && today < to)
             {
-                items.Add(new AgendaItem(today, null, AgendaKind.Overdue, todo.Text));
+                items.Add(new AgendaItem(today, null, AgendaKind.Overdue, todo.Text, todo.Id));
             }
         }
 

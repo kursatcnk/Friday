@@ -102,6 +102,8 @@ internal static class Snapshot
         var actions = new PanelActions
         {
             Chats = chats,
+            Agenda = SampleAgenda,
+            Learned = SampleLearned,
             PiperVoices = [PanelViewModel.PiperVoiceOption(@"D:\Friday\models\piper\tr_TR-dfki-medium.onnx"),
                 PanelViewModel.PiperVoiceOption(@"D:\Friday\models\piper\tr_TR-99eren99.onnx")]
         };
@@ -245,10 +247,53 @@ internal static class Snapshot
         panel.CancelRoutineCommand.Execute(null);
 
         panel.IsRoutines = false;
+        panel.IsAgenda = true;
+        RenderPanel(panel, folder, "panel-agenda");
+        panel.IsAgenda = false;
+        panel.IsLearned = true;
+        RenderPanel(panel, folder, "panel-learned");
+        panel.IsLearned = false;
         panel.IsSettings = true;
         RenderPanel(panel, folder, "panel-settings");
         Directory.Delete(chatFolder, recursive: true);
     }
+
+    /// <summary>Ajanda için örnek bir hafta: hatırlatmalar, toplantı, son günlü ve gecikmiş iş, doğum günü, ödeme, yüzme.</summary>
+    private static IReadOnlyList<AgendaItem> SampleAgenda(DateTime now)
+    {
+        var today = DateOnly.FromDateTime(now);
+        return
+        [
+            new AgendaItem(today, null, AgendaKind.Overdue, "Kirayı öde", "t1"),
+            new AgendaItem(today, new TimeOnly(15, 30), AgendaKind.Calendar, "Bütçe toplantısı"),
+            new AgendaItem(today, new TimeOnly(18, 0), AgendaKind.Reminder, "Mert'i ara", "r1"),
+            new AgendaItem(today.AddDays(1), new TimeOnly(9, 0), AgendaKind.Reminder, "Dişçi randevusu", "r2"),
+            new AgendaItem(today.AddDays(1), null, AgendaKind.Deadline, "Ela'nın okul formunu imzala", "t2"),
+            new AgendaItem(today.AddDays(1), null, AgendaKind.Weekly, "Pazartesi ve çarşamba akşamları yüzmeye gidiyor"),
+            new AgendaItem(today.AddDays(2), null, AgendaKind.Bill, "İnternet ödemesi"),
+            new AgendaItem(today.AddDays(3), null, AgendaKind.Deadline, "Sunum slaytlarını bitir", "t3"),
+            new AgendaItem(today.AddDays(3), new TimeOnly(19, 0), AgendaKind.Reminder, "Ela'yı yüzmeden al", "r3"),
+            new AgendaItem(today.AddDays(5), null, AgendaKind.SpecialDay, "Mert'in doğum günü"),
+        ];
+    }
+
+    private static IReadOnlyList<LearnedGroupView> SampleLearned() =>
+    [
+        new("kisayol", "Kısayollar", "\uE945", "Aynı isteği iki kez söyleyince dil modelini beklemeden yapılır.",
+            [new LearnedItemView("kisayol", "a", "\"kahve molası\"", "Zamanlayıcı kuruyorum"), new LearnedItemView("kisayol", "b", "\"spotify'ı kıs\"", "Uygulamanın sesini ayarlıyorum")]),
+        new("duzeltme", "Düzeltmeler", "\uE7A7", "\"Yanlış anladın\" dediğin sözler; artık hızlı komut sanılmaz, dil modeline gider.",
+            [new LearnedItemView("duzeltme", "c", "\"ekranı büyüt\"", "")]),
+        new("ad", "Duyduğu adlar", "\uE77B", "Konuşma tanımaya ipucu olarak verilen adlar; doğru duyulmalarını sağlar.",
+            [new LearnedItemView("ad", "Ekinsu", "Ekinsu", ""), new LearnedItemView("ad", "Validebağ", "Validebağ", ""), new LearnedItemView("ad", "Ilgaz Bey", "Ilgaz Bey", "")]),
+        new("uslup", "Üslup", "\uE8D2", "Söz kesmelerinden ve düzeltmelerinden öğrendiği tercihler.",
+            [new LearnedItemView("uslup", "cevap", "Kısa cevap", "Sesli cevaplar bu uzunlukta"), new LearnedItemView("uslup", "yazi:resmi", "Yazılarda resmi üslup", "Yazma köprüsünün taslakları")]),
+        new("susturulan", "Susturulan hatırlatmalar", "\uE7ED", "Art arda reddettiğin ya da \"bir daha sorma\" dediğin öneriler.",
+            [new LearnedItemView("susturulan", "goz", "Göz molası", "Sen açana kadar")]),
+        new("okunan", "Okuduğu belgeler", "\uE8A5", "Yarım dakikadan uzun baktığın belgeler; \"geçen hafta okuduğum…\" diye sorabilirsin.",
+            [new LearnedItemView("okunan", "x", "teklif_v2.pdf", "dün · Mavi Yazılım'ın kurumsal web sitesi teklifi; toplam 92.000 TL."),
+             new LearnedItemView("okunan", "y", "lease-agreement.pdf", "geçen çarşamba · Elm Street 5B için 12 aylık kira sözleşmesi.")]),
+        new("okunus", "Okunuşlar", "\uE767", "Friday bu sözleri böyle okur.", []),
+    ];
 
     /// <summary>Sohbet listesi için örnek sohbetler (bugün, dün, bu hafta ve sabitlenmiş bir tane).</summary>
     private static ChatStore SampleChats(string folder, DateTime now)

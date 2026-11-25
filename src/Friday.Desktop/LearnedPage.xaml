@@ -1,0 +1,75 @@
+<UserControl x:Class="Friday.Desktop.LearnedPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Friday.Desktop">
+    <Grid Margin="36,4,24,24">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,12,0" MaxWidth="1000" HorizontalAlignment="Left">
+                <TextBlock Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,0,0,10"
+                           Text="Friday konuştukça kendi kendine öğrenir: aynı isteği iki kez söylersen kısayol olur, &quot;yanlış anladın&quot; dersen o sözü bir daha komut sanmaz, söylediğin adları duymayı ve kelimeleri okumayı öğrenir, cevap ve yazı üslubunu sana göre ayarlar. Yanlış öğrendiğini buradan sil."/>
+                <DockPanel Margin="2,0,0,14">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding LearnedMessage}" Foreground="{StaticResource CalmBrush}" FontSize="12"
+                               TextTrimming="CharacterEllipsis" MaxWidth="560"/>
+                    <TextBlock Text="{Binding LearnedSummary}" Style="{StaticResource Caption}"/>
+                </DockPanel>
+
+                <ItemsControl ItemsSource="{Binding LearnedGroups}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:LearnedGroupView}">
+                            <Border Style="{StaticResource Card}" Width="400" Margin="0,0,14,14">
+                                <StackPanel>
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="14" Foreground="{StaticResource AccentBrush}"
+                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{Binding Title}" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="8,2" Background="{StaticResource AccentSoftBrush}">
+                                            <TextBlock Text="{Binding Count}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                        </Border>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Hint}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,8"/>
+                                    <TextBlock Text="Henüz yok." Foreground="{StaticResource FaintBrush}" FontSize="12"
+                                               Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}"/>
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:LearnedItemView}">
+                                                <Grid x:Name="Row" Background="Transparent" Margin="0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" LineHeight="18"/>
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,1,0,0"
+                                                                   Visibility="{Binding HasDetail, Converter={StaticResource Visible}}"/>
+                                                    </StackPanel>
+                                                    <Button x:Name="Forget" Grid.Column="1" Style="{StaticResource IconButton}" ToolTip="Unut" Width="26" Height="26"
+                                                            VerticalAlignment="Top" Opacity="0.35" Margin="8,0,0,0"
+                                                            Command="{Binding DataContext.ForgetLearnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="11"/>
+                                                    </Button>
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Forget" Property="Opacity" Value="1"/>
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -104,6 +104,21 @@ public sealed class NudgePolicy
         }
     }
 
+    /// <summary>Tek bir susturulmuş tür yeniden açılır; susturulmuşsa true.</summary>
+    public bool Unsilence(string kind)
+    {
+        lock (_gate)
+        {
+            if (!_states.Remove(kind))
+            {
+                return false;
+            }
+
+            Save();
+            return true;
+        }
+    }
+
     /// <summary>Susturulmuş bütün türler yeniden açılır; açılan sayısı.</summary>
     public int Reset()
     {

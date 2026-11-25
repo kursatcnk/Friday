@@ -42,6 +42,7 @@ public sealed partial class AssistantTools
     public async Task<QuickReply?> RunQuickAsync(QuickCommand quick, CancellationToken cancellationToken)
     {
         quick = quick with { Arguments = Shielded(quick.Tool, quick.Arguments) };
+        NoteUntrusted(quick.Tool);
         if (Rehearsal?.Invoke(quick.Tool, quick.Arguments) is { } staged)
         {
             return new QuickReply(staged);

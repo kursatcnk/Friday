@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Friday.Core;
 
 namespace Friday.Infrastructure;
 
@@ -78,8 +79,30 @@ public sealed partial class ClipboardHistory : IDisposable
         }
 
         _sequence = sequence;
-        Add(ClipboardText.Get());
+        // Parola yöneticileri kopyaladıkları parolayı "geçmişe alma" diye işaretler; Windows'un kendi pano geçmişi de bunlara
+        // uyar. Eskiden Friday bunları da saklıyordu; sonra "panodaki 2. metin" ile modele ya da telefona gidebiliyordu.
+        if (Private())
+        {
+            return;
+        }
+
+        var text = ClipboardText.Get();
+        if (!PrivacyShield.LooksLikeCredential(text) && PrivacyShield.Secret(text) is null)
+        {
+            Add(text);
+        }
     }
+
+    /// <summary>Panodaki içerik geçmişe alınmamak üzere işaretlenmiş mi (parola yöneticileri, gizli pencereler)?</summary>
+    private static bool Private() =>
+        PrivateFormats.Value.Any(format => format != 0 && NativeMethods.IsClipboardFormatAvailable(format));
+
+    private static readonly Lazy<uint[]> PrivateFormats = new(() =>
+    [
+        NativeMethods.RegisterClipboardFormatW("ExcludeClipboardContentFromMonitorProcessing"),
+        NativeMethods.RegisterClipboardFormatW("CanIncludeInClipboardHistory"),
+        NativeMethods.RegisterClipboardFormatW("Clipboard Viewer Ignore"),
+    ]);
 
     public void Dispose() => Enable(false);
 
@@ -87,5 +110,12 @@ public sealed partial class ClipboardHistory : IDisposable
     {
         [LibraryImport("user32.dll")]
         internal static partial uint GetClipboardSequenceNumber();
+
+        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial uint RegisterClipboardFormatW(string name);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsClipboardFormatAvailable(uint format);
     }
 }

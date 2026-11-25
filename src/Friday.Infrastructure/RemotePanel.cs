@@ -17,6 +17,21 @@ public sealed class RemotePanel : IDisposable
 {
     private const int MaxRequestBytes = 16 * 1024;
 
+    /// <summary>Aynı anda açık bağlantı sınırı: yarım bırakılan bağlantılar sunucuyu tüketemez.</summary>
+    private const int MaxConnections = 8;
+
+    /// <summary>Bir isteğin başlığı bu sürede gelmezse bağlantı kapanır (async okumada ReceiveTimeout işlemez).</summary>
+    private static readonly TimeSpan ReadLimit = TimeSpan.FromSeconds(10);
+
+    /// <summary>Bu kadar yanlış anahtardan sonra panel bir süre kimseyi kabul etmez (anahtar denemeye karşı).</summary>
+    private const int MaxFailures = 20;
+
+    private static readonly TimeSpan LockFor = TimeSpan.FromMinutes(15);
+
+    private readonly SemaphoreSlim _connections = new(MaxConnections, MaxConnections);
+    private readonly Queue<DateTime> _failures = new();
+    private DateTime _lockedUntil;
+
     /// <summary>Türkçe harfler kaçışsız yazılır; sayfa cevabı textContent ile gösterdiği için HTML olarak yorumlanmaz.</summary>
     private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -38,7 +53,7 @@ public sealed class RemotePanel : IDisposable
     public int Port { get; private set; }
 
     /// <summary>Yeni bir gizli anahtar (telefon bağlantısındaki "k=" değeri).</summary>
-    public static string NewKey() => Convert.ToHexString(RandomNumberGenerator.GetBytes(6)).ToLowerInvariant();
+    public static string NewKey() => Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
 
     /// <summary>Bu bilgisayarın ev ağındaki adresleri: "http://192.168.1.23:8765/?k=…".</summary>
     public static IReadOnlyList<string> Addresses(int port, string key) =>
@@ -88,7 +103,52 @@ public sealed class RemotePanel : IDisposable
                 return;
             }
 
-            _ = ServeAsync(client, cancellationToken);
+            if (!_connections.Wait(0, CancellationToken.None))
+            {
+                // Sınır dolu: yeni bağlantı beklemeden kapatılır.
+                client.Dispose();
+                continue;
+            }
+
+            _ = ServeLimitedAsync(client, cancellationToken);
+        }
+    }
+
+    private async Task ServeLimitedAsync(TcpClient client, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await ServeAsync(client, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _connections.Release();
+        }
+    }
+
+    /// <summary>Yanlış anahtar sayılır; kısa sürede çok fazlaysa panel bir süre kilitlenir.</summary>
+    private bool Locked(bool failed)
+    {
+        lock (_failures)
+        {
+            var now = DateTime.Now;
+            if (failed)
+            {
+                _failures.Enqueue(now);
+                while (_failures.Count > 0 && now - _failures.Peek() > LockFor)
+                {
+                    _failures.Dequeue();
+                }
+
+                if (_failures.Count >= MaxFailures)
+                {
+                    _lockedUntil = now + LockFor;
+                    _failures.Clear();
+                    FridayLog.Warn($"Telefondan erişim: çok fazla yanlış anahtar; {LockFor.TotalMinutes:0} dakika kilitlendi");
+                }
+            }
+
+            return now < _lockedUntil;
         }
     }
 
@@ -105,7 +165,9 @@ public sealed class RemotePanel : IDisposable
 
                 client.ReceiveTimeout = 5000;
                 var stream = client.GetStream();
-                var (method, target, headers, body) = await ReadRequestAsync(stream, cancellationToken).ConfigureAwait(false);
+                using var reading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                reading.CancelAfter(ReadLimit);
+                var (method, target, headers, body) = await ReadRequestAsync(stream, reading.Token).ConfigureAwait(false);
                 var path = target.Split('?')[0];
                 if (method == "GET" && path == "/")
                 {
@@ -113,8 +175,15 @@ public sealed class RemotePanel : IDisposable
                     return;
                 }
 
+                if (Locked(failed: false))
+                {
+                    await WriteJsonAsync(stream, "429 Too Many Requests", new JsonObject { ["error"] = "Çok fazla yanlış deneme; panel bir süre kapalı." }, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
                 if (!headers.TryGetValue("x-friday-key", out var key) || !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(key), _key))
                 {
+                    Locked(failed: true);
                     await WriteJsonAsync(stream, "403 Forbidden", new JsonObject { ["error"] = "Anahtar yanlış. Bağlantıyı Friday'in Ayarlar sayfasından yeniden aç." }, cancellationToken).ConfigureAwait(false);
                     return;
                 }
@@ -154,9 +223,10 @@ public sealed class RemotePanel : IDisposable
 
                 await WriteAsync(stream, "404 Not Found", "text/plain; charset=utf-8", "Yok"u8.ToArray(), cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is IOException or SocketException or JsonException or InvalidOperationException or FormatException)
+            catch (Exception exception) when (exception is IOException or SocketException or JsonException or InvalidOperationException or FormatException
+                                                  or OperationCanceledException)
             {
-                // Yarım kalan ya da bozuk istek: bağlantı kapanır, Friday etkilenmez.
+                // Yarım kalan, bozuk ya da zamanında gelmeyen istek: bağlantı kapanır, Friday etkilenmez.
             }
         }
     }
@@ -242,6 +312,7 @@ public sealed class RemotePanel : IDisposable
     {
         Stop();
         _one.Dispose();
+        _connections.Dispose();
     }
 
     private const string Page = """

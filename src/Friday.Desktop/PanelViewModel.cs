@@ -103,6 +103,18 @@ public sealed class PanelActions
 
     public Action<string> DeleteReminder { get; init; } = _ => { };
 
+    /// <summary>Bugünden başlayan 7 günün gündemi (bkz. <see cref="DayAgenda"/>).</summary>
+    public Func<DateTime, IReadOnlyList<AgendaItem>> Agenda { get; init; } = _ => [];
+
+    /// <summary>"Yarın 9'da dişçi" → hatırlatma, "cuma sunumu bitir" → iş; ne yapıldığını anlatan cümle.</summary>
+    public Func<string, Task<string>> AddToAgenda { get; init; } = _ => Task.FromResult("");
+
+    /// <summary>Friday'in kendi kendine öğrendikleri, gruplar halinde.</summary>
+    public Func<IReadOnlyList<LearnedGroupView>> Learned { get; init; } = () => [];
+
+    /// <summary>Öğrenilmiş bir şeyi unutur (grup anahtarı, öğe anahtarı); ne yapıldığını anlatan cümle.</summary>
+    public Func<string, string, string> ForgetLearned { get; init; } = (_, _) => "";
+
     public Action OpenNotes { get; init; } = () => { };
 
     /// <summary>Sohbetler; anlık görüntüde null.</summary>
@@ -267,10 +279,21 @@ public sealed partial class PanelViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
     private bool _isSettings;
 
-    public string PageTitle => IsToday ? "Bugün" : IsMemory ? "Hafıza" : IsRhythm ? "Ritim" : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
+    private bool _isAgenda;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageTitle), nameof(PageSubtitle))]
+    private bool _isLearned;
+
+    public string PageTitle => IsToday ? "Bugün" : IsAgenda ? "Ajanda" : IsMemory ? "Hafıza" : IsLearned ? "Öğrendikleri" : IsRhythm ? "Ritim"
+        : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
 
     public string PageSubtitle =>
         IsToday ? $"{DateTime.Now.ToString("d MMMM dddd", Turkish)} · {StatusText}"
+        : IsAgenda ? "Önümüzdeki 7 gün: hatırlatmalar, son günlü işler, özel günler ve haftalık düzenin."
+        : IsLearned ? "Konuştukça kendi kendine öğrendikleri; yanlış olanı sil."
         : IsMemory ? "Senin hakkında bildikleri; yalnızca bu bilgisayarda durur."
         : IsRhythm ? "Çalışma ritmin, molaların ve odak oturumların."
         : IsPrivacy ? "Bugün neyin bilgisayarda kaldığı, neyin dışarı çıktığı."
@@ -761,11 +784,13 @@ public sealed partial class PanelViewModel : ObservableObject
     [RelayCommand]
     private void OpenNotes() => _actions.OpenNotes();
 
-    /// <summary>Kısayollar: "chat", "memory", "rhythm", "routines", "settings", "import".</summary>
+    /// <summary>Kısayollar: "chat", "agenda", "memory", "learned", "rhythm", "routines", "settings", "import".</summary>
     [RelayCommand]
     private void GoTo(string page)
     {
         IsToday = IsPrivacy = false;
+        IsAgenda = page == "agenda";
+        IsLearned = page == "learned";
         IsChat = page == "chat";
         IsMemory = page is "memory" or "import";
         IsRhythm = page == "rhythm";

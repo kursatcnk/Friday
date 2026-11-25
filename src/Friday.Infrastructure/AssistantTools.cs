@@ -346,6 +346,17 @@ public sealed partial class AssistantTools(
     public async Task<string> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
         call = call with { Arguments = Shielded(call.Name, call.Arguments) };
+        if (Guard(call) is { } held)
+        {
+            return held;
+        }
+
+        return Untrusted(call.Name, await RunToolAsync(call, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>Aracı denetimsiz çalıştırır (kalkan ve gizlilik temizliği <see cref="ExecuteAsync"/>'te).</summary>
+    private async Task<string> RunToolAsync(ToolCall call, CancellationToken cancellationToken)
+    {
         if (Rehearsal?.Invoke(call.Name, call.Arguments) is { } staged)
         {
             return staged;

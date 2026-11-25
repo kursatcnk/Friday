@@ -94,6 +94,22 @@ public sealed partial class CorrectionBook(string file)
         }
     }
 
+    /// <summary>Tek bir düzeltmeyi unutur (söz yeniden hızlı komut olabilir); vardıysa true.</summary>
+    public bool Remove(string phrase)
+    {
+        lock (_gate)
+        {
+            var phrases = Load();
+            if (!phrases.Remove(phrase) && !phrases.Remove(Key(phrase)))
+            {
+                return false;
+            }
+
+            Save(phrases);
+            return true;
+        }
+    }
+
     /// <summary>Bütün düzeltmeleri unutur; kaç tane olduğunu döndürür.</summary>
     public int Clear()
     {

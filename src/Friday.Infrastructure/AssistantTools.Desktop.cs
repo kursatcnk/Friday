@@ -246,6 +246,15 @@ public sealed partial class AssistantTools
             address = "https://" + address;
         }
 
+        // Model ev ağındaki ya da bu bilgisayardaki bir adresi (modem arayüzü, yerel servisler) ancak kullanıcı o adresi
+        // söylediyse okur; yoksa okunan bir sayfa Friday'i ağın içine bakmaya yönlendirebilirdi.
+        if (window is null && ContentTrust.IsPrivateAddress(address) && Uri.TryCreate(address, UriKind.Absolute, out var inner)
+            && !LastUserText.Contains(inner.Host, StringComparison.OrdinalIgnoreCase))
+        {
+            ledger.Record(DataFlow.Local, "Dış içerik kalkanı", $"{inner.Host} ev ağında; kullanıcı istemediği için okunmadı");
+            return "Bu adres ev ağında ya da bu bilgisayarda; kullanıcı açıkça istemediği için okunmadı.";
+        }
+
         if (Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
         {
             try

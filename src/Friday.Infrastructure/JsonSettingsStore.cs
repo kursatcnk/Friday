@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Friday.Core;
 
 namespace Friday.Infrastructure;
@@ -36,7 +37,7 @@ public sealed class JsonSettingsStore(FridayPaths paths) : IRestorableStore
             return;
         }
 
-        var restored = JsonSerializer.Deserialize<FridaySettings>(content, Options) ?? new FridaySettings();
+        var restored = Read(content);
         Normalize(restored);
         if (Live is { } live)
         {
@@ -63,7 +64,7 @@ public sealed class JsonSettingsStore(FridayPaths paths) : IRestorableStore
 
         // Dosya bir araçla yanlış kodlamada kaydedildiyse "Ä°stanbul" gibi bozulan harfler düzeltilip geri yazılır.
         var text = TextRepair.FixMojibake(File.ReadAllText(paths.SettingsFile));
-        var settings = JsonSerializer.Deserialize<FridaySettings>(text, Options) ?? new FridaySettings();
+        var settings = Read(text);
         Normalize(settings);
         // Eski varsayılan mola rutini (müziği durdurup tek cümle söylemek) ritim koçunun rehberli molasıyla değişir;
         // kullanıcının kendi yazdığı bir mola rutinine dokunulmaz.
@@ -122,6 +123,26 @@ public sealed class JsonSettingsStore(FridayPaths paths) : IRestorableStore
     {
         UndoLog.Touching(this, paths.SettingsFile);
         Directory.CreateDirectory(paths.Data);
-        File.WriteAllText(paths.SettingsFile, JsonSerializer.Serialize(settings, Options));
+        File.WriteAllText(paths.SettingsFile, Write(settings));
+    }
+
+    /// <summary>Dosya metni → ayarlar; şifreli sırlar çözülür (bkz. <see cref="SettingsSecrets"/>).</summary>
+    internal static FridaySettings Read(string text)
+    {
+        if (JsonNode.Parse(text) is not JsonObject node)
+        {
+            return new FridaySettings();
+        }
+
+        SettingsSecrets.Unprotect(node);
+        return node.Deserialize<FridaySettings>(Options) ?? new FridaySettings();
+    }
+
+    /// <summary>Ayarlar → dosya metni; sırlar şifrelenir, bellekteki nesne değişmez.</summary>
+    internal static string Write(FridaySettings settings)
+    {
+        var node = JsonSerializer.SerializeToNode(settings, Options)!.AsObject();
+        SettingsSecrets.Protect(node);
+        return node.ToJsonString(Options);
     }
 }

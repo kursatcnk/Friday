@@ -205,6 +205,31 @@ public sealed class WritingStyle
         }
     }
 
+    /// <summary>Öğrenilmiş tek bir tercihi ("kısa", "resmi") unutur; öğrenilmişse true.</summary>
+    public bool Unlearn(string learned)
+    {
+        var key = learned switch { "kısa" => "kisa", "ayrıntılı" => "uzun", "resmi" => "resmi", "samimi" => "samimi", "kibar" => "kibar", _ => learned };
+        lock (_counts)
+        {
+            if (!_counts.Remove(key))
+            {
+                return false;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_file) ?? ".");
+                File.WriteAllText(_file, JsonSerializer.Serialize(_counts));
+            }
+            catch (IOException)
+            {
+                // Bir dahaki öğrenmede yeniden yazılır.
+            }
+
+            return true;
+        }
+    }
+
     /// <summary>Bir düzeltme isteği öğrenilir; üslup notu yeni oluştuysa true.</summary>
     public bool Learn(string kind)
     {
