@@ -111,7 +111,7 @@ public sealed partial class PanelViewModel
     public bool CanUseSmartBrain => _actions.SmartModelInstalled;
 
     public string BrainHint => _actions.SmartModelInstalled
-        ? "Hızlı: Gemma 4 E4B, kısa cevaplar ~0,3 sn. Akıllı: Gemma 4 12B, niyeti ve bağlamı çok daha iyi anlar; kısa cevaplar ~0,5–1 sn, ekran kartında ~3 GB fazla yer kaplar."
+        ? "Akıllı (Gemma 4 12B) önerilir: ölçümde 64 sorudan 64'ünü doğru cevapladı, ilk sözü ~0,2 sn'de söyler; ekran kartında ~3 GB fazla yer kaplar. Hızlı (Gemma 4 E4B) her soruda düşünmek zorunda olduğu için ilk sözü ~1,6 sn'de söyler ve daha sık yanılır; yalnızca ekran kartı belleği az olan bilgisayarlar içindir."
         : "Akıllı mod için Gemma 4 12B gerekir (7,5 GB, D:\\Friday\\models). Kurmak için: setup.ps1 -Smart";
 
     [ObservableProperty]
