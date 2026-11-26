@@ -23,9 +23,30 @@ public sealed partial class AssistantTools
 
     // ---------------------------------------------------------------- e-posta
 
-    /// <summary>Taslak varsayılan e-posta uygulamasında açılır ve metin panoya kopyalanır; Friday göndermez.</summary>
-    private string EmailDraft(string to, string subject, string body)
+    /// <summary>
+    /// Taslak varsayılan e-posta uygulamasında açılır ve metin panoya kopyalanır; Friday göndermez. Uzun ya da resmi bir
+    /// e-postada model yalnızca anlatılacakları (istek) verir, metni yazma köprüsü araçsız ayrı bir istekle yazar. Eskiden
+    /// uzun metin araç çağrısının içinde üretiliyordu: cevap sınırına takılıp ~30 sn'de yeniden üretiliyor, bazen yarım ya
+    /// da düz metin olarak kalıyordu. Yazılan taslak "kısalt", "daha kibar yap" ile düzeltilebilir.
+    /// </summary>
+    private async Task<string> EmailDraftAsync(string to, string subject, string body, string request, CancellationToken cancellationToken)
     {
+        if (body.Trim().Length < 40 && request.Trim().Length > 0)
+        {
+            var signature = Settings.Snippets.TryGetValue("imza", out var stored) ? stored : "";
+            var intent = $"Bir e-posta yaz. Alıcı: {(to.Trim().Length > 0 ? to.Trim() : "belirtilmedi")}. Konu: {subject.Trim()}. Anlatılacaklar: {request.Trim()}";
+            var output = Writing.Parse(await chat.CompleteAsync(
+                Settings.OllamaModel,
+                Writing.Instruction("Türkçe", Settings.UserName, signature, WritingStyle?.Notes ?? []),
+                Writing.Request("", intent),
+                null, null, cancellationToken).ConfigureAwait(false), "Türkçe");
+            body = output.Text;
+            if (body.Length > 0)
+            {
+                _draft = new WritingDraft("", intent, output.Language, output.Text, output.Turkish, DateTime.Now);
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(body))
         {
             return "Taslağın metni boş.";
