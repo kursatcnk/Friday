@@ -50,14 +50,13 @@ public sealed class RhythmTimeline : FrameworkElement
 
         const double top = 6;
         const double height = 14;
-        var track = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x22));
-        track.Freeze();
+        // Renkler temadan (açık temada da okunur; alttaki açıklamayla aynı): iz, çalışma, odak (vurgu), şu an çizgisi, saatler.
+        Brush Theme(string key, Color fallback) => TryFindResource(key) as Brush ?? new SolidColorBrush(fallback);
+        var track = Theme("TrackBrush", Color.FromRgb(0x1E, 0x1E, 0x22));
         drawingContext.DrawRoundedRectangle(track, null, new Rect(0, top, width, height), 7, 7);
 
-        var work = new SolidColorBrush(Color.FromRgb(0x6E, 0x6A, 0x62));
-        var focus = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x5B));
-        work.Freeze();
-        focus.Freeze();
+        var work = Theme("FaintBrush", Color.FromRgb(0x6E, 0x6A, 0x62));
+        var focus = Theme("AccentBrush", Color.FromRgb(0xFF, 0x8A, 0x5B));
         foreach (var segment in Segments)
         {
             var left = X(segment.Start);
@@ -66,14 +65,13 @@ public sealed class RhythmTimeline : FrameworkElement
                 new Rect(left, top + 2, right - left, height - 4), 5, 5);
         }
 
-        // Şu an: ince beyaz bir çizgi.
-        var nowPen = new Pen(new SolidColorBrush(Color.FromArgb(200, 0xF2, 0xF1, 0xEE)), 1.5);
+        // Şu an: yazı renginde ince bir çizgi.
+        var nowPen = new Pen(Theme("TextBrush", Color.FromRgb(0xF2, 0xF1, 0xEE)), 1.5);
         nowPen.Freeze();
         var nowX = X(Now);
         drawingContext.DrawLine(nowPen, new Point(nowX, top - 3), new Point(nowX, top + height + 3));
 
-        var label = new SolidColorBrush(Color.FromRgb(0x6E, 0x6C, 0x67));
-        label.Freeze();
+        var label = Theme("MutedBrush", Color.FromRgb(0x6E, 0x6C, 0x67));
         var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         for (var hour = firstHour; hour <= 24; hour += hour < 12 ? 2 : 3)
         {

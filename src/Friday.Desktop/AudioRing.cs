@@ -99,14 +99,7 @@ public sealed class AudioRing : FrameworkElement
         // Sade bir ses göstergesi: beş ince, yuvarlak uçlu çubuk. Boşta neredeyse durgun ve soluk, dinlerken ve konuşurken
         // sesin gücüyle, düşünürken sırayla yavaşça dalgalanır. Eskiden burada parlayan bir küre ve hâle vardı; "yapay
         // zekâ uygulaması" görüntüsünün en belirgin parçasıydı.
-        var color = State switch
-        {
-            AssistantState.Listening => Brush("AccentBrush", _color),
-            AssistantState.Speaking => Brush("TextBrush", _color),
-            AssistantState.Thinking => Brush("MutedBrush", _color),
-            AssistantState.Error => Brush("DangerBrush", _color),
-            _ => Brush("FaintBrush", _color)
-        };
+        var color = Brush(ThemeKey(State), _color);
         const int bars = 5;
         var width = Math.Max(2, size * 0.075);
         var gap = width * 1.15;
@@ -127,6 +120,16 @@ public sealed class AudioRing : FrameworkElement
             drawingContext.DrawRoundedRectangle(brush, null, rect, width / 2, width / 2);
         }
     }
+
+    /// <summary>Durumun temadaki fırçası: dinlerken vurgu, konuşurken yazı, düşünürken soluk yazı, hatada tehlike rengi.</summary>
+    public static string ThemeKey(AssistantState state) => state switch
+    {
+        AssistantState.Listening => "AccentBrush",
+        AssistantState.Speaking => "TextBrush",
+        AssistantState.Thinking => "MutedBrush",
+        AssistantState.Error => "DangerBrush",
+        _ => "FaintBrush"
+    };
 
     /// <summary>Temadaki fırçanın rengi; bulunamazsa verilen renk.</summary>
     private Color Brush(string key, Color fallback) => TryFindResource(key) is SolidColorBrush brush ? brush.Color : fallback;

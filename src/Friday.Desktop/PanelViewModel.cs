@@ -383,15 +383,9 @@ public sealed partial class PanelViewModel : ObservableObject
 
     public IReadOnlyList<string> HotkeyKeys => Hotkey.Split('+');
 
-    public Brush StateBrush
-    {
-        get
-        {
-            var brush = new SolidColorBrush(AudioRing.Palette(State));
-            brush.Freeze();
-            return brush;
-        }
-    }
+    /// <summary>Sohbet başlığındaki durum noktası; ses çubuklarıyla aynı tema rengi.</summary>
+    public Brush StateBrush =>
+        System.Windows.Application.Current?.TryFindResource(AudioRing.ThemeKey(State)) as Brush ?? Brushes.Gray;
 
     // ---------- Sohbet ----------
 
