@@ -27,7 +27,7 @@ public sealed partial class PanelViewModel
         "Rahatsız etmeyi kapat", "Geçici dosyaları temizle", "Diskimde ne yer kaplıyor", "Okuma listem", "Masalarım",
         "Listelerim", "Günlüğümü oku", "Hedefime ne kadar kaldı", "Gündem ne?", "Kopyaladıklarım", "Yeni sohbet",
         "Günümü planla", "İnternetim nasıl", "Bu ay ne kadar harcadım", "Harcamaları Excel'e aktar", "Sabit giderlerim",
-        "Alışkanlıklarım nasıl gidiyor", "Kelime çalışalım", "Kaç kelime biliyorum", "Yaklaşan özel günler", "Kısaltmalarım",
+        "Alışkanlıklarım nasıl gidiyor", "Yaklaşan özel günler", "Kısaltmalarım",
         "Panodaki resmi oku", "Hangi uygulamalar ses çıkarıyor", "Süre sınırlarım", "Döviz alarmlarım", "Günümü yazalım",
         "Haftalık raporu kaydet", "Ben yokken ne dedin", "Şimdi ne yapayım", "Panodaki fişi harcamaya ekle", "Ekrandaki yazıyı kopyala", "Panodakini yapılacaklara ekle", "Kopyaladığımı not al"
     ];

@@ -19,7 +19,7 @@ internal sealed class BenchWorld : IDisposable
         "saat_ve_tarih", "hesap", "gun_sayaci", "not", "hatirlatici", "hatirla", "unut", "gecmis", "liste", "yapilacaklar",
         "harcama", "aliskanlik", "o_gun", "her_yerde_ara", "ne_yapayim", "gun_plani", "okuduklarim", "ozel_gunler", "takvim",
         "sabit_gider", "yapilacak", "ruh_hali", "gunluk", "kontrol_listesi", "geri_al", "bilgi", "doviz", "hava_durumu",
-        "kelime", "kelime_cevir", "kosullu_hatirlatici",
+        "kelime_cevir", "kosullu_hatirlatici",
     };
 
     private readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
@@ -79,7 +79,6 @@ internal sealed class BenchWorld : IDisposable
             Expenses = expenses,
             HabitBook = new HabitBook(Path.Combine(data, "habit-book.json")),
             Habits = new HabitTracker(Path.Combine(data, "habits.json")),
-            Vocabulary = new VocabularyDeck(Path.Combine(data, "vocabulary.json")),
             Nudges = new NudgePolicy(Path.Combine(data, "nudges.json")),
             Reading = new ReadingLog(Path.Combine(data, "reading.json")),
             WritingStyle = new WritingStyle(Path.Combine(data, "writing-style.json")),

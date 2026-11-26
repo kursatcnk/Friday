@@ -43,7 +43,7 @@ public sealed partial class AssistantTools
 
         if (Rhythm?.Snapshot() is { FocusEnd: { } focusEnd } && focusEnd > now)
         {
-            parts.Add($"odakta, {focusEnd.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.TimeSuffix(focusEnd)} kadar");
+            parts.Add($"odakta, {focusEnd.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.ToSuffix(focusEnd)} kadar");
         }
 
         if (MeetingApp?.Invoke() is { } call)

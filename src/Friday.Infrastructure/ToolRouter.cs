@@ -25,7 +25,7 @@ public static class ToolRouter
         (["harca", "masraf", "lira", " tl", "bütçe", "para", "fatura", "kira", "abonelik", "ödedim", "ödeme", "ekstre", "kredi kartı", "taksit", "fiş", "ne kadar verdim", "kaç verdim"], ["harcama", "sabit_gider", "doviz", "fis"]),
         (["dolar", "euro", "avro", "sterlin", "kur", "döviz", "altın"], ["doviz", "doviz_alarmi"]),
         (["alışkanl", "seri", "her gün"], ["aliskanlik"]),
-        (["kelime", "ingilizce", "kart", "deste", "anlamı", "ne demek"], ["kelime", "kelime_cevir"]),
+        (["kelime", "ingilizce", "anlamı", "ne demek"], ["kelime_cevir"]),
         (["plan", "program", "ne yapayım", "takvim", "ajanda", "toplantı", "etkinlik", "randevu"], ["gun_plani", "takvim"]),
         (["odak", "pomodoro", "mola", "ritim", "nefes", "esneme", "su iç", "çalış"], ["ritim", "pomodoro", "odak_hedefi", "isle_odak"]),
         (["müzik", "şarkı", "parça", "çalan", "spotify", "ses", "video", "youtube", "klip", "izle", "dinle"], ["medya", "uygulama_sesi", "video_ac", "sarki_kaydet"]),

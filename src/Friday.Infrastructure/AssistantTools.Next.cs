@@ -54,11 +54,6 @@ public sealed partial class AssistantTools
                 : $"\"{block.Title}\" ile başla; 45 dakikalık bir odak bloğu yeter. Hazırsan \"{block.Title.ToLower(Turkish)} işine odaklan\" de."));
         }
 
-        if (Vocabulary is { Started: true } deck && deck.Stats(today).Waiting is > 0 and var waiting)
-        {
-            ideas.Add((30, $"Beş dakikan varsa {waiting} kelime seni bekliyor; \"kelime çalışalım\" de."));
-        }
-
         var ordered = ideas.OrderByDescending(idea => idea.Score).ToList();
         ledger.Record(DataFlow.Local, "Öneri", $"{ordered.Count} seçenek tartıldı");
         if (ordered.Count == 0)

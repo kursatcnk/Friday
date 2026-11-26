@@ -105,19 +105,14 @@ public sealed partial class AssistantTools
         return new QuickReply((recent.Count > 3 ? $"Son 6 saatte {recent.Count} şey söyledim; son üçü: " : "Söylediklerim: ") + string.Join(". ", last) + ".");
     }
 
-    // ---------- Kelime çevirisi ----------
+    // ---------- Kelime anlamı ----------
 
-    private async Task<QuickReply> VocabularyTranslateAsync(string action, string word, CancellationToken cancellationToken)
+    /// <summary>Seçili ya da söylenen İngilizce kelimenin Türkçe karşılıkları (yerel model); hiçbir yere kaydedilmez.</summary>
+    private async Task<QuickReply> WordMeaningAsync(string action, string word, CancellationToken cancellationToken)
     {
-        if (Vocabulary is not { } deck)
-        {
-            return new QuickReply("Kelime pratiği hazır değil.");
-        }
-
-        var previous = "";
         if (Simplify(action) == "secili")
         {
-            previous = ClipboardText.Get();
+            var previous = ClipboardText.Get();
             word = await CopySelectionAsync(cancellationToken).ConfigureAwait(false);
             Restore(previous);
         }
@@ -136,14 +131,9 @@ public sealed partial class AssistantTools
             null,
             cancellationToken).ConfigureAwait(false);
         var back = meaning.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault()?.Trim('"', '\'', '.', '*', ' ') ?? "";
-        if (back.Length == 0 || back.Length > 80)
-        {
-            return new QuickReply($"\"{word}\" için bir anlam bulamadım. \"Kelime ekle: {word} = anlamı\" diyebilirsin.");
-        }
-
-        var card = deck.Add(word, back, DateOnly.FromDateTime(DateTime.Now));
-        ledger.Record(DataFlow.Local, "Kelime", $"\"{card.Front}\" desteye eklendi (anlam yerel modelden)");
-        return new QuickReply($"Desteye ekledim: {card.Front}, {card.Back}. Sıradaki çalışmada sorarım.");
+        return back.Length is 0 or > 80
+            ? new QuickReply($"\"{word}\" için bir anlam bulamadım.")
+            : new QuickReply($"{word}: {back}.");
     }
 
     // ---------- Ekrandaki yazı ve panodan kaydetme ----------

@@ -52,17 +52,17 @@
 
                         <!-- Kipe göre düğmeler. -->
                         <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
-                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver" Padding="16,9">
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="mola" Padding="16,9">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="12" Margin="0,0,8,0" Foreground="{DynamicResource AccentInkBrush}"/>
                                     <TextBlock Text="Mola ver" FontWeight="SemiBold" Foreground="{DynamicResource AccentInkBrush}"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım" Content="25 dk odak"/>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="50 dakika odaklanacağım" Content="50 dk odak"/>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="90 dakika odaklanacağım" Content="90 dk odak"/>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="4 pomodoro yap" Content="4 pomodoro"
-                                    ToolTip="25 dk odak + 5 dk mola, dört tur"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="odak:25" Content="25 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="odak:50" Content="50 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="odak:90" Content="90 dk odak"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="pomodoro:4" Content="4 pomodoro"
+                                    ToolTip="25 dk odak + 5 dk mola, dört tur; duraklatılabilir, her an bitirilebilir"/>
                             <Border Margin="4" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource LineBrush}" Background="{DynamicResource SurfaceRaisedBrush}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBox Text="{Binding CustomFocusMinutes, UpdateSourceTrigger=PropertyChanged}" Width="44" BorderThickness="0" Background="Transparent"
@@ -70,22 +70,36 @@
                                     <Button Style="{StaticResource GhostButton}" BorderThickness="0" Content="dk odak" Command="{Binding StartCustomFocusCommand}" Padding="4,8,12,8"/>
                                 </StackPanel>
                             </Border>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="30 dakika ertele"
-                                    Content="Öneriyi 30 dk ertele" Visibility="{Binding CanSnooze, Converter={StaticResource Visible}}"/>
                         </WrapPanel>
                         <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsFocusMode, Converter={StaticResource Visible}}">
-                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Odağı bitir" Padding="16,9" Content="Odağı bitir"/>
-                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Mola ver" Content="Mola ver"/>
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="duraklat" Padding="16,9" Content="Duraklat"
+                                    Visibility="{Binding FocusPaused, Converter={StaticResource Hidden}}"/>
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="devam" Padding="16,9" Content="Devam et"
+                                    Visibility="{Binding FocusPaused, Converter={StaticResource Visible}}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="uzat:10" Content="+10 dk"
+                                    ToolTip="Odağı 10 dakika uzat"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="odakbitti" Content="Odağı bitir"
+                                    Visibility="{Binding SeriesActive, Converter={StaticResource Hidden}}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="seribitti" Content="Seriyi bitir"
+                                    Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="mola" Content="Mola ver"/>
                         </WrapPanel>
                         <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsBreakMode, Converter={StaticResource Visible}}">
-                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Moladan döndüm" Padding="16,9" Content="Moladan döndüm"/>
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="molabitti" Padding="16,9" Content="Moladan döndüm"
+                                    Visibility="{Binding SeriesActive, Converter={StaticResource Hidden}}"/>
+                            <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="molabitti" Padding="16,9" Content="Sıradaki tura geç"
+                                    Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım" Content="Nefes egzersizi"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Esneme yapalım" Content="Esneme"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="seribitti" Content="Seriyi bitir"
+                                    Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
                         </WrapPanel>
                         <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsOffMode, Converter={StaticResource Visible}}">
                             <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding EnableRhythmCommand}" Padding="16,9" Content="Ritim koçunu aç"/>
                         </WrapPanel>
 
+                        <TextBlock Text="{Binding RhythmNote}" Foreground="{DynamicResource CalmBrush}" Margin="0,8,0,0"
+                                   Visibility="{Binding RhythmNote, Converter={StaticResource TextVisible}}"/>
                         <TextBlock Text="{Binding FocusApps}" Style="{StaticResource Body}" Margin="0,12,0,0" TextWrapping="Wrap"
                                    Visibility="{Binding FocusApps, Converter={StaticResource TextVisible}}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
@@ -93,6 +107,17 @@
                             <Button Style="{StaticResource IconButton}" Padding="5" Margin="6,0,0,0" ToolTip="Ritim ayarları" Command="{Binding GoToCommand}" CommandParameter="settings">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" FontSize="10"/>
                             </Button>
+                        </StackPanel>
+                        <!-- Mola önerilerini sustur ya da yeniden aç (yalnızca çalışma kipinde). -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding SuggestionsPaused, Converter={StaticResource Hidden}}">
+                                <TextBlock Text="Önerileri sustur:" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Button Style="{StaticResource LinkButton}" Command="{Binding ControlCommand}" CommandParameter="durdur:60" Content="1 saat"/>
+                                <TextBlock Text="·" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="6,0"/>
+                                <Button Style="{StaticResource LinkButton}" Command="{Binding ControlCommand}" CommandParameter="durdur:gun" Content="bugünlük"/>
+                            </StackPanel>
+                            <Button Style="{StaticResource LinkButton}" Command="{Binding ControlCommand}" CommandParameter="surdur" Content="Önerileri yeniden aç"
+                                    Visibility="{Binding SuggestionsPaused, Converter={StaticResource Visible}}"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>

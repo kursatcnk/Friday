@@ -84,7 +84,26 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _weekAverage = "";
 
-    /// <summary>Saniyede bir (Ritim ya da Bugün sayfası açıkken): halka, saat ve açıklama.</summary>
+    /// <summary>Ritim düğmelerinin son sonucu ("Odak başladı, 25 dakika").</summary>
+    [ObservableProperty]
+    private string _rhythmNote = "";
+
+    /// <summary>Mola önerileri bir süreliğine kapatıldı.</summary>
+    [ObservableProperty]
+    private bool _suggestionsPaused;
+
+    /// <summary>Odak duraklatıldı ("Devam et" görünür).</summary>
+    [ObservableProperty]
+    private bool _focusPaused;
+
+    /// <summary>Pomodoro serisi sürüyor ("Seriyi bitir" görünür).</summary>
+    [ObservableProperty]
+    private bool _seriesActive;
+
+    /// <summary>Düğmeler ritim koçunu doğrudan yönetir: sohbete yazılmaz, sesli cevap verilmez.</summary>
+    [RelayCommand]
+    private void Control(string key) => RhythmNote = _actions.RhythmControl(key);
+
     private static Color ThemeColor(string key) =>
         System.Windows.Application.Current?.TryFindResource(key) is SolidColorBrush brush ? brush.Color : Color.FromRgb(0x7C, 0x79, 0x73);
 
@@ -95,6 +114,9 @@ public sealed partial class PanelViewModel
         DialLabel = display.Label;
         DialClock = display.Clock;
         DialCaption = display.ClockCaption;
+        SuggestionsPaused = snapshot.SnoozedUntil is { } until && until > DateTime.Now;
+        FocusPaused = snapshot.FocusPausedAt is not null;
+        SeriesActive = snapshot.SeriesRound > 0;
         DialProgress = display.Progress;
         DialSentence = display.Sentence;
         // Renkler temadan: odakta vurgu, molada sakin yeşil, uzun çalışmada uyarı, olağan çalışmada yazı rengi.
@@ -247,7 +269,7 @@ public sealed partial class PanelViewModel
     {
         if (int.TryParse(CustomFocusMinutes.Trim(), out var minutes) && minutes is >= 5 and <= 240)
         {
-            _actions.Send($"{minutes} dakika odaklanacağım");
+            RhythmNote = _actions.RhythmControl($"odak:{minutes}");
         }
     }
 

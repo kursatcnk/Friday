@@ -44,10 +44,20 @@ public enum RhythmEventKind
     BackFromBreak,
 
     /// <summary>Günün ilk oturuşu (en az 4 saatlik aradan sonra, sabah).</summary>
-    DayStarted
+    DayStarted,
+
+    /// <summary>Pomodoro serisinde bir tur bitti; kısa mola kendiliğinden başladı.</summary>
+    SeriesBreak,
+
+    /// <summary>Seri molası bitti; sıradaki odak turu kendiliğinden başladı.</summary>
+    SeriesNext,
+
+    /// <summary>Pomodoro serisinin son turu bitti.</summary>
+    SeriesDone
 }
 
-public sealed record RhythmEvent(RhythmEventKind Kind, TimeSpan Length);
+/// <param name="Round">Pomodoro serisindeki tur (seri olaylarında); diğerlerinde 0.</param>
+public sealed record RhythmEvent(RhythmEventKind Kind, TimeSpan Length, int Round = 0, int Rounds = 0);
 
 /// <summary>
 /// Çalışma ritminin saf mantığı: son klavye/fare kullanımından bu yana geçen süreye bakarak aralıksız çalışmayı, molaları,
@@ -92,6 +102,23 @@ public sealed class RhythmTracker
     public DateTime? LastSuggestion { get; private set; }
 
     public bool InFocus => FocusEnd is not null;
+
+    /// <summary>Odak duraklatıldıysa ne zaman; duraklatılmış odakta süre işlemez, bitiş ileri kayar.</summary>
+    public DateTime? FocusPausedAt { get; private set; }
+
+    /// <summary>Pomodoro serisinde kaçıncı tur (1'den başlar); seri yoksa 0.</summary>
+    public int SeriesRound { get; private set; }
+
+    public int SeriesRounds { get; private set; }
+
+    /// <summary>Süren molanın uzunluğu: seri molası 5 dakika, diğerleri ayardaki mola süresi.</summary>
+    public TimeSpan CurrentBreakLength => _breakFor ?? BreakLength;
+
+    public static readonly TimeSpan SeriesFocus = TimeSpan.FromMinutes(25);
+
+    public static readonly TimeSpan SeriesRest = TimeSpan.FromMinutes(5);
+
+    private TimeSpan? _breakFor;
 
     public bool IsAway => _awaySince is not null;
 
@@ -140,39 +167,67 @@ public sealed class RhythmTracker
                     {
                         events.Add(new RhythmEvent(RhythmEventKind.DayStarted, gone));
                     }
-                    else if (BreakStart is not null || suggested)
+                    else if (SeriesRound == 0 && (BreakStart is not null || suggested))
                     {
                         events.Add(new RhythmEvent(RhythmEventKind.BackFromBreak, gone));
                     }
 
-                    BreakStart = null;
+                    if (SeriesRound == 0)
+                    {
+                        BreakStart = null;
+                        _breakFor = null;
+                    }
                 }
             }
 
             _stretchStart ??= lastInput;
             Today.ActiveMinutes += elapsed.TotalMinutes;
-            if (InFocus)
+            var focusing = InFocus && FocusPausedAt is null;
+            if (focusing)
             {
                 Today.FocusMinutes += elapsed.TotalMinutes;
             }
 
-            Extend(now, elapsed, InFocus ? RhythmSegmentKind.Focus : RhythmSegmentKind.Work);
+            Extend(now, elapsed, focusing ? RhythmSegmentKind.Focus : RhythmSegmentKind.Work);
             Today.LongestStretchMinutes = Math.Max(Today.LongestStretchMinutes, CurrentStretch(now).TotalMinutes);
         }
 
-        if (FocusEnd is { } end && now >= end)
+        if (FocusEnd is { } end && FocusPausedAt is null && now >= end)
         {
-            events.Add(new RhythmEvent(RhythmEventKind.FocusEnded, end - FocusStart!.Value));
+            var length = end - FocusStart!.Value;
             FocusStart = null;
             FocusEnd = null;
             LastSuggestion = now;
+            if (SeriesRound == 0)
+            {
+                events.Add(new RhythmEvent(RhythmEventKind.FocusEnded, length));
+            }
+            else if (SeriesRound < SeriesRounds)
+            {
+                events.Add(new RhythmEvent(RhythmEventKind.SeriesBreak, length, SeriesRound, SeriesRounds));
+                StartBreak(now, SeriesRest);
+            }
+            else
+            {
+                events.Add(new RhythmEvent(RhythmEventKind.SeriesDone, length, SeriesRound, SeriesRounds));
+                StopSeries();
+            }
         }
 
-        if (BreakStart is { } started && _awaySince is null && now - started >= BreakLength)
+        if (BreakStart is { } started && _awaySince is null && now - started >= CurrentBreakLength)
         {
-            events.Add(new RhythmEvent(RhythmEventKind.BreakOver, now - started));
             BreakStart = null;
+            _breakFor = null;
             _stretchStart = now;
+            if (SeriesRound > 0)
+            {
+                NextRound(now);
+                events.Add(new RhythmEvent(RhythmEventKind.SeriesNext, now - started, SeriesRound, SeriesRounds));
+            }
+            else
+            {
+                events.Add(new RhythmEvent(RhythmEventKind.BreakOver, now - started));
+            }
         }
 
         var stretch = CurrentStretch(now);
@@ -196,9 +251,14 @@ public sealed class RhythmTracker
         SnoozedUntil = now + delay;
     }
 
-    public void StartBreak(DateTime now)
+    /// <summary>Mola başlar; süren odak (duraklatılmış olsa da) biter.</summary>
+    public void StartBreak(DateTime now, TimeSpan? length = null)
     {
+        FocusStart = null;
+        FocusEnd = null;
+        FocusPausedAt = null;
         BreakStart = now;
+        _breakFor = length;
         LastSuggestion = now;
         CloseStretch(now);
     }
@@ -213,23 +273,103 @@ public sealed class RhythmTracker
         }
 
         BreakStart = null;
+        _breakFor = null;
         _stretchStart = now;
         return now - started;
     }
 
+    /// <summary>Odak başlar; süren mola biter.</summary>
     public void StartFocus(DateTime now, TimeSpan length)
     {
+        if (BreakStart is not null)
+        {
+            BreakStart = null;
+            _breakFor = null;
+            _stretchStart = now;
+        }
+
         FocusStart = now;
         FocusEnd = now + length;
+        FocusPausedAt = null;
     }
 
-    /// <returns>Odakta geçen süre; odak yoksa sıfır.</returns>
+    /// <returns>Odakta geçen süre (duraklatılan kısım hariç); odak yoksa sıfır.</returns>
     public TimeSpan EndFocus(DateTime now)
     {
-        var spent = FocusStart is { } start ? now - start : TimeSpan.Zero;
+        var spent = FocusStart is { } start ? (FocusPausedAt ?? now) - start : TimeSpan.Zero;
         FocusStart = null;
         FocusEnd = null;
+        FocusPausedAt = null;
         return spent;
+    }
+
+    /// <summary>Odak durur (telefon, kapıdaki kurye); kalan süre korunur.</summary>
+    /// <returns>Duraklatılacak bir odak varsa true.</returns>
+    public bool PauseFocus(DateTime now)
+    {
+        if (FocusEnd is null || FocusPausedAt is not null)
+        {
+            return false;
+        }
+
+        FocusPausedAt = now;
+        return true;
+    }
+
+    /// <summary>Duraklatılan odak kaldığı yerden sürer: başlangıç ve bitiş, duraklamanın süresi kadar ileri kayar.</summary>
+    /// <returns>Duraklatılmış bir odak varsa true.</returns>
+    public bool ResumeFocus(DateTime now)
+    {
+        if (FocusPausedAt is not { } paused || FocusEnd is not { } end || FocusStart is not { } start)
+        {
+            return false;
+        }
+
+        var gap = now > paused ? now - paused : TimeSpan.Zero;
+        FocusStart = start + gap;
+        FocusEnd = end + gap;
+        FocusPausedAt = null;
+        return true;
+    }
+
+    /// <summary>Süren odağı uzatır.</summary>
+    /// <returns>Uzatılacak bir odak varsa true.</returns>
+    public bool ExtendFocus(TimeSpan by)
+    {
+        if (FocusEnd is not { } end)
+        {
+            return false;
+        }
+
+        FocusEnd = end + by;
+        return true;
+    }
+
+    /// <summary>Pomodoro serisi: 25 dakika odak, 5 dakika mola; turlar kendiliğinden ilerler, duraklatma ve bitirme her an geçerlidir.</summary>
+    public void StartSeries(DateTime now, int rounds)
+    {
+        SeriesRounds = Math.Clamp(rounds, 1, 8);
+        SeriesRound = 1;
+        StartFocus(now, SeriesFocus);
+    }
+
+    /// <summary>Seri biter; süren odak ya da mola olduğu gibi kalır (onları çağıran bitirir).</summary>
+    public void StopSeries()
+    {
+        SeriesRound = 0;
+        SeriesRounds = 0;
+    }
+
+    /// <summary>Seri molası bitti ya da atlandı: sıradaki tur başlar.</summary>
+    public void NextRound(DateTime now)
+    {
+        if (SeriesRound == 0)
+        {
+            return;
+        }
+
+        SeriesRound = Math.Min(SeriesRound + 1, SeriesRounds);
+        StartFocus(now, SeriesFocus);
     }
 
     public void Snooze(DateTime now, TimeSpan length) => SnoozedUntil = now + length;

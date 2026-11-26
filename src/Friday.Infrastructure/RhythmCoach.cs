@@ -108,7 +108,8 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             return new RhythmSnapshot(Enabled, _tracker.StretchStart, _tracker.FocusStart, _tracker.FocusEnd, _tracker.BreakStart,
-                _tracker.BreakEvery, _tracker.BreakLength, _tracker.IsAway, _tracker.SnoozedUntil);
+                _tracker.BreakEvery, _tracker.CurrentBreakLength, _tracker.IsAway, _tracker.SnoozedUntil, _tracker.FocusPausedAt,
+                _tracker.SeriesRound, _tracker.SeriesRounds);
         }
     }
 
@@ -139,11 +140,15 @@ public sealed partial class RhythmCoach : IDisposable
         }
     }
 
+    /// <summary>Mola başlar; süren odak biter, pomodoro serisi durur (seri kendi molalarını kendisi verir).</summary>
     public QuickReply StartBreak()
     {
+        bool stoppedSeries;
         lock (_gate)
         {
             _where = CurrentWindow();
+            stoppedSeries = _tracker.SeriesRound > 0;
+            _tracker.StopSeries();
             _tracker.StartBreak(DateTime.Now);
             Save();
         }
@@ -151,7 +156,7 @@ public sealed partial class RhythmCoach : IDisposable
         Changed?.Invoke(this, EventArgs.Empty);
         lock (_gate)
         {
-            return new QuickReply(RhythmCoachLines.BreakStarted(_tracker.BreakLength));
+            return new QuickReply((stoppedSeries ? "Pomodoro serisini durdurdum. " : "") + RhythmCoachLines.BreakStarted(_tracker.BreakLength));
         }
     }
 
@@ -162,6 +167,16 @@ public sealed partial class RhythmCoach : IDisposable
         string? where;
         lock (_gate)
         {
+            // Seri molası erken bitirilirse sıradaki tur hemen başlar.
+            if (_tracker.SeriesRound > 0 && _tracker.BreakStart is not null)
+            {
+                _tracker.NextRound(DateTime.Now);
+                var round = (_tracker.SeriesRound, _tracker.SeriesRounds);
+                Save();
+                Changed?.Invoke(this, EventArgs.Empty);
+                return new QuickReply($"Pomodoro {round.SeriesRound}/{round.SeriesRounds}: 25 dakika odak, başla.");
+            }
+
             spent = _tracker.EndBreak(DateTime.Now);
             where = _where;
             Save();
@@ -178,6 +193,7 @@ public sealed partial class RhythmCoach : IDisposable
         var length = TimeSpan.FromMinutes(Math.Clamp(minutes <= 0 ? 25 : minutes, 5, 240));
         lock (_gate)
         {
+            _tracker.StopSeries();
             _tracker.StartFocus(DateTime.Now, length);
         }
 
@@ -185,18 +201,118 @@ public sealed partial class RhythmCoach : IDisposable
         return new QuickReply(RhythmCoachLines.FocusStarted(length));
     }
 
+    /// <summary>Odak (seri sürüyorsa bütün seri) biter.</summary>
     public QuickReply EndFocus()
     {
         TimeSpan spent;
+        bool hadFocus;
+        int series;
         lock (_gate)
         {
+            hadFocus = _tracker.InFocus;
+            series = _tracker.SeriesRound;
+            _tracker.StopSeries();
             spent = _tracker.EndFocus(DateTime.Now);
+            if (series > 0 && _tracker.BreakStart is not null)
+            {
+                _tracker.EndBreak(DateTime.Now);
+            }
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
-        return new QuickReply(spent < TimeSpan.FromMinutes(1)
+        if (series > 0 && !hadFocus)
+        {
+            return new QuickReply("Pomodoro serisini durdurdum.");
+        }
+
+        var lead = series > 0 ? "Pomodoro serisini durdurdum. " : "";
+        return new QuickReply(!hadFocus
             ? "Şu an açık bir odak oturumu yok."
-            : $"Odak bitti; {RhythmCoachLines.Span(spent)} odaklandın.{(FocusInsight?.Invoke(spent) is { } insight ? " " + insight : "")}");
+            : spent < TimeSpan.FromMinutes(1)
+            ? lead + "Odak bitti."
+            : $"{lead}Odak bitti; {RhythmCoachLines.Span(spent)} odaklandın.{(FocusInsight?.Invoke(spent) is { } insight ? " " + insight : "")}");
+    }
+
+    /// <summary>Odağı duraklatır; kalan süre korunur.</summary>
+    public QuickReply PauseFocus()
+    {
+        bool paused;
+        TimeSpan left = TimeSpan.Zero;
+        lock (_gate)
+        {
+            paused = _tracker.PauseFocus(DateTime.Now);
+            if (_tracker.FocusEnd is { } end && _tracker.FocusPausedAt is { } at)
+            {
+                left = end - at;
+            }
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(paused
+            ? $"Odağı duraklattım; {RhythmCoachLines.Span(left)} kaldı. Hazır olunca \"odağa devam\" de."
+            : left > TimeSpan.Zero ? "Odak zaten duraklatılmış." : "Şu an açık bir odak oturumu yok.");
+    }
+
+    /// <summary>Duraklatılan odak kaldığı yerden sürer.</summary>
+    public QuickReply ResumeFocus()
+    {
+        bool resumed;
+        DateTime? end;
+        lock (_gate)
+        {
+            resumed = _tracker.ResumeFocus(DateTime.Now);
+            end = _tracker.FocusEnd;
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(resumed && end is { } at
+            ? $"Devam; odak {at.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.TimeSuffix(at)} bitiyor."
+            : end is not null ? "Odak zaten sürüyor." : "Duraklatılmış bir odak yok.");
+    }
+
+    /// <summary>Süren odağı uzatır ("10 dakika daha").</summary>
+    public QuickReply ExtendFocus(double minutes)
+    {
+        var by = TimeSpan.FromMinutes(Math.Clamp(minutes <= 0 ? 10 : minutes, 1, 120));
+        bool extended;
+        DateTime? end;
+        lock (_gate)
+        {
+            extended = _tracker.ExtendFocus(by);
+            end = _tracker.FocusEnd;
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(extended && end is { } at
+            ? $"Odağı {RhythmCoachLines.Span(by)} uzattım; {at.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.TimeSuffix(at)} bitiyor."
+            : "Şu an açık bir odak oturumu yok; \"25 dakika odaklanacağım\" diyerek başlatabilirsin.");
+    }
+
+    /// <summary>Pomodoro serisi (25 dk odak + 5 dk mola); turlar ritim koçunun saatiyle ilerler.</summary>
+    public QuickReply StartSeries(int rounds)
+    {
+        rounds = Math.Clamp(rounds, 1, 8);
+        lock (_gate)
+        {
+            _tracker.StartSeries(DateTime.Now, rounds);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(rounds == 1
+            ? "Bir pomodoro başladı: 25 dakika odak."
+            : $"{rounds} pomodoro başladı: 25 dakika odak, 5 dakika mola. İlk tur şimdi.");
+    }
+
+    /// <summary>Pomodoro serisi ve süren turu (odak ya da mola) biter.</summary>
+    public QuickReply StopSeries()
+    {
+        int round;
+        lock (_gate)
+        {
+            round = _tracker.SeriesRound;
+        }
+
+        return round == 0 ? new QuickReply("Süren bir pomodoro serisi yok.") : EndFocus();
     }
 
     public QuickReply Snooze(double minutes)
@@ -208,6 +324,35 @@ public sealed partial class RhythmCoach : IDisposable
         }
 
         return new QuickReply(RhythmCoachLines.Snoozed(length));
+    }
+
+    /// <summary>
+    /// Mola önerileri bir süre susar (süre yoksa yarın sabaha kadar); çalışma süresi ölçülmeye devam eder. Eskiden en fazla
+    /// iki saat ertelenebiliyordu ve panelden ertelemeyi geri almak mümkün değildi.
+    /// </summary>
+    public QuickReply PauseSuggestions(TimeSpan? length)
+    {
+        var now = DateTime.Now;
+        var until = length is { } span ? now + span : now.Date.AddDays(1).AddHours(5);
+        lock (_gate)
+        {
+            _tracker.Snooze(now, until - now);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(length is null ? "Mola önerileri bugünlük kapalı." : $"Mola önerileri {until.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.ToSuffix(until)} kadar kapalı.");
+    }
+
+    /// <summary>Durdurulan öneriler hemen sürer.</summary>
+    public QuickReply ResumeSuggestions()
+    {
+        lock (_gate)
+        {
+            _tracker.Snooze(DateTime.Now, TimeSpan.Zero);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply("Mola önerileri yeniden açık.");
     }
 
     public QuickReply Water()
@@ -358,6 +503,21 @@ public sealed partial class RhythmCoach : IDisposable
                 break;
             case RhythmEventKind.DayStarted:
                 Greet();
+                break;
+            case RhythmEventKind.SeriesBreak:
+                lock (_gate)
+                {
+                    _where = CurrentWindow();
+                }
+
+                Say($"Pomodoro {item.Round}/{item.Rounds} bitti. 5 dakika mola: kalk, biraz esne, su iç.", mustTell: true);
+                break;
+            case RhythmEventKind.SeriesNext:
+                Say($"Pomodoro {item.Round}/{item.Rounds}: 25 dakika odak, başla." + (_where is { } place ? $" Kaldığın yer: {place}." : ""), mustTell: true);
+                break;
+            case RhythmEventKind.SeriesDone:
+                Say($"{item.Rounds} pomodoro tamam, harika iş! Bugün toplam {RhythmCoachLines.Span(TimeSpan.FromMinutes(Today.FocusMinutes))} odaklandın. "
+                    + "Şimdi 15 dakikalık uzun bir molayı hak ettin.", mustTell: true);
                 break;
         }
     }

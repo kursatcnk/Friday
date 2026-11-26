@@ -1,0 +1,184 @@
+using Friday.Core;
+
+namespace Friday.UnitTests;
+
+/// <summary>
+/// Ritmi istendiği an yönetmek: odak duraklatılır, sürdürülür, uzatılır; pomodoro serisi kendi saatiyle ilerler ve her an
+/// bitirilebilir. Eskiden seri ayrı bir zamanlayıcıyla dönüyor, "Odağı bitir" deyince arkadan mola ve yeni turlar gelmeye
+/// devam ediyordu; odak da duraklatılamıyordu.
+/// </summary>
+public class RhythmControlTests
+{
+    private static readonly DateTime Morning = new(2026, 11, 17, 9, 0, 0);
+
+    private static List<RhythmEvent> Run(RhythmTracker tracker, DateTime from, TimeSpan length, TimeSpan idle)
+    {
+        var events = new List<RhythmEvent>();
+        for (var now = from; now <= from + length; now += TimeSpan.FromSeconds(20))
+        {
+            events.AddRange(tracker.Update(now, idle));
+        }
+
+        return events;
+    }
+
+    [Fact]
+    public void APausedFocusKeepsItsRemainingTime()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartFocus(Morning, TimeSpan.FromMinutes(25));
+        Run(tracker, Morning, TimeSpan.FromMinutes(10), TimeSpan.FromSeconds(5));
+
+        Assert.True(tracker.PauseFocus(Morning.AddMinutes(10)));
+        Assert.False(tracker.PauseFocus(Morning.AddMinutes(11)));
+        // 20 dakikalık telefon görüşmesi: odak bitmez, odak süresi sayılmaz.
+        var during = Run(tracker, Morning.AddMinutes(10).AddSeconds(20), TimeSpan.FromMinutes(20), TimeSpan.FromSeconds(5));
+        Assert.DoesNotContain(during, item => item.Kind == RhythmEventKind.FocusEnded);
+        Assert.InRange(tracker.Today.FocusMinutes, 9, 11);
+
+        Assert.True(tracker.ResumeFocus(Morning.AddMinutes(30)));
+        Assert.Equal(Morning.AddMinutes(45), tracker.FocusEnd);
+        var after = Run(tracker, Morning.AddMinutes(30), TimeSpan.FromMinutes(16), TimeSpan.FromSeconds(5));
+        var ended = Assert.Single(after, item => item.Kind == RhythmEventKind.FocusEnded);
+        Assert.Equal(TimeSpan.FromMinutes(25), ended.Length);
+    }
+
+    [Fact]
+    public void EndingAPausedFocusCountsOnlyTheFocusedPart()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartFocus(Morning, TimeSpan.FromMinutes(25));
+        tracker.PauseFocus(Morning.AddMinutes(8));
+        Assert.Equal(TimeSpan.FromMinutes(8), tracker.EndFocus(Morning.AddMinutes(40)));
+        Assert.False(tracker.InFocus);
+        Assert.Null(tracker.FocusPausedAt);
+    }
+
+    [Fact]
+    public void ExtendingMovesTheEnd()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        Assert.False(tracker.ExtendFocus(TimeSpan.FromMinutes(10)));
+        tracker.StartFocus(Morning, TimeSpan.FromMinutes(25));
+        Assert.True(tracker.ExtendFocus(TimeSpan.FromMinutes(10)));
+        Assert.Equal(Morning.AddMinutes(35), tracker.FocusEnd);
+    }
+
+    [Fact]
+    public void ABreakEndsTheFocusAndAFocusEndsTheBreak()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartFocus(Morning, TimeSpan.FromMinutes(25));
+        tracker.StartBreak(Morning.AddMinutes(5));
+        Assert.False(tracker.InFocus);
+        Assert.NotNull(tracker.BreakStart);
+
+        tracker.StartFocus(Morning.AddMinutes(7), TimeSpan.FromMinutes(25));
+        Assert.Null(tracker.BreakStart);
+        Assert.True(tracker.InFocus);
+    }
+
+    [Fact]
+    public void ASeriesRunsOnItsOwnClock()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(10));
+        tracker.StartSeries(Morning, 2);
+        Assert.Equal(1, tracker.SeriesRound);
+
+        var events = Run(tracker, Morning, TimeSpan.FromMinutes(26), TimeSpan.FromSeconds(5));
+        var rest = Assert.Single(events, item => item.Kind == RhythmEventKind.SeriesBreak);
+        Assert.Equal((1, 2), (rest.Round, rest.Rounds));
+        Assert.DoesNotContain(events, item => item.Kind == RhythmEventKind.FocusEnded);
+        // Seri molası ayardaki 10 dakika değil, 5 dakika.
+        Assert.Equal(TimeSpan.FromMinutes(5), tracker.CurrentBreakLength);
+
+        events = Run(tracker, Morning.AddMinutes(26).AddSeconds(20), TimeSpan.FromMinutes(5), TimeSpan.FromSeconds(5));
+        var next = Assert.Single(events, item => item.Kind == RhythmEventKind.SeriesNext);
+        Assert.Equal(2, next.Round);
+        Assert.True(tracker.InFocus);
+
+        events = Run(tracker, Morning.AddMinutes(31).AddSeconds(40), TimeSpan.FromMinutes(26), TimeSpan.FromSeconds(5));
+        var done = Assert.Single(events, item => item.Kind == RhythmEventKind.SeriesDone);
+        Assert.Equal(2, done.Rounds);
+        Assert.Equal(0, tracker.SeriesRound);
+        Assert.Null(tracker.BreakStart);
+    }
+
+    [Fact]
+    public void TheNextRoundWaitsUntilTheUserIsBack()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartSeries(Morning, 3);
+        Run(tracker, Morning, TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(20)), TimeSpan.FromSeconds(5));
+        Assert.NotNull(tracker.BreakStart);
+
+        // Molada 12 dakika masadan kalkıyor: o sırada yeni tur başlamaz, "hoş geldin" de denmez.
+        var away = Morning.AddMinutes(26);
+        var gone = new List<RhythmEvent>();
+        for (var minute = 0; minute <= 12; minute++)
+        {
+            gone.AddRange(tracker.Update(away.AddMinutes(minute), TimeSpan.FromMinutes(minute)));
+        }
+
+        Assert.DoesNotContain(gone, item => item.Kind == RhythmEventKind.SeriesNext);
+        var back = tracker.Update(away.AddMinutes(12).AddSeconds(20), TimeSpan.FromSeconds(1));
+        Assert.Contains(back, item => item.Kind == RhythmEventKind.SeriesNext);
+        Assert.DoesNotContain(back, item => item.Kind == RhythmEventKind.BackFromBreak);
+        Assert.Equal(2, tracker.SeriesRound);
+    }
+
+    [Fact]
+    public void SkippingTheSeriesBreakStartsTheNextRound()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartSeries(Morning, 4);
+        Run(tracker, Morning, TimeSpan.FromMinutes(25).Add(TimeSpan.FromSeconds(20)), TimeSpan.FromSeconds(5));
+        tracker.NextRound(Morning.AddMinutes(27));
+        Assert.Equal(2, tracker.SeriesRound);
+        Assert.Null(tracker.BreakStart);
+        Assert.Equal(Morning.AddMinutes(52), tracker.FocusEnd);
+    }
+
+    [Fact]
+    public void PausedFocusAndSeriesAreShown()
+    {
+        var now = Morning.AddMinutes(20);
+        var paused = new RhythmSnapshot(true, Morning, Morning, Morning.AddMinutes(25), null, TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null,
+            Morning.AddMinutes(10), 2, 4);
+        var display = RhythmText.Describe(paused, now);
+        Assert.Equal("Odak duraklatıldı", display.Label);
+        Assert.Equal("15:00", display.Clock);
+        Assert.StartsWith("Pomodoro 2/4.", display.Sentence, StringComparison.Ordinal);
+
+        var rest = new RhythmSnapshot(true, null, null, null, now.AddMinutes(-1), TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null, null, 1, 4);
+        Assert.Contains("sıradaki tur kendiliğinden", RhythmText.Describe(rest, now).Sentence, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SilencedSuggestionsSayUntilWhen()
+    {
+        var now = Morning.AddMinutes(30);
+        var snoozed = new RhythmSnapshot(true, Morning, null, null, null, TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, now.AddHours(1));
+        Assert.Contains("10:30'a kadar kapalı", RhythmText.Describe(snoozed, now).Sentence, StringComparison.Ordinal);
+        var tomorrow = snoozed with { SnoozedUntil = now.Date.AddDays(1).AddHours(5) };
+        Assert.StartsWith("Mola önerileri bugünlük kapalı", RhythmText.Describe(tomorrow, now).Sentence, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("odağı duraklat", "odak_duraklat", "")]
+    [InlineData("odağa ara ver", "odak_duraklat", "")]
+    [InlineData("pomodoroyu duraklat", "odak_duraklat", "")]
+    [InlineData("odağa devam et", "odak_devam", "")]
+    [InlineData("odağı sürdür", "odak_devam", "")]
+    [InlineData("odağı 15 dakika uzat", "odak_uzat", "15")]
+    [InlineData("odağı uzat", "odak_uzat", "10")]
+    [InlineData("on dakika daha odaklanayım", "odak_uzat", "10")]
+    [InlineData("odağı bitir", "odak_bitir", "")]
+    public void RecognizesFocusControls(string sentence, string action, string minutes)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("ritim", command?.Tool);
+        Assert.Equal(action, command!.Arguments["islem"]);
+        Assert.Equal(minutes, command.Arguments.GetValueOrDefault("dakika", ""));
+    }
+}

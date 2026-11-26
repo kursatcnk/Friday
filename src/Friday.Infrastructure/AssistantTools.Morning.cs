@@ -122,22 +122,6 @@ public sealed partial class AssistantTools
                 : $"Bugünkü odak hedefin {TurkishGrammar.Duration(Settings.FocusGoalMinutes)}.");
         }
 
-        // Kelime pratiği tek cümle: tekrar bekliyorsa sayı, beklemiyorsa günün kelimesi.
-        if (Vocabulary is { Started: true } deck)
-        {
-            var due = deck.Stats(today).DueToday;
-            var learning = deck.Cards.Where(card => card.Box is >= 1 and <= 3).ToList();
-            var word = learning.Count > 0 ? learning[today.DayNumber % learning.Count] : null;
-            if (due > 0)
-            {
-                Add(25, $"Bugün {due} kelime tekrar bekliyor.");
-            }
-            else if (word is not null)
-            {
-                Add(18, $"Günün kelimesi: {word.Front}, yani {word.Back.Split(',')[0].Trim()}.");
-            }
-        }
-
         if (Lists?.Items("okuma listesi").Count is > 0 and var reading)
         {
             Add(15, $"Okuma listende {reading} sayfa bekliyor.");

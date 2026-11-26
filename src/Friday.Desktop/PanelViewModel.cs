@@ -103,6 +103,9 @@ public sealed class PanelActions
 
     public Action<string> DeleteReminder { get; init; } = _ => { };
 
+    /// <summary>Ritim koçunu sesli cevap olmadan doğrudan yönetir ("odak:25", "mola", "durdur:60"…); sonucu anlatan cümle.</summary>
+    public Func<string, string> RhythmControl { get; init; } = _ => "";
+
     /// <summary>Kullanıcı yazmaya başladı: dil modeli soru gelmeden ısıtılır.</summary>
     public Action WarmForTyping { get; init; } = () => { };
 
@@ -245,7 +248,6 @@ public sealed partial class PanelViewModel : ObservableObject
         "İnternetim nasıl?",
         "Bu ay ne kadar harcadım?",
         "Alışkanlıklarım nasıl gidiyor?",
-        "Kelime çalışalım",
         "Yaklaşan özel günler",
         "İndirme bitince haber ver",
         "Gündem ne?",

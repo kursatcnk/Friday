@@ -2,12 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace Friday.Core;
 
-/// <summary>Yarım kalmış bir konuşmada (kelime çalışması, kontrol listesi, günlük sorusu) gelen sözün ona ait olup olmadığı.</summary>
+/// <summary>Yarım kalmış bir konuşmada (kontrol listesi, günlük sorusu) gelen sözün ona ait olup olmadığı.</summary>
 public static partial class QuickIntents
 {
     /// <summary>
     /// Bekleyen soruya cevap değil, araya giren ayrı bir istek mi? "100 dolar ne kadar", "yarın hava nasıl olacak?" ya da
-    /// uzun bir cümle kelime çalışmasının ya da kontrol listesinin cevabı sanılmaz. <paramref name="shortAnswer"/>: beklenen
+    /// uzun bir cümle kontrol listesinin cevabı sanılmaz. <paramref name="shortAnswer"/>: beklenen
     /// cevap kısadır (kelimenin anlamı, "tamam", "yok"); günlük sorusu gibi serbest cevaplarda yalnızca açık sorular ayrılır.
     /// Kısa, tereddütlü cevaplar ("başarmak mı") cevap sayılmaya devam eder.
     /// </summary>

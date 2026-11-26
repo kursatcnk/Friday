@@ -176,7 +176,6 @@ public sealed partial class AssistantTools
             return null;
         }
 
-        _awaitingOwnsDecline = false;
         _awaitingKind = "gorusme_notu";
         _awaitingAt = DateTime.Now;
         _awaitingAnswer = text =>

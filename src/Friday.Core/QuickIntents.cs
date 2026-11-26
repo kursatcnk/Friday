@@ -51,11 +51,6 @@ public static partial class QuickIntents
             return Command("kisaltma", ("islem", "ekle"), ("ad", snippet.Name), ("metin", snippet.Text));
         }
 
-        if (WordDefinition(text) is { } word)
-        {
-            return Command("kelime", ("islem", "ekle"), ("kelime", word.Front), ("anlam", word.Back));
-        }
-
         if (CustomCommand(text) is { } custom)
         {
             return Command("ozel_komut", ("ifade", custom.Phrase), ("adim", custom.Step));
@@ -136,7 +131,7 @@ public static partial class QuickIntents
             ?? Undo(sentence)
             ?? Life(sentence)
             ?? Snippets(sentence)
-            ?? Practice(sentence)
+            ?? Planning(sentence)
             ?? Bills(sentence)
             ?? Alerts(sentence)
             ?? Todo(sentence)
@@ -446,6 +441,12 @@ public static partial class QuickIntents
             return Command("ritim", ("islem", "odak"), ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)));
         }
 
+        if (FocusExtend().Match(sentence) is { Success: true } extend)
+        {
+            var minutes = ParseNumber(extend.Groups["n"].Value) is { } value ? value : 10;
+            return Command("ritim", ("islem", "odak_uzat"), ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)));
+        }
+
         if (SnoozeRequest().Match(sentence) is { Success: true } snooze)
         {
             var minutes = ParseNumber(snooze.Groups["n"].Value) is { } value ? value : 15;
@@ -454,6 +455,8 @@ public static partial class QuickIntents
 
         var action = sentence switch
         {
+            _ when FocusPause().IsMatch(sentence) => "odak_duraklat",
+            _ when FocusResume().IsMatch(sentence) => "odak_devam",
             _ when FocusEnd().IsMatch(sentence) => "odak_bitir",
             _ when BreakEnd().IsMatch(sentence) => "mola_bitir",
             _ when BreakRequest().IsMatch(sentence) => "mola",
@@ -563,6 +566,18 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:odak(?: modu(?:nu)?)?|odağı) (?:bitir|kapat|durdur|sonlandır)$")]
     private static partial Regex FocusEnd();
+
+    // "odağı duraklat", "odağa ara ver", "odağı beklet"
+    [GeneratedRegex(@"^(?:odağı|odak(?: modunu)?|pomodoroyu|sayacı) (?:duraklat|beklet|dondur)$|^odağa (?:biraz )?ara ver$")]
+    private static partial Regex FocusPause();
+
+    // "odağa devam", "odağı sürdür", "odağı devam ettir"
+    [GeneratedRegex(@"^(?:odağa devam(?: et)?|odağı (?:sürdür|devam ettir)|pomodoroya devam(?: et)?|sayaca devam(?: et)?)$")]
+    private static partial Regex FocusResume();
+
+    // "odağı 10 dakika uzat", "odağı uzat", "on dakika daha odaklanayım"
+    [GeneratedRegex(@"^(?:odağı|odak süresini)(?: (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika)? uzat$|^(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha (?:odaklan(?:ayım|alım)?|odak)$")]
+    private static partial Regex FocusExtend();
 
     [GeneratedRegex(@"^(?:molayı (?:bitir|sonlandır|kapat)|moladan (?:döndüm|geldim)|mola bitti|(?:ben )?geri döndüm)$")]
     private static partial Regex BreakEnd();

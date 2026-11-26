@@ -265,14 +265,13 @@ public sealed partial class App : Application, IDisposable
         var habits = new HabitTracker(Path.Combine(paths.Data, "habits.json"));
         var habitBook = new HabitBook(Path.Combine(paths.Data, "habit-book.json"));
         var expenses = new ExpenseBook(Path.Combine(paths.Data, "expenses.json"));
-        var vocabulary = new VocabularyDeck(Path.Combine(paths.Data, "vocabulary.json"));
 
         // Yerel model yanıtları uzun sürebilir; zaman aşımını istekler kendi belirler.
         _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
-        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Vocabulary = vocabulary, Nudges = new NudgePolicy(Path.Combine(paths.Data, "nudges.json")),
+        var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Nudges = new NudgePolicy(Path.Combine(paths.Data, "nudges.json")),
             Reading = new ReadingLog(Path.Combine(paths.Data, "reading.json")), WritingStyle = new WritingStyle(Path.Combine(paths.Data, "writing-style.json")) };
         StoreApps.Warm();
         _tools = tools;
@@ -342,6 +341,28 @@ public sealed partial class App : Application, IDisposable
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
+            RhythmControl = key =>
+            {
+                var parts = key.Split(':', 2);
+                var minutes = parts.Length > 1 && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : 0;
+                var reply = parts[0] switch
+                {
+                    "odak" => rhythm.StartFocus(minutes),
+                    "odakbitti" => rhythm.EndFocus(),
+                    "duraklat" => rhythm.PauseFocus(),
+                    "devam" => rhythm.ResumeFocus(),
+                    "uzat" => rhythm.ExtendFocus(minutes),
+                    "pomodoro" => rhythm.StartSeries((int)Math.Max(1, minutes)),
+                    "seribitti" => rhythm.StopSeries(),
+                    "mola" => rhythm.StartBreak(),
+                    "molabitti" => rhythm.EndBreak(),
+                    "durdur" => rhythm.PauseSuggestions(parts.Length > 1 && parts[1] == "gun" ? null : TimeSpan.FromMinutes(minutes <= 0 ? 60 : minutes)),
+                    "surdur" => rhythm.ResumeSuggestions(),
+                    _ => new QuickReply("")
+                };
+                ledger.Record(DataFlow.Local, "Ritim", $"Panelden: {key}");
+                return reply.Text;
+            },
             Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
                 tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
             AddToAgenda = async text =>
@@ -529,13 +550,12 @@ public sealed partial class App : Application, IDisposable
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
             var (from, to, _) = ExpenseBook.Period("ay", DateTime.Now);
-            panel.ShowTodaySummary(todos.Open, habitBook.Pending(today), vocabulary.Started ? vocabulary.Stats(today) : null, expenses.Summary(from, to).Total, today);
+            panel.ShowTodaySummary(todos.Open, habitBook.Pending(today), expenses.Summary(from, to).Total, today);
         }
 
         todos.Changed += (_, _) => Ui(ShowSummary);
         habitBook.Changed += (_, _) => Ui(ShowSummary);
         expenses.Changed += (_, _) => Ui(ShowSummary);
-        vocabulary.Changed += (_, _) => Ui(ShowSummary);
         ShowSummary();
         todos.Changed += (_, _) => Ui(ShowPlan);
         habitBook.Changed += (_, _) => Ui(ShowPlan);
@@ -549,8 +569,6 @@ public sealed partial class App : Application, IDisposable
             ShowSummary();
         };
         planClock.Start();
-        vocabulary.Changed += (_, _) => Ui(() => panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started));
-        panel.ShowVocabulary(vocabulary.Stats(DateOnly.FromDateTime(DateTime.Now)), vocabulary.Started);
         ShowToday();
         panel.ShowNotes(notes.All);
         async Task RefreshWeatherAsync()

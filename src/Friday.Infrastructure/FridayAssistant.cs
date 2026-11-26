@@ -261,7 +261,7 @@ public sealed class FridayAssistant : IDisposable
         _ledger = ledger;
         _chats = chats;
         // Panelden başka bir sohbet açıldı, yeni sohbete geçildi ya da açık sohbet silindi: model o sohbetle devam eder.
-        // Yarım kalan her şey (kelime çalışması, cevap beklenen soru, kontrol listesi, onay, devam komutu) o sohbetle kalır.
+        // Yarım kalan her şey (cevap beklenen soru, kontrol listesi, onay, devam komutu) o sohbetle kalır.
         _chats.CurrentChanged += (_, _) =>
         {
             Volatile.Write(ref _reload, _chats.CurrentTurns);
@@ -867,7 +867,7 @@ public sealed class FridayAssistant : IDisposable
                     return;
                 }
 
-                // Kontrol listesi ya da kelime pratiği gibi cevap bekleyen bir soru varsa dinleme sürer.
+                // Kontrol listesi gibi cevap bekleyen bir soru varsa dinleme sürer.
                 if ((_settings.FollowUpSeconds <= 0 && !_tools.InChecklist && !_tools.AwaitsAnswer) || stopListening.IsCancellationRequested || _endConversation)
                 {
                     _endConversation = false;
@@ -1135,9 +1135,9 @@ public sealed class FridayAssistant : IDisposable
         // Bekleyen bir soruya ("İndirilenleri düzenleyeyim mi?") verilen kısa "evet" ya da "hayır" önce ona gider.
         // "Günün nasıl geçti?" gibi serbest cevap bekleyen bir soru varsa söz ona gider; açıkça bir komutsa komut çalışır.
         // "Şimdi değil", "hayır" gibi sözler de soruya gider (yoksa "şimdi değil" mola ertelemesi sanılır).
-        // Kelime çalışmasında ve kontrol listesinde cevap komuttan önce gelir ("masa", "tamam"); ama iki sözcükten uzun açık
+        // Kontrol listesinde cevap komuttan önce gelir ("masa", "tamam"); ama iki sözcükten uzun açık
         // bir komut ("yeni sohbet", "100 dolar kaç lira") ya da araya giren bir soru ("100 dolar ne kadar", "yarın hava nasıl
-        // olacak") cevap sanılmaz (bkz. QuickIntents.IsAside). Eskiden bir kez başlayan kelime çalışması her şeyi yutuyordu.
+        // olacak") cevap sanılmaz (bkz. QuickIntents.IsAside). 
         var matched = Quick(text);
         // "Kısalt", "daha kibar yap" ancak düzeltilecek bir taslak varken yazma köprüsüne gider.
         if (matched is { Tool: "yazi" } && matched.Arguments.GetValueOrDefault("islem") == "duzelt" && !_tools.HasDraft)
@@ -1148,11 +1148,9 @@ public sealed class FridayAssistant : IDisposable
         var clearCommand = matched is { Tentative: false } && text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2;
         var checklist = _tools.InChecklist && !clearCommand && !QuickIntents.IsAside(text, shortAnswer: true);
         var answering = !checklist && _tools.AwaitsAnswer
-            && (_tools.AnswerTakesPriority
-                ? !clearCommand && !QuickIntents.IsAside(text, shortAnswer: true)
-                : QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
+            && (QuickIntents.IsDecline(text) || QuickIntents.IsNo(text)
                   || (matched is not { Tentative: false } && !QuickIntents.IsAside(text, shortAnswer: false)));
-        if ((_tools.InChecklist && !checklist) || (_tools.AnswerTakesPriority && !answering))
+        if (_tools.InChecklist && !checklist)
         {
             FridayLog.Info($"Araya giren istek, yarım kalan konuşma bekliyor: \"{text}\"");
         }
@@ -1939,61 +1937,15 @@ public sealed class FridayAssistant : IDisposable
 
     // ---------------------------------------------------------------- pomodoro
 
-    private CancellationTokenSource? _pomodoro;
-
-    /// <summary>Pomodoro serisi: 25 dk odak (ritim koçunda sayılır), 5 dk mola; son turdan sonra uzun mola önerisi. 0 durdurur.</summary>
+    /// <summary>Pomodoro serisi: 25 dk odak, 5 dk mola, ritim koçunun saatiyle; duraklatılabilir, her an bitirilebilir. 0 durdurur.</summary>
     private string Pomodoro(int count)
     {
-        _pomodoro?.Cancel();
-        _pomodoro = null;
-        if (count <= 0)
-        {
-            _tools.Rhythm?.EndFocus();
-            return "Pomodoro serisini durdurdum.";
-        }
-
         if (_tools.Rhythm is not { } rhythm)
         {
             return "Pomodoro için ritim koçunun açık olması gerekiyor (Ayarlar › Ritim).";
         }
 
-        var source = _pomodoro = new CancellationTokenSource();
-        rhythm.StartFocus(25);
-        _ = RunPomodoroAsync(rhythm, count, source.Token);
-        return $"{count} pomodoro başladı: 25 dakika odak, 5 dakika mola. İlk tur şimdi.";
-    }
-
-    private async Task RunPomodoroAsync(RhythmCoach rhythm, int count, CancellationToken cancellationToken)
-    {
-        try
-        {
-            for (var round = 1; round <= count; round++)
-            {
-                if (round > 1)
-                {
-                    rhythm.StartFocus(25);
-                    Announce($"Pomodoro {round}/{count}: 25 dakika odak, başla.");
-                }
-
-                // Odak bitişini ritim koçu kendisi söyler (odak özeti ve hedefle birlikte).
-                await Task.Delay(TimeSpan.FromMinutes(25) + TimeSpan.FromSeconds(8), cancellationToken).ConfigureAwait(false);
-                if (round == count)
-                {
-                    break;
-                }
-
-                rhythm.StartBreak();
-                Announce("5 dakika mola: kalk, biraz esne, su iç.");
-                await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken).ConfigureAwait(false);
-                rhythm.EndBreak();
-            }
-
-            Announce($"{count} pomodoro tamam, harika iş! Şimdi 15 dakikalık uzun bir molayı hak ettin.");
-        }
-        catch (OperationCanceledException)
-        {
-            // Durduruldu.
-        }
+        return count <= 0 ? rhythm.StopSeries().Text : rhythm.StartSeries(count).Text;
     }
 
     // ---------------------------------------------------------------- görüşme algılama
@@ -2738,7 +2690,6 @@ public sealed class FridayAssistant : IDisposable
         _routineTimer?.Dispose();
         _activity?.Dispose();
         _careTimer?.Dispose();
-        _pomodoro?.Cancel();
         _tools.Documents?.Dispose();
         _remote?.Dispose();
         _announcement?.Cancel();

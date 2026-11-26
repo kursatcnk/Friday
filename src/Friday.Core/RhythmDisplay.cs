@@ -12,7 +12,10 @@ public sealed record RhythmSnapshot(
     TimeSpan BreakEvery,
     TimeSpan BreakLength,
     bool IsAway,
-    DateTime? SnoozedUntil);
+    DateTime? SnoozedUntil,
+    DateTime? FocusPausedAt = null,
+    int SeriesRound = 0,
+    int SeriesRounds = 0);
 
 public enum RhythmMode
 {
@@ -44,10 +47,17 @@ public static class RhythmText
                 "Ritim koçu kapalı. Açarsan uzun süre ara vermeden çalıştığında uygun bir anda mola öneririm.");
         }
 
+        var series = state.SeriesRound > 0 ? $"Pomodoro {state.SeriesRound}/{state.SeriesRounds}. " : "";
         if (state.BreakStart is { } breakStart)
         {
             var spent = now - breakStart;
             var left = state.BreakLength - spent;
+            if (state.SeriesRound > 0)
+            {
+                return new RhythmDisplay(RhythmMode.Break, "Moladasın", Clock(left), "kaldı", Ratio(spent, state.BreakLength),
+                    $"{state.SeriesRound}/{state.SeriesRounds} tur bitti. {Minutes(state.BreakLength)} mola; bitince sıradaki tur kendiliğinden başlar.");
+            }
+
             return left > TimeSpan.Zero
                 ? new RhythmDisplay(RhythmMode.Break, "Moladasın", Clock(left), "kaldı", Ratio(spent, state.BreakLength),
                     $"{Minutes(state.BreakLength)} mola. Ekrandan uzaklaş; döndüğünde kaldığın yeri söylerim.")
@@ -58,10 +68,18 @@ public static class RhythmText
         if (state.FocusEnd is { } focusEnd)
         {
             var start = state.FocusStart ?? now;
-            var left = focusEnd - now;
+            var at = state.FocusPausedAt ?? now;
+            var left = focusEnd - at;
+            if (state.FocusPausedAt is { } paused)
+            {
+                return new RhythmDisplay(RhythmMode.Focus, "Odak duraklatıldı", Clock(left < TimeSpan.Zero ? TimeSpan.Zero : left), "kaldı",
+                    Ratio(at - start, focusEnd - start),
+                    $"{series}{paused.ToString("HH:mm", Turkish)}'{TimeSuffix(paused)} duraklattın. Devam ettiğinde kalan süre kaldığı yerden işler.");
+            }
+
             return new RhythmDisplay(RhythmMode.Focus, "Odaktasın", Clock(left < TimeSpan.Zero ? TimeSpan.Zero : left), "kaldı",
                 Ratio(now - start, focusEnd - start),
-                $"Odak {focusEnd.ToString("HH:mm", Turkish)}'{TimeSuffix(focusEnd)} bitiyor. Bu sırada mola önermem; bitince haber veririm.");
+                $"{series}Odak {focusEnd.ToString("HH:mm", Turkish)}'{TimeSuffix(focusEnd)} bitiyor. Bu sırada mola önermem; bitince haber veririm.");
         }
 
         if (state.IsAway)
@@ -80,7 +98,9 @@ public static class RhythmText
         if (state.SnoozedUntil is { } snoozed && snoozed > now)
         {
             return new RhythmDisplay(RhythmMode.Working, "Çalışıyorsun", Clock(stretch), "aralıksız", Ratio(stretch, state.BreakEvery),
-                $"Mola önerisini {snoozed.ToString("HH:mm", Turkish)}'{TimeSuffix(snoozed)} kadar erteledin.");
+                snoozed.Date > now.Date
+                    ? "Mola önerileri bugünlük kapalı; aralıksız süreyi yine de sayıyorum."
+                    : $"Mola önerileri {snoozed.ToString("HH:mm", Turkish)}'{ToSuffix(snoozed)} kadar kapalı; aralıksız süreyi yine de sayıyorum.");
         }
 
         if (stretch >= state.BreakEvery)
@@ -121,6 +141,20 @@ public static class RhythmText
             1 or 2 or 7 or 8 => "de",
             3 or 4 or 5 => "te",
             _ => "da"
+        };
+    }
+
+    /// <summary>"10:30" → "a", "15:00" → "e", "12:00" → "ye", "06:00" → "ya": saate yönelme eki ("10:30'a kadar").</summary>
+    public static string ToSuffix(DateTime time)
+    {
+        var spoken = time.Minute == 0 ? time.Hour : time.Minute;
+        return (spoken % 10) switch
+        {
+            0 => spoken is 20 or 50 ? "ye" : "a",
+            1 or 3 or 4 or 5 or 8 => "e",
+            2 or 7 => "ye",
+            6 => "ya",
+            _ => "a"
         };
     }
 

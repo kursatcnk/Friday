@@ -15,7 +15,6 @@ public class RoutingCoverageTests
     [InlineData("kredi kartı ekstremi ne zaman ödenecek", "sabit_gider")]
     [InlineData("sterlin bugün ne alemde", "doviz")]
     [InlineData("kitap okuma serimi bozdum mu", "aliskanlik")]
-    [InlineData("bana birkaç İngilizce kelime sor", "kelime")]
     [InlineData("bugünkü ajandamda neler var", "takvim")]
     [InlineData("önümüzdeki günlerde hatırlamam gereken özel tarihler var mı", "ozel_gunler")]
     [InlineData("annemin doğum gününe kaç gün kaldı", "gun_sayaci")]

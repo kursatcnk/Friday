@@ -38,15 +38,12 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _habitSummary = "";
 
-    /// <summary>Kartlar yalnızca kullanılınca görünür: alışkanlığı, harcaması ya da kelime destesi olmayana boş kart gösterilmez.</summary>
+    /// <summary>Kartlar yalnızca kullanılınca görünür: alışkanlığı ya da harcaması olmayana boş kart gösterilmez.</summary>
     [ObservableProperty]
     private bool _hasHabits;
 
     [ObservableProperty]
     private bool _showSpendingCard;
-
-    [ObservableProperty]
-    private bool _hasVocabulary;
 
     [ObservableProperty]
     private string _spendingTotal = "0 TL";
@@ -76,7 +73,7 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _todaySummary = "";
 
-    public void ShowTodaySummary(IReadOnlyList<TodoItem> open, IReadOnlyList<DailyHabit> pending, DeckStats? words, decimal monthSpent, DateOnly today)
+    public void ShowTodaySummary(IReadOnlyList<TodoItem> open, IReadOnlyList<DailyHabit> pending, decimal monthSpent, DateOnly today)
     {
         var parts = new List<string>();
         if (open.Count > 0)
@@ -100,11 +97,6 @@ public sealed partial class PanelViewModel
         if (pending.Count > 0)
         {
             parts.Add($"{pending.Count} alışkanlık kaldı");
-        }
-
-        if (words is { Waiting: > 0 } deck)
-        {
-            parts.Add($"{deck.Waiting} kelime bekliyor");
         }
 
         if (monthSpent > 0)
@@ -224,37 +216,4 @@ public sealed partial class PanelViewModel
     [RelayCommand]
     private void RemoveExpense(ExpenseView item) => _actions.RemoveExpense(item.Id);
 
-    [ObservableProperty]
-    private string _vocabularyDue = "110";
-
-    [ObservableProperty]
-    private string _vocabularyDetail = "";
-
-    [ObservableProperty]
-    private string _vocabularyCaption = "";
-
-    public void ShowVocabulary(DeckStats stats, bool started)
-    {
-        HasVocabulary = started;
-        if (!started)
-        {
-            VocabularyDue = "110";
-            VocabularyDetail = "sık kullanılan İngilizce kelime hazır. Friday sorar, sen Türkçesini söylersin; bildiklerini aralıklı tekrar eder.";
-            VocabularyCaption = "";
-            return;
-        }
-
-        var waiting = stats.Waiting;
-        VocabularyDue = waiting.ToString(TurkishCulture);
-        VocabularyDetail = waiting == 0 ? "Bugünlük kelimeler bitti. Yarın yine." : $"kelime bugün seni bekliyor ({stats.DueToday} tekrar).";
-        VocabularyCaption = $"{stats.Learned}/{stats.Total} öğrenildi";
-    }
-
-    /// <summary>Sohbet sayfasına geçip pratiği başlatır; cevaplar yazılarak ya da sesle verilebilir.</summary>
-    [RelayCommand]
-    private void StartPractice()
-    {
-        GoTo("chat");
-        _actions.Send("Kelime çalışalım");
-    }
 }

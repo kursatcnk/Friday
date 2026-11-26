@@ -9,8 +9,6 @@ public sealed partial class AssistantTools
 
     private Func<string, QuickReply>? _awaitingAnswer;
 
-    /// <summary>Soru "hayır", "pas" gibi cevapları kendisi değerlendirir (kelime pratiği).</summary>
-    private bool _awaitingOwnsDecline;
     private DateTime _awaitingAt;
     private DateOnly _journalAsked;
 
@@ -185,7 +183,6 @@ public sealed partial class AssistantTools
         }
 
         _journalAsked = today;
-        _awaitingOwnsDecline = false;
         _awaitingKind = force ? null : "gun_sonu";
         _awaitingAnswer = AnswerJournal;
         _awaitingAt = DateTime.Now;
@@ -210,7 +207,7 @@ public sealed partial class AssistantTools
             return new QuickReply("Bir şey sormamıştım.");
         }
 
-        if (!_awaitingOwnsDecline && (QuickIntents.IsNo(text) || QuickIntents.IsDecline(text)))
+        if (QuickIntents.IsNo(text) || QuickIntents.IsDecline(text))
         {
             return new QuickReply("Peki, başka zaman." + Learn(kind, accepted: false));
         }

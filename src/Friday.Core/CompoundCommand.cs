@@ -31,7 +31,7 @@ public static partial class CompoundCommand
     /// </summary>
     private static readonly HashSet<string> FreeText = new(StringComparer.Ordinal)
     {
-        "not", "hatirlatici", "kosullu_hatirlatici", "yaz", "kisaltma", "kelime", "liste", "yapilacaklar", "hatirla", "eposta_taslagi",
+        "not", "hatirlatici", "kosullu_hatirlatici", "yaz", "kisaltma", "liste", "yapilacaklar", "hatirla", "eposta_taslagi",
         "internette_ara", "bilgi", "web_ara", "ozel_komut", "zamanlayici", "kontrol_listesi", "gunluk"
     };
 

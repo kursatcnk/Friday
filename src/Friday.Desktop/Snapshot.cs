@@ -192,7 +192,7 @@ internal static class Snapshot
         panel.IsRhythm = true;
         var day = DateTime.Today;
         var focus = new RhythmSnapshot(true, now.AddMinutes(-41), now.AddMinutes(-13), now.AddMinutes(12), null,
-            TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null);
+            TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), false, null, null, 2, 4);
         var rhythmDay = new RhythmDay
         {
             Date = DateOnly.FromDateTime(day),

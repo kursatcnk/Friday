@@ -72,7 +72,7 @@ public sealed partial class AssistantTools
                     return new QuickReply("Hiçbir hatırlatmayı susturmadım.");
                 }
 
-                ShowListCard("Susturulanlar", "", silenced.Select(item => new CardRow(NudgePolicy.Label(item.Kind), item.Until is { } until ? $"{until:d MMM}'e kadar" : "kalıcı")));
+                ShowListCard("Susturulanlar", "", silenced.Select(item => new CardRow(NudgePolicy.Label(item.Kind), item.Until is { } until ? $"{until:d MMM} tarihine kadar" : "kalıcı")));
                 return new QuickReply("Susturduklarım: " + TurkishGrammar.Join([.. silenced.Select(item => NudgePolicy.Label(item.Kind) + (item.Until is null ? "" : " (bir süreliğine)"))]) + ".");
         }
     }

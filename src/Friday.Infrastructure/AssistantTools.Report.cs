@@ -11,7 +11,7 @@ public sealed partial class AssistantTools
 
     /// <summary>
     /// Son 7 günün raporu Kaydedilenler klasörüne Markdown olarak yazılır: odak ve ekran süresi, alışkanlıklar, harcamalar,
-    /// işler, günlük ve kelime pratiği. Dil modeli kullanılmaz; yalnızca kayıtlardan derlenir.
+    /// işler ve günlük. Dil modeli kullanılmaz; yalnızca kayıtlardan derlenir.
     /// </summary>
     private QuickReply WeeklyReportFile()
     {
@@ -95,13 +95,6 @@ public sealed partial class AssistantTools
                 text.AppendLine(CultureInfo.InvariantCulture, $"- {when.ToString("ddd HH:mm", Turkish)} · {entry}");
             }
 
-            text.AppendLine();
-        }
-
-        if (Vocabulary is { Started: true } deck)
-        {
-            var stats = deck.Stats(today);
-            text.AppendLine(CultureInfo.InvariantCulture, $"## Kelime pratiği\n- {stats.Learned}/{stats.Total} kelime öğrenildi, bugün {stats.Waiting} kelime bekliyor");
             text.AppendLine();
         }
 

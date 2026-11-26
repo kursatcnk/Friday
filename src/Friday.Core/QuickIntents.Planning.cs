@@ -2,23 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace Friday.Core;
 
-/// <summary>Kelime pratiği ve uygulama bazında ses.</summary>
+/// <summary>Gün planı, bağlantı testi, işe odak ve uygulama bazında ses.</summary>
 public static partial class QuickIntents
 {
     /// <summary>"müzik", "video" gibi sözler bir uygulama adı değildir; genel ses komutlarına kalır.</summary>
     private static readonly HashSet<string> NotAudioApps = ["müzik", "müziğ", "şarkı", "şarkını", "video", "ses", "bilgisayar", "bilgisayarı", "hoparlör", "kulaklık", "tv", "televizyon", "film"];
 
-    /// <summary>"kelime ekle: serendipity = mutlu tesadüf" → ("serendipity", "mutlu tesadüf"); harfler korunur.</summary>
-    public static (string Front, string Back)? WordDefinition(string text)
-    {
-        var original = AddressAnyCase().Replace(text.Trim(), "").Trim().TrimEnd('.', '!');
-        var match = WordDefine().Match(original);
-        return match.Success && match.Groups["f"].Value.Trim().Length > 0 && match.Groups["b"].Value.Trim().Length > 0
-            ? (match.Groups["f"].Value.Trim(), match.Groups["b"].Value.Trim())
-            : null;
-    }
-
-    private static QuickCommand? Practice(string sentence)
+    private static QuickCommand? Planning(string sentence)
     {
         if (DayPlanRequest().IsMatch(sentence))
         {
@@ -41,19 +31,7 @@ public static partial class QuickIntents
             return Command("isle_odak", ("is", task), ("dakika", minutes));
         }
 
-        if (VocabularyStart().IsMatch(sentence))
-        {
-            return Command("kelime", ("islem", "calis"));
-        }
-
-        if (VocabularyStats().IsMatch(sentence))
-        {
-            return Command("kelime", ("islem", "durum"));
-        }
-
-        return VocabularyRemove().Match(sentence) is { Success: true } remove
-            ? Command("kelime", ("islem", "sil"), ("kelime", remove.Groups["f"].Value.Trim()))
-            : null;
+        return null;
     }
 
     /// <summary>"Spotify'ın sesini kıs", "Discord'u sessize al", "Chrome'un sesini yüzde 30 yap", "hangi uygulamalar ses çıkarıyor".</summary>
@@ -102,19 +80,6 @@ public static partial class QuickIntents
     // "faturayı ödemeye 25 dakika odaklan", "sunuma odaklanalım", "rapor için 1 saat odak aç"
     [GeneratedRegex(@"^(?<x>\p{L}[\p{L}\d ]{1,40}?)(?:['’]?(?:ya|ye|na|ne|a|e)| için) (?:(?<n>\d+|[\p{L}]+(?: [\p{L}]+)?) (?<u>dakika|saat)(?:lık)? )?(?:odaklan(?:ayım|alım|acağım|mak istiyorum)?|odak(?: aç)?)$")]
     private static partial Regex FocusTaskRequest();
-
-    [GeneratedRegex(@"^(?:yeni )?kelime ekle[:,]?\s+(?<f>[^=:]+?)\s*(?:=|:| - | anlamı | demek(?:tir)? | yani )\s*(?<b>.+)$", RegexOptions.IgnoreCase)]
-    private static partial Regex WordDefine();
-
-    // "kelime çalışalım", "ingilizce pratik yapalım", "kelime testi", "kartları tekrar edelim"
-    [GeneratedRegex(@"^(?:hadi )?(?:ingilizce )?(?:kelime|kelimeleri|kelimelerimi|kartları|kelime kartlarını) (?:çalış(?:alım|mak istiyorum|tır|ayım)?|tekrar (?:et|edelim|edeyim)|pratik yap(?:alım)?|sor)$|^(?:hadi )?(?:ingilizce )?(?:kelime|dil) (?:pratiği|testi|antrenmanı|çalışması|tekrarı)(?: yap(?:alım)?| aç)?$|^(?:hadi )?ingilizce (?:pratik yap(?:alım)?|çalış(?:alım)?|çalışmak istiyorum)$")]
-    private static partial Regex VocabularyStart();
-
-    [GeneratedRegex(@"^(?:kaç kelime (?:biliyorum|öğrendim)|kelime durumum|kelimelerim(?: nasıl gidiyor| ne durumda)?|kelime istatistiklerim|kelime destem(?: nasıl)?)$")]
-    private static partial Regex VocabularyStats();
-
-    [GeneratedRegex(@"^(?<f>.+?) kelimesini (?:sil|çıkar|desteden çıkar)$")]
-    private static partial Regex VocabularyRemove();
 
     [GeneratedRegex(@"^(?:hangi uygulamalar(?: ses çıkarıyor| ses veriyor| çalıyor)?|uygulama sesleri(?:ni göster)?|ses karıştırıcı(?:yı aç)?|ses mikseri(?:ni aç)?)$")]
     private static partial Regex AppVolumeList();

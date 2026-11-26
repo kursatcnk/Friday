@@ -336,8 +336,8 @@
                                     </Grid>
                                     <TextBlock Text="{Binding DialSentence}" Style="{StaticResource Body}" FontSize="12" Margin="0,10,0,12"/>
                                     <WrapPanel Margin="-4,0,0,0">
-                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Mola ver" Command="{Binding RhythmCommand}" CommandParameter="Mola ver"/>
-                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="25 dk odak" Command="{Binding RhythmCommand}" CommandParameter="25 dakika odaklanacağım"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Mola ver" Command="{Binding ControlCommand}" CommandParameter="mola"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="25 dk odak" Command="{Binding ControlCommand}" CommandParameter="odak:25"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="Nefes" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım"/>
                                     </WrapPanel>
                                 </StackPanel>
@@ -588,27 +588,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                </StackPanel>
-                            </Border>
-                            <!-- Kelime pratiği: bugün bekleyen tekrarlar ve öğrenilenler. -->
-                            <Border local:CardFlowPanel.Key="vocabulary" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}" Visibility="{Binding HasVocabulary, Converter={StaticResource Visible}}">
-                                <StackPanel>
-                                    <Grid>
-                                        <TextBlock Text="Kelime pratiği" Style="{StaticResource SectionTitle}"/>
-                                        <TextBlock Text="{Binding VocabularyCaption}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                    </Grid>
-                                    <Grid Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding VocabularyDue}" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="SemiBold"
-                                                   Typography.NumeralAlignment="Tabular" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding VocabularyDetail}" Style="{StaticResource Body}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="Çalış" Padding="16,7" Margin="10,0,0,0" VerticalAlignment="Center"
-                                                Command="{Binding StartPracticeCommand}"/>
-                                    </Grid>
                                 </StackPanel>
                             </Border>
                             <!-- Notlar. -->
