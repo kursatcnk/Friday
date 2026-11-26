@@ -115,6 +115,13 @@ public sealed partial class AssistantTools
             return null;
         }
 
+        // Soru yalnızca o işin oturumu bitince sorulur: iş odağı molayla ya da yeni bir odakla kesildiyse sonraki alakasız
+        // odağın sonunda "rapor işini bitirdin mi?" denmez.
+        if (Rhythm?.Today.Sessions.LastOrDefault() is { } last && !string.Equals(last.Task, task, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         var todo = Todos?.Open.FirstOrDefault(item => item.Text == task);
         _focusAsked = DateTime.Now;
         Ask("Odak", _ =>
