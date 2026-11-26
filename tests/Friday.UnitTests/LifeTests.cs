@@ -112,6 +112,7 @@ public class ExpenseIntentTests
     [Theory]
     [InlineData("kahveye 80 lira harcadım", 80, "kahveye")]
     [InlineData("markete 450 lira verdim", 450, "markete")]
+    [InlineData("markete 230 lira bıraktım", 230, "markete")]
     [InlineData("taksiye 120 tl ödedim", 120, "taksiye")]
     [InlineData("market alışverişine iki yüz elli lira verdim", 250, "market alışverişine")]
     [InlineData("80 liralık kahve aldım", 80, "kahve")]

@@ -135,7 +135,7 @@ public static partial class QuickIntents
     private static partial Regex LeadingTime();
 
     // "kahveye 80 lira harcadım", "market alışverişine iki yüz elli lira verdim", "200 tl harcadım"
-    [GeneratedRegex(@"^(?<pre>.+?) (?:lira|tl|₺)(?:lık)? (?:harcadım|harcadık|verdim|ödedim|gitti|bayıldım)$")]
+    [GeneratedRegex(@"^(?<pre>.+?) (?:lira|tl|₺)(?:lık)? (?:harcadım|harcadık|verdim|ödedim|bıraktım|saydım|gitti|bayıldım)$")]
     private static partial Regex SpentOn();
 
     // "80 liralık kahve aldım", "450 liraya market alışverişi yaptım"
