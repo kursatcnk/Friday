@@ -2217,7 +2217,8 @@ public sealed class FridayAssistant : IDisposable
             }
 
             _scheduler.Allowed = _tools.AllowsNudge;
-            var context = new ProactiveContext(now, Muted, snapshot.IsAway, FullScreenDetector.IsBusy());
+            var focused = snapshot.FocusEnd is { } focusEnd && focusEnd > now && snapshot.FocusPausedAt is null;
+            var context = new ProactiveContext(now, Muted, snapshot.IsAway, FullScreenDetector.IsBusy(), focused);
             if (await _scheduler.NextAsync(ProactiveCandidates(), context).ConfigureAwait(false) is { } next)
             {
                 if (next.Candidate.UserSet)

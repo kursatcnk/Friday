@@ -49,4 +49,14 @@ public class ProactiveSchedulerTests
         Assert.Null(await scheduler.NextAsync([Say("seri", 50, "Seri.") with { AvoidFullScreen = true }], away));
         Assert.Null(await scheduler.NextAsync([Say("goz", 60, "Göz molası.")], new ProactiveContext(Evening, false, false, false)));
     }
+
+    [Fact]
+    public async Task WaitsUntilAFocusIsOverButLetsUserSetAlertsThrough()
+    {
+        var scheduler = new ProactiveScheduler();
+        var focused = new ProactiveContext(Evening, Muted: false, Away: false, FullScreen: false, Focused: true);
+        Assert.Null(await scheduler.NextAsync([Say("seri", 55, "Seri tehlikede.")], focused));
+        Assert.Equal("kur", (await scheduler.NextAsync([Say("seri", 55, "Seri."), Say("kur", 10, "Dolar 45'i geçti.") with { UserSet = true }], focused))?.Candidate.Kind);
+        Assert.Equal("seri", (await scheduler.NextAsync([Say("seri", 55, "Seri tehlikede.")], focused with { Focused = false }))?.Candidate.Kind);
+    }
 }

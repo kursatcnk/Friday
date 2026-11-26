@@ -1,7 +1,8 @@
 namespace Friday.Core;
 
 /// <summary>Kendiliğinden konuşma anındaki durum.</summary>
-public sealed record ProactiveContext(DateTime Now, bool Muted, bool Away, bool FullScreen);
+/// <param name="Focused">Süren (duraklatılmamış) bir odak var: kullanıcının kurmadığı dürtmeler odak bitene kadar bekler.</param>
+public sealed record ProactiveContext(DateTime Now, bool Muted, bool Away, bool FullScreen, bool Focused = false);
 
 /// <summary>
 /// Kendiliğinden söylenebilecek bir şey. Produce o an söylenecek cümleyi üretir (zamanı değilse null); günde bir kez gibi
@@ -39,7 +40,7 @@ public sealed class ProactiveScheduler
     {
         foreach (var candidate in candidates.OrderByDescending(item => item.Priority))
         {
-            if (!candidate.UserSet && (context.Muted || !Allowed(candidate.Kind)))
+            if (!candidate.UserSet && (context.Muted || context.Focused || !Allowed(candidate.Kind)))
             {
                 continue;
             }
