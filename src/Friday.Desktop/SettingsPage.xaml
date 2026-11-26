@@ -14,6 +14,26 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Margin" Value="0,2,0,0"/>
         </Style>
+        <Style x:Key="CategoryLink" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="Transparent" CornerRadius="5" Padding="10,7">
+                            <ContentPresenter HorizontalAlignment="Left" TextElement.FontSize="13"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource HoverWashBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="Row" TargetType="StackPanel">
             <Setter Property="Margin" Value="0,0,0,18"/>
         </Style>
@@ -34,42 +54,41 @@
     </UserControl.Resources>
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="204"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Uzun sayfada arama ve bölümler arasında tek tıkla geçiş. -->
-        <DockPanel Margin="36,0,24,8">
-        <Grid DockPanel.Dock="Left" Width="210" Margin="0,0,10,6" VerticalAlignment="Top">
+        <!-- Solda arama ve bölümler: Windows Ayarlar gibi dikey bir liste. -->
+        <StackPanel Grid.RowSpan="2" Margin="36,0,16,16">
+            <Grid Margin="0,0,0,14">
             <TextBox x:Name="SearchBox" Padding="30,6,10,6" FontSize="12.5" TextChanged="OnSearch" AutomationProperties.Name="Ayarlarda ara"/>
             <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="11" Foreground="{DynamicResource FaintBrush}" Margin="11,0,0,0"
                        VerticalAlignment="Center" HorizontalAlignment="Left" IsHitTestVisible="False"/>
             <TextBlock x:Name="SearchHint" Text="Ayarlarda ara" Foreground="{DynamicResource FaintBrush}" FontSize="12.5" Margin="31,0,0,0"
                        VerticalAlignment="Center" IsHitTestVisible="False"/>
         </Grid>
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource ChipButton}" Content="Görünüm" Tag="SectionLook" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Kısayollar" Tag="Section1" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Uyandırma" Tag="Section2" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Ritim" Tag="Section3" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Karakter" Tag="Section4" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Yardımcılar" Tag="Section5" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Belgeler" Tag="SectionDocs" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Telefon" Tag="SectionRemote" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Takvim" Tag="Section6" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Ses" Tag="Section7" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Mikrofon" Tag="Section8" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Akıl" Tag="Section9" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Verilerin" Tag="Section10" Click="OnJump" Margin="0,0,6,6"/>
-                <Button Style="{StaticResource ChipButton}" Content="Hakkında" Tag="Section11" Click="OnJump" Margin="0,0,6,6"/>
-            </StackPanel>
-        </ScrollViewer>
-        </DockPanel>
+                <Button Style="{StaticResource CategoryLink}" Content="Görünüm" Tag="SectionLook" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Kısayollar" Tag="Section1" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Uyandırma" Tag="Section2" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Ritim" Tag="Section3" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Karakter" Tag="Section4" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Yardımcılar" Tag="Section5" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Belgeler" Tag="SectionDocs" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Telefon" Tag="SectionRemote" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Takvim" Tag="Section6" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Ses" Tag="Section7" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Mikrofon" Tag="Section8" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Akıl" Tag="Section9" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Verilerin" Tag="Section10" Click="OnJump"/>
+                <Button Style="{StaticResource CategoryLink}" Content="Hakkında" Tag="Section11" Click="OnJump"/>
+        </StackPanel>
 
-        <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="36,4,24,0">
+        <ScrollViewer x:Name="Scroller" Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="8,0,24,0">
             <StackPanel x:Name="Sections" Margin="0,0,12,16" MaxWidth="760" HorizontalAlignment="Left">
                 <TextBlock x:Name="NoResults" Style="{StaticResource Body}" Margin="0,8,0,14" Visibility="Collapsed"
                            Text="Bu aramayla eşleşen bir ayar yok. Ör. &quot;ses&quot;, &quot;kısayol&quot;, &quot;görüşme&quot;, &quot;yedek&quot;."/>
@@ -663,7 +682,7 @@
         </ScrollViewer>
 
         <!-- Değişiklikler anında kaydedilir; burada yalnızca sonucu yazılır. -->
-        <TextBlock Grid.Row="2" Text="{Binding SavedMessage}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="38,6,36,12"
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SavedMessage}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="38,6,36,12"
                    Visibility="{Binding SavedMessage, Converter={StaticResource TextVisible}}"/>
     </Grid>
 </UserControl>
