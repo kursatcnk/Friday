@@ -270,20 +270,27 @@
                             <DataTemplate DataType="{x:Type local:WeekBarView}">
                                 <StackPanel Margin="8,0">
                                     <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                                    <Grid Height="110">
+                                    <Grid Height="110" ToolTip="{Binding FocusLabel}">
                                         <Border x:Name="Bar" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="3" Background="{DynamicResource TrackBrush}"/>
+                                        <Border Height="{Binding FocusHeight}" VerticalAlignment="Bottom" CornerRadius="3" Background="{DynamicResource AccentBrush}"/>
                                     </Grid>
                                     <TextBlock x:Name="Day" Text="{Binding Day}" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                 </StackPanel>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                        <Setter TargetName="Bar" Property="Background" Value="{DynamicResource AccentBrush}"/>
                                         <Setter TargetName="Day" Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                        <Setter TargetName="Day" Property="FontWeight" Value="SemiBold"/>
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Margin="8,10,0,0">
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{DynamicResource TrackBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Bilgisayar başında" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
+                        <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Odak" Style="{StaticResource Caption}" Margin="6,0,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

@@ -7,7 +7,8 @@ using Friday.Core;
 namespace Friday.Desktop;
 
 /// <summary>Ritim sayfasındaki haftalık grafikte bir gün.</summary>
-public sealed record WeekBarView(string Day, double Height, string Label, bool IsToday);
+/// <param name="FocusHeight">Çubuğun odakta geçen kısmı (vurgu renginde).</param>
+public sealed record WeekBarView(string Day, double Height, string Label, bool IsToday, double FocusHeight = 0, string FocusLabel = "");
 
 /// <summary>Ritim sayfasında bir odak oturumu satırı.</summary>
 public sealed record FocusSessionView(string Time, string Length, string Task);
@@ -203,12 +204,18 @@ public sealed partial class PanelViewModel
         {
             var minutes = day.ActiveMinutes;
             var label = minutes < 1 ? "" : RhythmText.Compact(minutes);
-            WeekBars.Add(new WeekBarView(day.Date.ToString("ddd", Turkish), Math.Max(4, 110 * minutes / longest), label, day.Date == today));
+            var height = Math.Max(4, 110 * minutes / longest);
+            // Odak, çubuğun dibinden vurgu renginde yükselir; bilgisayar başında geçen sürenin ne kadarının odak olduğu görünür.
+            var focus = Math.Min(height, 110 * Math.Min(day.FocusMinutes, minutes) / longest);
+            WeekBars.Add(new WeekBarView(day.Date.ToString("ddd", Turkish), height, label, day.Date == today, focus,
+                day.FocusMinutes >= 1 ? $"odak {RhythmText.Compact(day.FocusMinutes)}" : ""));
         }
 
         WeekSummary = RhythmCoachLines.Week(days);
         var worked = days.Where(day => day.ActiveMinutes >= 1).ToList();
-        WeekAverage = worked.Count == 0 ? "" : $"Çalıştığın günlerde ortalama {RhythmText.Compact(worked.Average(day => day.ActiveMinutes))}";
+        var focusDays = days.Where(day => day.FocusMinutes >= 1).ToList();
+        WeekAverage = worked.Count == 0 ? "" : $"Çalıştığın günlerde ortalama {RhythmText.Compact(worked.Average(day => day.ActiveMinutes))}"
+            + (focusDays.Count == 0 ? "" : $", odak {RhythmText.Compact(focusDays.Average(day => day.FocusMinutes))}");
     }
 
     [ObservableProperty]

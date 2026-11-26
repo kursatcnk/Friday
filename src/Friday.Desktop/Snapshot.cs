@@ -220,9 +220,11 @@ internal static class Snapshot
         panel.ShowWeek([.. Enumerable.Range(0, 7).Select(offset => new RhythmDay
         {
             Date = DateOnly.FromDateTime(day.AddDays(offset - 6)),
-            ActiveMinutes = SampleWeek[offset]
+            ActiveMinutes = SampleWeek[offset],
+            FocusMinutes = Math.Round(SampleWeek[offset] * (offset % 3 == 0 ? 0.15 : 0.4))
         })]);
         RenderPanel(panel, folder, "panel-rhythm");
+        RenderPanel(panel, folder, "panel-rhythm-full", 1900);
         panel.TickRhythm(working);
         RenderPanel(panel, folder, "panel-rhythm-working");
         panel.TickRhythm(new RhythmSnapshot(true, null, null, null, now.AddMinutes(-2).AddSeconds(-14), TimeSpan.FromMinutes(50),
@@ -341,9 +343,9 @@ internal static class Snapshot
         public override DateTimeOffset GetUtcNow() => new DateTimeOffset(Now).ToUniversalTime();
     }
 
-    private static void RenderPanel(PanelViewModel viewModel, string folder, string name)
+    private static void RenderPanel(PanelViewModel viewModel, string folder, string name, double height = 660)
     {
-        var view = new PanelView { DataContext = viewModel, Width = 1020, Height = 660 };
+        var view = new PanelView { DataContext = viewModel, Width = 1020, Height = height };
         view.FreezeAnimation(1.1);
         Save(view, Path.Combine(folder, name + ".png"));
     }
