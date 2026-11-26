@@ -463,6 +463,7 @@ public sealed partial class AssistantTools
             "odakduraklat" => coach.PauseFocus(),
             "odakdevam" => coach.ResumeFocus(),
             "odakuzat" => coach.ExtendFocus(minutes),
+            "molauzat" => coach.ExtendBreak(minutes),
             "odaklar" => coach.FocusSessions(task, period),
             "ertele" => coach.Snooze(minutes),
             "nefes" => RhythmCoach.Breathe(),

@@ -287,4 +287,28 @@ public class RhythmControlTests
         back.Restore(resting.Live(), Morning.AddMinutes(10));
         Assert.Null(back.BreakStart);
     }
+
+    [Fact]
+    public void ABreakCanBeExtended()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        Assert.False(tracker.ExtendBreak(TimeSpan.FromMinutes(5)));
+        tracker.Update(Morning, TimeSpan.Zero);
+        tracker.StartBreak(Morning);
+        Assert.True(tracker.ExtendBreak(TimeSpan.FromMinutes(5)));
+        var events = Run(tracker, Morning, TimeSpan.FromMinutes(11), TimeSpan.FromSeconds(3));
+        var over = Assert.Single(events, item => item.Kind == RhythmEventKind.BreakOver);
+        Assert.True(over.Length >= TimeSpan.FromMinutes(10));
+    }
+
+    [Theory]
+    [InlineData("molayı 5 dakika uzat", "5")]
+    [InlineData("molayı uzat", "5")]
+    [InlineData("on dakika daha mola", "10")]
+    public void RecognizesBreakExtension(string sentence, string minutes)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("mola_uzat", command?.Arguments["islem"]);
+        Assert.Equal(minutes, command!.Arguments["dakika"]);
+    }
 }

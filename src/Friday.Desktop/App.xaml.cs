@@ -677,6 +677,7 @@ public sealed partial class App : Application, IDisposable
                 "seribitti" => rhythm.StopSeries(),
                 "mola" => rhythm.StartBreak(),
                 "molabitti" => rhythm.EndBreak(),
+                "molauzat" => rhythm.ExtendBreak(minutes),
                 "durdur" => rhythm.PauseSuggestions(parts.Length > 1 && parts[1] == "gun" ? null : TimeSpan.FromMinutes(minutes <= 0 ? 60 : minutes)),
                 "surdur" => rhythm.ResumeSuggestions(),
                 _ => new QuickReply("")
@@ -707,8 +708,8 @@ public sealed partial class App : Application, IDisposable
             if (state.BreakStart is not null)
             {
                 return state.SeriesRound > 0
-                    ? [Do("Sıradaki tura geç", "molabitti"), Do("Pomodoro serisini bitir", "seribitti")]
-                    : [Do("Moladan döndüm", "molabitti")];
+                    ? [Do("Sıradaki tura geç", "molabitti"), Do("Molayı 5 dakika uzat", "molauzat:5"), Do("Pomodoro serisini bitir", "seribitti")]
+                    : [Do("Moladan döndüm", "molabitti"), Do("Molayı 5 dakika uzat", "molauzat:5")];
             }
 
             var silenced = state.SnoozedUntil is { } until && until > DateTime.Now;

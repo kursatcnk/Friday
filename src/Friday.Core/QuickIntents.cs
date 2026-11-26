@@ -446,6 +446,12 @@ public static partial class QuickIntents
             return spent;
         }
 
+        if (BreakExtend().Match(sentence) is { Success: true } longer)
+        {
+            var minutes = ParseNumber(longer.Groups["n"].Value) is { } value ? value : 5;
+            return Command("ritim", ("islem", "mola_uzat"), ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)));
+        }
+
         if (FocusExtend().Match(sentence) is { Success: true } extend)
         {
             var minutes = ParseNumber(extend.Groups["n"].Value) is { } value ? value : 10;
@@ -622,6 +628,10 @@ public static partial class QuickIntents
     // "odağa devam", "odağı sürdür", "odağı devam ettir"
     [GeneratedRegex(@"^(?:odağa devam(?: et)?|odağı (?:sürdür|devam ettir)|pomodoroya devam(?: et)?|sayaca devam(?: et)?)$")]
     private static partial Regex FocusResume();
+
+    // "molayı 5 dakika uzat", "molayı uzat", "beş dakika daha mola"
+    [GeneratedRegex(@"^molayı(?: (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika)? uzat$|^(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha mola(?: ver(?:eyim)?| istiyorum)?$")]
+    private static partial Regex BreakExtend();
 
     // "odağı 10 dakika uzat", "odağı uzat", "on dakika daha odaklanayım"
     [GeneratedRegex(@"^(?:odağı|odak süresini)(?: (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika)? uzat$|^(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha (?:odaklan(?:ayım|alım)?|odak)$")]

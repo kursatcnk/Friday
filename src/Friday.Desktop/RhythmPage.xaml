@@ -95,6 +95,8 @@
                                     Visibility="{Binding SeriesActive, Converter={StaticResource Hidden}}"/>
                             <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="molabitti" Padding="16,9" Content="Sıradaki tura geç"
                                     Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
+                            <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="molauzat:5" Content="+5 dk"
+                                    ToolTip="Molayı 5 dakika uzat"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım" Content="Nefes egzersizi"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding RhythmCommand}" CommandParameter="Esneme yapalım" Content="Esneme"/>
                             <Button Style="{StaticResource GhostButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="seribitti" Content="Seriyi bitir"

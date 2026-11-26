@@ -204,7 +204,7 @@ public sealed partial class AssistantTools(
         Tool("gecmis", "Geçmiş sohbetler: belirli bir günde neler konuşulduğunu verir ya da bütün sohbetlerde bir konuyu arar ('geçen hafta X hakkında ne konuşmuştuk').",
             [("gun", "string", "bugun, dun ya da yyyy-aa-gg", false), ("ara", "string", "Sohbetlerde aranacak sözcük", false)]),
         Tool("ritim", "Çalışma ritmi koçu: mola başlatır, odak oturumu açar/bitirir/duraklatır/uzatır, molayı erteler, sesli nefes egzersizi ya da esneme yaptırır, içilen suyu sayar, günün çalışma özetini ve moladan önce kalınan yeri söyler.",
-            [("islem", "string", "mola, mola_bitir, odak, odak_bitir, odak_duraklat, odak_devam, odak_uzat, odaklar (hangi işe ne kadar odaklanıldı), ertele, nefes, esneme, su, durum (bugün), hafta ya da kaldigim_yer", true),
+            [("islem", "string", "mola, mola_bitir, odak, odak_bitir, odak_duraklat, odak_devam, odak_uzat, mola_uzat, odaklar (hangi işe ne kadar odaklanıldı), ertele, nefes, esneme, su, durum (bugün), hafta ya da kaldigim_yer", true),
              ("dakika", "number", "odak, uzatma ya da erteleme süresi (dakika)", false),
              ("is", "string", "odaklar için iş adı (rapor, sunum…); boşsa işlere göre döküm", false),
              ("donem", "string", "odaklar için bugun, dun, hafta ya da ay", false)]),

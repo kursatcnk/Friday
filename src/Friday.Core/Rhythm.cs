@@ -414,6 +414,19 @@ public sealed class RhythmTracker
         return true;
     }
 
+    /// <summary>Süren molayı uzatır ("5 dakika daha"); seri molasında sıradaki tur da o kadar sonra başlar.</summary>
+    /// <returns>Süren bir mola varsa true.</returns>
+    public bool ExtendBreak(TimeSpan by)
+    {
+        if (BreakStart is null)
+        {
+            return false;
+        }
+
+        _breakFor = CurrentBreakLength + by;
+        return true;
+    }
+
     /// <summary>Süren odağı uzatır.</summary>
     /// <returns>Uzatılacak bir odak varsa true.</returns>
     public bool ExtendFocus(TimeSpan by)

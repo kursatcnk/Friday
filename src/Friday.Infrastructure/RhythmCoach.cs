@@ -297,6 +297,29 @@ public sealed partial class RhythmCoach : IDisposable
             : "Şu an açık bir odak oturumu yok; \"25 dakika odaklanacağım\" diyerek başlatabilirsin.");
     }
 
+    /// <summary>Süren molayı uzatır ("5 dakika daha mola").</summary>
+    public QuickReply ExtendBreak(double minutes)
+    {
+        var by = TimeSpan.FromMinutes(Math.Clamp(minutes <= 0 ? 5 : minutes, 1, 60));
+        bool extended;
+        DateTime? end = null;
+        lock (_gate)
+        {
+            extended = _tracker.ExtendBreak(by);
+            if (_tracker.BreakStart is { } start)
+            {
+                end = start + _tracker.CurrentBreakLength;
+            }
+
+            SaveQuietly();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new QuickReply(extended && end is { } at
+            ? $"Molayı {RhythmCoachLines.Span(by)} uzattım; {at.ToString("HH:mm", CultureInfo.InvariantCulture)}'{RhythmText.ToSuffix(at)} kadar."
+            : "Şu an bir molada değilsin.");
+    }
+
     /// <summary>Pomodoro serisi (25 dk odak + 5 dk mola); turlar ritim koçunun saatiyle ilerler.</summary>
     public QuickReply StartSeries(int rounds, string task = "")
     {
