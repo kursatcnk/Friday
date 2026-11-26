@@ -623,7 +623,7 @@ public static partial class QuickIntents
     private static partial Regex FocusPeriod();
 
     // "neye odaklandım", "en çok neye çalıştım", "neye ne kadar odaklandım", "odak oturumlarım"
-    [GeneratedRegex(@"^(?:en çok )?neye (?:ne kadar )?(?:odaklandım|çalıştım|zaman harcadım)$|^odak (?:oturumlarım|geçmişim|dökümüm)(?: neler| ne)?$|^hangi işlere? (?:ne kadar )?(?:odaklandım|çalıştım)$")]
+    [GeneratedRegex(@"^(?:en çok )?(?:neye|hangi işe|hangi işlere) (?:ne kadar )?(?:odaklandım|odaklanmışım|çalıştım|çalışmışım|(?:zaman|vakit) (?:harcadım|harcamışım|ayırdım|ayırmışım))$|^odak (?:oturumlarım|geçmişim|dökümüm)(?: neler| ne)?$")]
     private static partial Regex FocusBreakdown();
 
     // "rapora ne kadar çalıştım", "sunum için kaç saat odaklandım", "faturalara ne kadar zaman harcadım"
@@ -631,11 +631,11 @@ public static partial class QuickIntents
     private static partial Regex FocusOnTaskSpent();
 
     // "odağı duraklat", "odağa ara ver", "odağı beklet"
-    [GeneratedRegex(@"^(?:odağı|odak(?: modunu)?|pomodoroyu|sayacı) (?:duraklat|beklet|dondur)$|^odağa (?:biraz )?ara ver$")]
+    [GeneratedRegex(@"(?:^|, )(?:odağı|odak(?: modunu)?|pomodoroyu|sayacı) (?:biraz |bir dakika |bir saniye |bir süre |kısa bir süre )?(?:duraklat|beklet|dondur)$|(?:^|, )odağa (?:biraz |kısa bir )?ara ver$")]
     private static partial Regex FocusPause();
 
     // "odağa devam", "odağı sürdür", "odağı devam ettir"
-    [GeneratedRegex(@"^(?:odağa devam(?: et)?|odağı (?:sürdür|devam ettir)|pomodoroya devam(?: et)?|sayaca devam(?: et)?)$")]
+    [GeneratedRegex(@"(?:^|, )(?:kaldığım yerden |kaldığı yerden )?(?:odağa|odaklanmaya|pomodoroya|sayaca) (?:kaldığım yerden |kaldığı yerden )?devam(?: et| edelim| ediyorum| edeyim)?$|(?:^|, )odağı (?:sürdür|devam ettir)$")]
     private static partial Regex FocusResume();
 
     // "molayı 5 dakika uzat", "molayı uzat", "beş dakika daha mola"

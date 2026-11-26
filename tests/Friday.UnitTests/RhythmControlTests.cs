@@ -174,6 +174,8 @@ public class RhythmControlTests
     [InlineData("odağı uzat", "odak_uzat", "10")]
     [InlineData("on dakika daha odaklanayım", "odak_uzat", "10")]
     [InlineData("odağı bitir", "odak_bitir", "")]
+    [InlineData("telefon çaldı, odağı bir dakika beklet", "odak_duraklat", "")]
+    [InlineData("tamam döndüm, kaldığım yerden odaklanmaya devam edelim", "odak_devam", "")]
     public void RecognizesFocusControls(string sentence, string action, string minutes)
     {
         var command = QuickIntents.Match(sentence);
@@ -234,6 +236,7 @@ public class RhythmControlTests
     [InlineData("bugün neye odaklandım", "", "bugun")]
     [InlineData("bu ay en çok neye çalıştım", "", "ay")]
     [InlineData("odak oturumlarım", "", "bugun")]
+    [InlineData("bu hafta en çok hangi işe vakit ayırmışım", "", "hafta")]
     public void AsksWhereTheFocusWent(string sentence, string task, string period)
     {
         var command = QuickIntents.Match(sentence);

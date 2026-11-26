@@ -311,7 +311,10 @@ public static partial class AgentPlan
         "kaydediyorum", "ekliyorum", "not ediyorum", "kuruyorum", "hatırlatıyorum", "yazdım bile", "listene attım", "listeye attım",
         "hatırlayacağım", "bilgilendireceğim", "bilgilendiririm", "uyaracağım", "uyarırım",
         "taslağını hazırladım", "taslağı hazırladım", "taslak hazırladım", "e-postayı hazırladım", "e-postanı hazırladım", "maili hazırladım",
-        "mailini hazırladım", "taslağını açtım", "taslağı açtım"
+        "mailini hazırladım", "taslağını açtım", "taslağı açtım",
+        "beklettim", "duraklattım", "askıya aldım", "devam ettiriyorum", "devam ettirdim", "molanı uzattım", "molayı uzattım", "odağı uzattım",
+        "odağı başlattım", "odak başlattım", "odağı bitirdim", "aktif ettim", "duraklatıyorum", "bekletiyorum", "askıya alıyorum",
+        "beklemeye alıyorum", "beklemeye aldım", "sürdürüyorum", "durduruyorum", "daha uzattım", "dakika uzattım"
     ];
 
     /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>
@@ -350,7 +353,8 @@ public static partial class AgentPlan
         (["hatırlatıcı", "hatırlatırım", "hatırlatacağım", "hatırlatıyorum", "haber vereceğim", "haber veririm", "uyandır", "dürt", "seslen",
           "uyar", "bilgilendir", "alarm"], "hatirlatici"),
         (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla"),
-        (["taslağ", "taslak", "e-posta", "eposta", "maili"], "eposta_taslagi")
+        (["taslağ", "taslak", "e-posta", "eposta", "maili"], "eposta_taslagi"),
+        (["odak", "odağ", "mola", "pomodoro", "sayac", "sayaç", "beklet", "duraklat", "askıya al", "beklemeye al"], "ritim")
     ];
 
     /// <summary>Bir iddia cümlesinin denk geldiği araçlar, en belirginden başlayarak; tanınmazsa boş.</summary>

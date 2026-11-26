@@ -105,6 +105,16 @@ internal static class Cases
             new("zor", ["bu akşam Mert'i arama hatırlatmasını yarın akşama al"], "", Tools: "hatirlatici"),
             new("zor", ["Ela'nın okul formunu ne zamana kadar imzalamam lazım"], "[Yy]arın|" + today.AddDays(1).ToString("d MMMM", Turkish)),
 
+            // Ritim: kalıba uymayan söyleyişler dil modeli yolundan doğru araca gitmeli
+            new("ritim", ["telefon çaldı, odağı bir dakika beklet"], "", Tools: "ritim"),
+            new("ritim", ["tamam döndüm, kaldığım yerden odaklanmaya devam edelim"], "", Tools: "ritim"),
+            new("ritim", ["bu hafta en çok hangi işe vakit ayırmışım"], "", Tools: "ritim"),
+            new("ritim", ["molam biraz uzasın, beş dakika daha"], "", Tools: "ritim"),
+            new("ritim", ["kapıya bakmam lazım, sayacı bekletir misin"], "", Tools: "ritim"),
+            new("ritim", ["geldim, sayaç kaldığı yerden sürsün"], "", Tools: "ritim"),
+            new("ritim", ["son bir haftada hangi işlere ne kadar emek vermişim"], "", Tools: "ritim"),
+            new("ritim", ["15 mart 2027 ne güne geliyor"], "(?i)pazartesi"),
+
             // Uzun üretim: üretim sınırına takılsa da tamamlanmalı
             new("uzun", ["patronum Ahmet Bey'e yarın izin istediğimi, projenin son durumunu ve dönünce yapacaklarımı anlatan uzun ve resmi bir e-posta taslağı hazırla"], "",
                 Tools: "eposta_taslagi|yazi"),
