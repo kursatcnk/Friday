@@ -319,7 +319,8 @@ public static partial class AgentPlan
         "beklettim", "duraklattım", "askıya aldım", "devam ettiriyorum", "devam ettirdim", "molanı uzattım", "molayı uzattım", "odağı uzattım",
         "odağı başlattım", "odak başlattım", "odağı bitirdim", "aktif ettim", "duraklatıyorum", "bekletiyorum", "askıya alıyorum",
         "beklemeye alıyorum", "beklemeye aldım", "sürdürüyorum", "durduruyorum", "daha uzattım", "dakika uzattım",
-        "işaretledim", "işaretliyorum", "siliyorum", "sildim", "iptal ettim", "iptal ediyorum", "kaldırdım", "kaldırıyorum"
+        "işaretledim", "işaretliyorum", "siliyorum", "sildim", "iptal ettim", "iptal ediyorum", "kaldırdım", "kaldırıyorum",
+        "devam ediyoruz", "kaldığın yerden devam", "kontrol ettim", "baktım"
     ];
 
     /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>
@@ -360,7 +361,7 @@ public static partial class AgentPlan
           "uyar", "bilgilendir", "alarm", "hatırlatma"], "hatirlatici"),
         (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla"),
         (["taslağ", "taslak", "e-posta", "eposta", "maili"], "eposta_taslagi"),
-        (["odak", "odağ", "mola", "pomodoro", "sayac", "sayaç", "beklet", "duraklat", "askıya al", "beklemeye al"], "ritim")
+        (["odak", "odağ", "mola", "pomodoro", "sayac", "sayaç", "beklet", "duraklat", "askıya al", "beklemeye al", "kaldığın yerden"], "ritim")
     ];
 
     /// <summary>Bir iddia cümlesinin denk geldiği araçlar, en belirginden başlayarak; tanınmazsa boş.</summary>

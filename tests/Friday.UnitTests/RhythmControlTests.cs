@@ -176,6 +176,7 @@ public class RhythmControlTests
     [InlineData("odağı bitir", "odak_bitir", "")]
     [InlineData("telefon çaldı, odağı bir dakika beklet", "odak_duraklat", "")]
     [InlineData("tamam döndüm, kaldığım yerden odaklanmaya devam edelim", "odak_devam", "")]
+    [InlineData("geldim, sayaç kaldığı yerden sürsün", "odak_devam", "")]
     public void RecognizesFocusControls(string sentence, string action, string minutes)
     {
         var command = QuickIntents.Match(sentence);

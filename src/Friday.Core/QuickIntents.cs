@@ -644,7 +644,7 @@ public static partial class QuickIntents
     private static partial Regex FocusPause();
 
     // "odağa devam", "odağı sürdür", "odağı devam ettir"
-    [GeneratedRegex(@"(?:^|, )(?:kaldığım yerden |kaldığı yerden )?(?:odağa|odaklanmaya|pomodoroya|sayaca) (?:kaldığım yerden |kaldığı yerden )?devam(?: et| edelim| ediyorum| edeyim)?$|(?:^|, )odağı (?:sürdür|devam ettir)$")]
+    [GeneratedRegex(@"(?:^|, )(?:kaldığım yerden |kaldığı yerden )?(?:odağa|odaklanmaya|pomodoroya|sayaca) (?:kaldığım yerden |kaldığı yerden )?devam(?: et| edelim| ediyorum| edeyim)?$|(?:^|, )odağı (?:sürdür|devam ettir)$|(?:^|, )(?:sayaç|odak|pomodoro) kaldığı yerden (?:sürsün|devam etsin|başlasın)$")]
     private static partial Regex FocusResume();
 
     // "molayı 5 dakika uzat", "molayı uzat", "beş dakika daha mola"
