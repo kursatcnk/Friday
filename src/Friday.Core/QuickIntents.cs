@@ -648,7 +648,7 @@ public static partial class QuickIntents
     private static partial Regex FocusResume();
 
     // "molayı 5 dakika uzat", "molayı uzat", "beş dakika daha mola"
-    [GeneratedRegex(@"^molayı(?: (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika)? uzat$|^(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha mola(?: ver(?:eyim)?| istiyorum)?$")]
+    [GeneratedRegex(@"^molayı(?: (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika)? uzat$|^(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha mola(?: ver(?:eyim)?| istiyorum)?$|^molam (?:biraz )?uza(?:sın|tılsın)(?:, (?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika daha)?$")]
     private static partial Regex BreakExtend();
 
     // "odağı 10 dakika uzat", "odağı uzat", "on dakika daha odaklanayım"

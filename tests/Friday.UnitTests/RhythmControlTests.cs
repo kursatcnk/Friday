@@ -309,6 +309,7 @@ public class RhythmControlTests
     [InlineData("molayı 5 dakika uzat", "5")]
     [InlineData("molayı uzat", "5")]
     [InlineData("on dakika daha mola", "10")]
+    [InlineData("molam biraz uzasın, beş dakika daha", "5")]
     public void RecognizesBreakExtension(string sentence, string minutes)
     {
         var command = QuickIntents.Match(sentence);
