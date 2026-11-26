@@ -377,22 +377,30 @@
                                                         <TextBlock x:Name="Due" Text="{Binding DueLabel}" Style="{StaticResource Caption}" Margin="0,1,0,0"
                                                                    Visibility="{Binding HasDue, Converter={StaticResource Visible}}"/>
                                                     </StackPanel>
-                                                    <Button Grid.Column="2" x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Sil" Opacity="0" Padding="5"
-                                                            Command="{Binding DataContext.RemoveTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}">
-                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
-                                                    </Button>
+                                                    <StackPanel Grid.Column="2" x:Name="Actions" Orientation="Horizontal" Opacity="0" VerticalAlignment="Top">
+                                                        <Button x:Name="Focus" Style="{StaticResource IconButton}" ToolTip="Bu işe 25 dakika odaklan" Padding="5"
+                                                                Command="{Binding DataContext.FocusTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}">
+                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="9"/>
+                                                        </Button>
+                                                        <Button x:Name="Remove" Style="{StaticResource IconButton}" ToolTip="Sil" Padding="5"
+                                                                Command="{Binding DataContext.RemoveTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}">
+                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
+                                                        </Button>
+                                                    </StackPanel>
                                                 </Grid>
                                                 <DataTemplate.Triggers>
                                                     <DataTrigger Binding="{Binding IsDone}" Value="True">
                                                         <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource FaintBrush}"/>
                                                         <Setter TargetName="Label" Property="TextDecorations" Value="Strikethrough"/>
+                                                        <Setter TargetName="Focus" Property="Visibility" Value="Collapsed"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsUrgent}" Value="True">
                                                         <Setter TargetName="Due" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                     </DataTrigger>
                                                     <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Remove" Property="Opacity" Value="1"/>
+                                                        <Setter TargetName="Actions" Property="Opacity" Value="1"/>
                                                     </Trigger>
                                                 </DataTemplate.Triggers>
                                             </DataTemplate>

@@ -52,4 +52,12 @@ public sealed partial class PanelViewModel
 
     [RelayCommand]
     private void RemoveTodo(TodoView item) => _actions.RemoveTodo(item.Id);
+
+    /// <summary>İşe 25 dakikalık odak: oturum o işe sayılır, bitince "bitirdin mi?" sorulur; halka Ritim sayfasında görünür.</summary>
+    [RelayCommand]
+    private void FocusTodo(TodoView item)
+    {
+        RhythmNote = _actions.FocusOnTask(item.Text, 25);
+        GoTo("rhythm");
+    }
 }
