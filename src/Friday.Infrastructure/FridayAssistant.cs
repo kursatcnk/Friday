@@ -1739,10 +1739,16 @@ public sealed class FridayAssistant : IDisposable
                     return reply.Append(spoken).ToString();
                 }
 
-                if (calls.Count == 1 && AssistantTools.AnswersDirectly(call.Name))
+                if (calls.Count == 1 && (AssistantTools.AnswersDirectly(call.Name)
+                                         || (!multiStep && AssistantTools.ConfirmsDirectly(call) && AssistantTools.Speakable(result))))
                 {
-                    // Görme modelinin cevabı doğrudan okunur; sohbet modeli arka planda yeniden yüklenir.
-                    Prewarm();
+                    // Görme modelinin cevabı doğrudan okunur; sohbet modeli arka planda yeniden yüklenir. Kayıt değiştiren
+                    // komutların onay cümlesi de olduğu gibi okunur (bkz. AssistantTools.ConfirmsDirectly).
+                    if (AssistantTools.AnswersDirectly(call.Name))
+                    {
+                        Prewarm();
+                    }
+
                     reply.Append(result);
                     Show(reply.ToString());
                     var direct = new SentenceChunker();

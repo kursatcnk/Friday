@@ -65,6 +65,32 @@ public sealed partial class AssistantTools
     /// </summary>
     public static bool AnswersDirectly(string tool) => tool == "ekrana_bak";
 
+    /// <summary>
+    /// Kayıt değiştiren tek bir çağrının sonucu zaten okunacak bir onay cümlesidir ("Son harcamayı sildim: eczane, 430 lira.");
+    /// dil modeline ikinci kez sorulmadan doğrudan söylenir. Ölçümde ikinci turda model ara sıra alakasız bir tanıtım
+    /// ("Merhaba! Ben Friday…") ya da yapılmamış bir iş söylüyordu; ayrıca bir model turu (~1–2 sn) kazanılır.
+    /// </summary>
+    public static bool ConfirmsDirectly(ToolCall call) => (call.Name, Simplify(Argument(call, "islem"))) switch
+    {
+        ("harcama", "ekle" or "silson" or "butce") => true,
+        ("liste", "ekle" or "cikar" or "temizle") => true,
+        ("yapilacaklar", "ekle" or "tamamla" or "onemli") => true,
+        ("hatirlatici", "ekle" or "sil" or "tasi") => true,
+        ("not", "ekle") => true,
+        ("hatirla", _) => true,
+        ("ritim", var action) => action is not ("odaklar" or "durum" or "hafta" or "kaldigimyer"),
+        _ => false
+    };
+
+    /// <summary>
+    /// Sonuç olduğu gibi okunabilir mi? Güvenlik kalkanının onay isteği ("ONAY GEREKLİ…") ya da modele yönelik bir yönerge
+    /// ("Kullanıcıya … söyle") içeren sonuçlar okunmaz; onları model kullanıcıya uygun sözlerle söyler.
+    /// </summary>
+    public static bool Speakable(string result) =>
+        result.Length is > 0 and < 400 && !result.StartsWith("ONAY GEREKLİ", StringComparison.Ordinal)
+        && !result.Contains("Kullanıcıya", StringComparison.Ordinal) && !result.Contains("kullanıcıya", StringComparison.Ordinal)
+        && !result.StartsWith("Hata", StringComparison.Ordinal) && !result.Contains('[', StringComparison.Ordinal);
+
     private async Task<string> ClipboardAsync(string action, string language, CancellationToken cancellationToken)
     {
         var text = ClipboardText.Get().Trim();
@@ -121,7 +147,7 @@ public sealed partial class AssistantTools
         ledger.Record(DataFlow.Local, "Hafıza", $"Kaydedildi: {saved.Text}");
         // Eski bir bilgi güncellendiyse model bunu kullanıcıya söyler ("eskiden 0532 … idi").
         return replaced is null || replaced == saved.Text
-            ? $"Hafızaya kaydedildi: {saved.Text}"
+            ? $"Tamam, aklımda: {MemoryText.ForDisplay(saved.Text)}"
             : $"Hafızadaki eski bilgi güncellendi. Eski: {replaced} Yeni: {saved.Text} Kullanıcıya eski bilginin yerine yenisini koyduğunu kısaca söyle.";
     }
 
