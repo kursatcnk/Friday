@@ -247,4 +247,44 @@ public class RhythmControlTests
     [InlineData("bugün ne kadar çalıştım", "durum")]
     [InlineData("bu hafta ne kadar çalıştım", "hafta")]
     public void LeavesTheDaySummaryAlone(string sentence, string action) => Assert.Equal(action, QuickIntents.Match(sentence)?.Arguments["islem"]);
+
+    [Fact]
+    public void ARestartKeepsWhatTheUserStarted()
+    {
+        var before = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        before.StartSeries(Morning, 4, "Sunum");
+        before.PauseFocus(Morning.AddMinutes(10));
+        before.Snooze(Morning, TimeSpan.FromHours(20));
+        var live = before.Live();
+
+        // Friday bir saat sonra yeniden açılıyor: duraklatılmış tur, seri ve susturma yerinde.
+        var after = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        after.Restore(live, Morning.AddHours(1));
+        Assert.Equal(Morning.AddMinutes(10), after.FocusPausedAt);
+        Assert.Equal((1, 4, "Sunum"), (after.SeriesRound, after.SeriesRounds, after.FocusTask));
+        Assert.Equal(Morning.AddHours(20), after.SnoozedUntil);
+        Assert.True(after.ResumeFocus(Morning.AddHours(1)));
+        Assert.Equal(Morning.AddHours(1).AddMinutes(15), after.FocusEnd);
+    }
+
+    [Fact]
+    public void WhatEndedWhileClosedIsNotRestored()
+    {
+        var before = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        before.StartFocus(Morning, TimeSpan.FromMinutes(25), "Rapor");
+        before.Snooze(Morning, TimeSpan.FromMinutes(30));
+        var after = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        after.Restore(before.Live(), Morning.AddHours(2));
+        Assert.False(after.InFocus);
+        Assert.Null(after.SnoozedUntil);
+
+        var resting = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        resting.StartBreak(Morning);
+        var back = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        back.Restore(resting.Live(), Morning.AddMinutes(3));
+        Assert.Equal(Morning, back.BreakStart);
+        back = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        back.Restore(resting.Live(), Morning.AddMinutes(10));
+        Assert.Null(back.BreakStart);
+    }
 }

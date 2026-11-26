@@ -63,6 +63,23 @@ public enum RhythmEventKind
 public sealed record RhythmEvent(RhythmEventKind Kind, TimeSpan Length, int Round = 0, int Rounds = 0);
 
 /// <summary>
+/// Ritmin o anki, kullanıcının başlattığı durumu (odak, mola, seri, susturulan öneriler). Friday yeniden başlarsa buradan
+/// sürer; eskiden yeniden başlatınca odak, pomodoro serisi ve "bugünlük durdur" kayboluyordu.
+/// </summary>
+public sealed record RhythmLive(
+    DateTime? FocusStart,
+    DateTime? FocusEnd,
+    DateTime? FocusPausedAt,
+    string FocusTask,
+    DateTime FocusBegan,
+    DateTime? BreakStart,
+    double? BreakMinutes,
+    int SeriesRound,
+    int SeriesRounds,
+    string SeriesTask,
+    DateTime? SnoozedUntil);
+
+/// <summary>
 /// Çalışma ritminin saf mantığı: son klavye/fare kullanımından bu yana geçen süreye bakarak aralıksız çalışmayı, molaları,
 /// odak oturumlarını ve günün özetini tutar. Saat dışarıdan verilir; bu sayede tamamen test edilebilir.
 /// </summary>
@@ -249,6 +266,46 @@ public sealed class RhythmTracker
         }
 
         return events;
+    }
+
+    /// <summary>Kaydedilecek anlık durum.</summary>
+    public RhythmLive Live() => new(FocusStart, FocusEnd, FocusPausedAt, FocusTask, _focusBegan, BreakStart, _breakFor?.TotalMinutes,
+        SeriesRound, SeriesRounds, _seriesTask, SnoozedUntil);
+
+    /// <summary>
+    /// Kaydedilmiş durumdan sürer; Friday kapalıyken süresi dolanlar alınmaz (biten odak, biten mola, geçen susturma).
+    /// Duraklatılmış odak, kaldığı yerden beklemeye devam eder.
+    /// </summary>
+    public void Restore(RhythmLive live, DateTime now)
+    {
+        if (live.SnoozedUntil is { } snoozed && snoozed > now)
+        {
+            SnoozedUntil = snoozed;
+        }
+
+        var focusAlive = live.FocusStart is not null && live.FocusEnd is { } end && (live.FocusPausedAt is not null || end > now);
+        var breakLength = live.BreakMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : BreakLength;
+        var breakAlive = live.BreakStart is { } rest && now - rest < breakLength;
+        if (focusAlive)
+        {
+            FocusStart = live.FocusStart;
+            FocusEnd = live.FocusEnd;
+            FocusPausedAt = live.FocusPausedAt;
+            FocusTask = live.FocusTask;
+            _focusBegan = live.FocusBegan;
+        }
+        else if (breakAlive)
+        {
+            BreakStart = live.BreakStart;
+            _breakFor = live.BreakMinutes is { } length ? TimeSpan.FromMinutes(length) : null;
+        }
+
+        if ((focusAlive || breakAlive) && live.SeriesRound > 0)
+        {
+            SeriesRound = live.SeriesRound;
+            SeriesRounds = live.SeriesRounds;
+            _seriesTask = live.SeriesTask;
+        }
     }
 
     /// <summary>Öneri uygun olmayan bir anda geldiyse (tam ekran, Friday konuşuyor) birkaç dakika sonra yeniden denenir.</summary>

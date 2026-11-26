@@ -38,6 +38,7 @@ public sealed partial class RhythmCoach : IDisposable
         var today = Load(DateOnly.FromDateTime(DateTime.Now));
         _freshDay = today is null;
         _tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5), today);
+        RestoreLive();
         Prune();
     }
 
@@ -246,6 +247,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             paused = _tracker.PauseFocus(DateTime.Now);
+            SaveQuietly();
             if (_tracker.FocusEnd is { } end && _tracker.FocusPausedAt is { } at)
             {
                 left = end - at;
@@ -266,6 +268,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             resumed = _tracker.ResumeFocus(DateTime.Now);
+            SaveQuietly();
             end = _tracker.FocusEnd;
         }
 
@@ -284,6 +287,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             extended = _tracker.ExtendFocus(by);
+            SaveQuietly();
             end = _tracker.FocusEnd;
         }
 
@@ -300,6 +304,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             _tracker.StartSeries(DateTime.Now, rounds, task);
+            SaveQuietly();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -352,6 +357,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             _tracker.Snooze(DateTime.Now, length);
+            SaveQuietly();
         }
 
         return new QuickReply(RhythmCoachLines.Snoozed(length));
@@ -368,6 +374,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             _tracker.Snooze(now, until - now);
+            SaveQuietly();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -380,6 +387,7 @@ public sealed partial class RhythmCoach : IDisposable
         lock (_gate)
         {
             _tracker.Snooze(DateTime.Now, TimeSpan.Zero);
+            SaveQuietly();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -593,7 +601,59 @@ public sealed partial class RhythmCoach : IDisposable
         }
     }
 
-    private void Save() => File.WriteAllText(FileFor(_tracker.Today.Date), JsonSerializer.Serialize(_tracker.Today, Json));
+    private void Save()
+    {
+        File.WriteAllText(FileFor(_tracker.Today.Date), JsonSerializer.Serialize(_tracker.Today, Json));
+        SaveLive();
+    }
+
+    /// <summary>Panelden ya da sesle verilen komutlarda kayıt hatası komutu bozmaz; günlüğe yazılır.</summary>
+    private void SaveQuietly()
+    {
+        try
+        {
+            Save();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            FridayLog.Error("Ritim kaydedilemedi", exception);
+        }
+    }
+
+    private string LiveFile => Path.Combine(_folder, "live-state.json");
+
+    /// <summary>Odak, mola, seri ve susturma yeniden başlatmada kaybolmasın diye ayrı bir dosyada tutulur.</summary>
+    private void SaveLive()
+    {
+        var live = _tracker.Live();
+        var idle = live.FocusStart is null && live.BreakStart is null && live.SnoozedUntil is null;
+        if (idle)
+        {
+            if (File.Exists(LiveFile))
+            {
+                File.Delete(LiveFile);
+            }
+
+            return;
+        }
+
+        File.WriteAllText(LiveFile, JsonSerializer.Serialize(live, Json));
+    }
+
+    private void RestoreLive()
+    {
+        try
+        {
+            if (File.Exists(LiveFile) && JsonSerializer.Deserialize<RhythmLive>(File.ReadAllText(LiveFile), Json) is { } live)
+            {
+                _tracker.Restore(live, DateTime.Now);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            FridayLog.Error("Ritim durumu okunamadı", exception);
+        }
+    }
 
     /// <summary>90 günden eski ritim dosyaları silinir.</summary>
     private void Prune()
