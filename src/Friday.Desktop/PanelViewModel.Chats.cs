@@ -303,7 +303,7 @@ public sealed partial class PanelViewModel
         IsCurrentPinned = chat?.Pinned ?? false;
         CurrentChatTitle = chat?.Title ?? "Yeni sohbet";
         CurrentChatMeta = chat is null
-            ? "Sorduğun ilk şey bu sohbetin başlığı olur."
+            ? ""
             : $"{chat.Created.LocalDateTime.ToString("d MMMM HH:mm", Turkish)} · {chat.TurnCount} soru";
         foreach (var item in ChatList.OfType<ChatItemView>())
         {

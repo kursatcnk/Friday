@@ -860,9 +860,9 @@
                                                         <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="13.5" LineHeight="20"/>
                                                         <TextBlock Text="{Binding Meta}" Style="{StaticResource Caption}" Margin="0,4,0,0"/>
                                                     </StackPanel>
-                                                    <Border Grid.Column="1" CornerRadius="9" Padding="10,4" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Center"
+                                                    <Border Grid.Column="1" VerticalAlignment="Center"
                                                             Margin="12,0,6,0" Visibility="{Binding HasCountdown, Converter={StaticResource Visible}}">
-                                                        <TextBlock Text="{Binding Countdown}" Foreground="{DynamicResource AccentBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Countdown}" Foreground="{DynamicResource MutedBrush}" FontSize="12"/>
                                                     </Border>
                                                     <Button Grid.Column="2" x:Name="Forget" Style="{StaticResource IconButton}" ToolTip="Unut" Opacity="0"
                                                             Command="{Binding DataContext.ForgetMemoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -934,26 +934,11 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <UniformGrid Columns="3" Margin="-6,0,-6,18">
-                        <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                            <StackPanel>
-                                <TextBlock Text="Mikrofon" Style="{StaticResource Caption}"/>
-                                <TextBlock Text="{Binding MicrophoneSummary}" Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="19"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                            <StackPanel>
-                                <TextBlock Text="Bilgisayarda kalan" Style="{StaticResource Caption}"/>
-                                <TextBlock Text="{Binding LocalCount}" Style="{StaticResource StatValue}" Foreground="{DynamicResource CalmBrush}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="6,0" Padding="18,16">
-                            <StackPanel>
-                                <TextBlock Text="Dışarı giden" Style="{StaticResource Caption}"/>
-                                <TextBlock Text="{Binding OutboundCount}" Style="{StaticResource StatValue}" Foreground="{DynamicResource WarningBrush}"/>
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
+                    <TextBlock Margin="0,0,0,18" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="13">
+                        <Run Text="Mikrofon:"/> <Run Text="{Binding MicrophoneSummary, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                        <Run Text="  ·  Bilgisayarda kalan:"/> <Run Text="{Binding LocalCount, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                        <Run Text="  ·  Dışarı giden:"/> <Run Text="{Binding OutboundCount, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                    </TextBlock>
                     <TextBlock Grid.Row="1" Text="Bugünün defteri" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Ledger}">

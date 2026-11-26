@@ -230,27 +230,29 @@
                 </TextBlock>
             </StackPanel>
 
-            <!-- Boş durum: küre, selam ve öneriler. -->
-            <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
+            <!-- Boş durum: birkaç örnek, düz bağlantılar halinde. -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,28,0,0"
                         Visibility="{Binding HasLines, Converter={StaticResource Hidden}}">
-                <local:AudioRing x:Name="HeroRing" Width="170" Height="170" Level="{Binding Level}" State="{Binding State}"/>
-                <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" Margin="0,10,0,6"
-                           FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding WakeHint}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" FontSize="13.5"
-                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520"/>
-                <TextBlock Text="Dinleme, anlama ve düşünme bu bilgisayarda yapılır." Foreground="{DynamicResource FaintBrush}"
-                           HorizontalAlignment="Center" Margin="0,4,0,22" FontSize="12"/>
-                <ItemsControl ItemsSource="{Binding Suggestions}" MaxWidth="560">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel HorizontalAlignment="Center"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                <local:AudioRing x:Name="HeroRing" Width="0" Height="0" Visibility="Collapsed"/>
+                <TextBlock Text="Örneğin" Style="{StaticResource Caption}" Margin="0,0,0,8"/>
+                <ItemsControl ItemsSource="{Binding Suggestions}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource ChipButton}" Content="{Binding}"
+                            <Button Content="{Binding}" Cursor="Hand" HorizontalAlignment="Left" Margin="0,2"
                                     Command="{Binding DataContext.SuggestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"/>
+                                    CommandParameter="{Binding}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <TextBlock x:Name="Label" Text="{TemplateBinding Content}" Foreground="{DynamicResource MutedBrush}" FontSize="13.5" Padding="0,3"/>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                                <Setter TargetName="Label" Property="TextDecorations" Value="Underline"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -262,7 +264,7 @@
             </ScrollViewer>
 
             <!-- Yazma alanı: yüzen, yumuşak köşeli bir kutu. -->
-            <Border Grid.Row="3" Margin="0,16,0,0" CornerRadius="18" Background="{DynamicResource SurfaceRaisedBrush}"
+            <Border Grid.Row="3" Margin="0,16,0,0" CornerRadius="8" Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                 <Grid>
                     <TextBox x:Name="DraftBox" Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" Padding="18,13,60,13" FontSize="14"

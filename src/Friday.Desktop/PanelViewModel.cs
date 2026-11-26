@@ -292,12 +292,13 @@ public sealed partial class PanelViewModel : ObservableObject
     private bool _isLearned;
 
     public string PageTitle => IsToday ? "Bugün" : IsAgenda ? "Ajanda" : IsMemory ? "Hafıza" : IsLearned ? "Öğrendikleri" : IsRhythm ? "Ritim"
-        : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : AssistantName;
+        : IsPrivacy ? "Gizlilik" : IsRoutines ? "Rutinler" : IsSettings ? "Ayarlar" : "Sohbet";
 
     /// <summary>Başlığın altındaki satır: yalnızca Bugün (tarih) ve Sohbet (durum); diğer sayfalar başlığı tekrar etmez.</summary>
     public string PageSubtitle =>
         IsToday ? DateTime.Now.ToString("d MMMM dddd", Turkish)
-        : IsChat ? StatusText
+        // Sohbette yalnızca bir şey olurken (dinliyor, düşünüyor, konuşuyor); boştaki teknik durum satırı gösterilmez.
+        : IsChat ? (State is AssistantState.Idle or AssistantState.Starting ? "" : StatusText)
         : "";
 
     public string Greeting => string.IsNullOrWhiteSpace(_settings.UserName) ? "Merhaba." : $"Merhaba {_settings.UserName.Trim()}.";
