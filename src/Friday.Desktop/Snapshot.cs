@@ -216,6 +216,7 @@ internal static class Snapshot
             ]
         };
         panel.ShowRhythm(rhythmDay, focus);
+        panel.ShowGoal(rhythmDay, [rhythmDay]);
         panel.RhythmNow = day.AddHours(14.4);
         panel.ShowWeek([.. Enumerable.Range(0, 7).Select(offset => new RhythmDay
         {
