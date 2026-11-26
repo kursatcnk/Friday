@@ -447,6 +447,11 @@ public static partial class QuickIntents
             return Command("ritim", ("islem", "odak"), ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)));
         }
 
+        if (TodoImportant().Match(sentence) is { Success: true } important)
+        {
+            return Command("yapilacak", ("islem", "onemli"), ("metin", important.Groups["x"].Value.Trim()));
+        }
+
         if (FocusSpent(sentence) is { } spent)
         {
             return spent;
@@ -619,6 +624,10 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?<d>.+?)(?:['’]?(?:da|de|ta|te|ı|i|u|ü|sı|si|su|sü))? (?:hangi güne (?:denk )?(?:geliyor|gelir|düşüyor|rastlıyor)|hangi gün(?:e)? (?:denk geliyor|oluyor|düşüyor)|ne günü|ne güne (?:denk )?geliyor|haftanın hangi günü|hangi gün)(?: acaba)?$")]
     private static partial Regex WeekdayQuestion();
 
+    // "sunum işini önemli olarak işaretle", "kirayı önemli yap", "raporu yıldızla"
+    [GeneratedRegex(@"^(?<x>.+?)(?: işini| görevini)? (?:önemli (?:olarak )?(?:işaretle|yap|say)|yıldızla)$")]
+    private static partial Regex TodoImportant();
+
     [GeneratedRegex(@"(?:^| )(?:bugün|dün|bu hafta(?: içinde)?|son bir hafta(?:da)?|bu ay|son bir ay(?:da)?)(?= |$)")]
     private static partial Regex FocusPeriod();
 
@@ -699,7 +708,7 @@ public static partial class QuickIntents
     private static partial Regex ReminderList();
 
     // "dişçi hatırlatmasını sil/iptal et/kaldır/unut", "dişçiyle ilgili hatırlatmayı sil", "dişçi hatırlatmasına gerek yok"
-    [GeneratedRegex(@"^(?<x>.+?)(?:(?:y?l[ae]) ilgili)? hatırlatma(?:sını|yı|sına|ya)? (?:iptal et|sil|kaldır|unut|gerek yok|lazım değil)$")]
+    [GeneratedRegex(@"^(?<x>.+?)(?:(?:y?l[ae]) ilgili)? hatırlatma(?:sını|yı|sına|ya)? (?:iptal et|sil|kaldır|unut|gerek yok|gerek kalmadı|lazım değil|ihtiyaç yok)$")]
     private static partial Regex ReminderCancel();
 
     // "not al: süt al", "şunu not et: yarın bankaya git", "süt almayı not al"

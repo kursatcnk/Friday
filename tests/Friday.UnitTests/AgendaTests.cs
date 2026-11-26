@@ -291,6 +291,16 @@ public class ModelGuardTests
         Assert.Equal("eposta_taslagi", TextToolCall.Parse(text, Names)?.Name);
     }
 
+    [Theory]
+    [InlineData("sunum işini önemli olarak işaretle", "sunum")]
+    [InlineData("kirayı önemli yap", "kirayı")]
+    public void MarksATaskImportant(string sentence, string task)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("onemli", command?.Arguments["islem"]);
+        Assert.Equal(task, command!.Arguments["metin"]);
+    }
+
     [Fact]
     public void GemmasToolCodeFormIsUnderstood()
     {

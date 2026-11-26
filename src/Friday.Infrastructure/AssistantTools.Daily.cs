@@ -71,6 +71,17 @@ public sealed partial class AssistantTools
                 ledger.Record(DataFlow.Local, "Yapılacaklar", "Söylenen iş tamamlandı");
                 var remaining = todos.Open.Count;
                 return new QuickReply($"Harika, \"{said.Text}\" işini listeden düştüm." + (remaining == 0 ? " Liste bitti, tebrikler!" : $" {remaining} iş kaldı."));
+            case "onemli":
+                // "Sunum işini önemli olarak işaretle": eskiden böyle bir işlem yoktu; model listeyi okuyup
+                // "işaretledim" diyordu.
+                if (todos.Find(text) is not { } marked)
+                {
+                    return new QuickReply(text.Trim().Length == 0 ? "Hangi işi önemli olarak işaretleyeyim?" : $"Listende \"{text.Trim()}\" diye bir iş bulamadım.");
+                }
+
+                todos.Add(marked.Text, now, null, important: true);
+                ledger.Record(DataFlow.Local, "Yapılacaklar", "Bir iş önemli olarak işaretlendi");
+                return new QuickReply(marked.Important ? $"\"{marked.Text}\" zaten önemli olarak işaretli." : $"\"{marked.Text}\" işini önemli olarak işaretledim.");
             case "temizle":
                 var removed = todos.ClearDone();
                 return new QuickReply(removed == 0 ? "Temizlenecek tamamlanmış iş yok." : $"{removed} tamamlanmış işi listeden kaldırdım.");
