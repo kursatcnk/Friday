@@ -59,12 +59,12 @@
                 <ItemsControl ItemsSource="{Binding Routines}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <local:AdaptiveGrid MinItemWidth="240" Gap="14" Margin="0,0,0,14"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:RoutineView}">
-                            <Border x:Name="Card" Style="{StaticResource Card}" Width="262" Margin="0,0,14,14">
+                            <Border x:Name="Card" Style="{StaticResource Card}" Margin="0">
                                 <DockPanel>
                                     <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
                                         <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left"
@@ -107,7 +107,7 @@
                                                         <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="12" Foreground="{DynamicResource FaintBrush}"
                                                                    Width="18" VerticalAlignment="Top" Margin="0,2,0,0"/>
                                                         <TextBlock x:Name="StepText" Text="{Binding Text}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
-                                                                   MaxWidth="190" Margin="8,0,0,0" LineHeight="19"/>
+                                                                   Margin="8,0,0,0" LineHeight="19"/>
                                                     </StackPanel>
                                                     <DataTemplate.Triggers>
                                                         <DataTrigger Binding="{Binding IsValid}" Value="False">
@@ -129,12 +129,12 @@
                 <ItemsControl ItemsSource="{Binding RoutineTemplates}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <local:AdaptiveGrid MinItemWidth="240" Gap="14" Margin="0,0,0,10"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type core:RoutineTemplate}">
-                            <Button Style="{StaticResource GhostButton}" Width="262" Margin="0,0,14,10" Padding="16,12" HorizontalContentAlignment="Left"
+                            <Button Style="{StaticResource GhostButton}" Margin="0" Padding="16,12" HorizontalContentAlignment="Left"
                                     Command="{Binding DataContext.UseTemplateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}">
                                 <StackPanel>

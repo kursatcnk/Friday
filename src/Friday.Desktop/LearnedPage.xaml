@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:Friday.Desktop">
     <Grid Margin="36,4,24,24">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="0,0,12,0" MaxWidth="1000" HorizontalAlignment="Left">
+            <StackPanel Margin="0,0,12,0" MaxWidth="1180" HorizontalAlignment="Stretch">
                 <DockPanel Margin="2,0,0,14">
                     <TextBlock DockPanel.Dock="Right" Text="{Binding LearnedMessage}" Foreground="{DynamicResource CalmBrush}" FontSize="12"
                                TextTrimming="CharacterEllipsis" MaxWidth="560"/>
@@ -14,12 +14,12 @@
                 <ItemsControl ItemsSource="{Binding LearnedGroups}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <local:AdaptiveGrid MinItemWidth="340" Gap="14" Margin="0,0,0,14" MaxColumns="3"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:LearnedGroupView}">
-                            <Border Style="{StaticResource Card}" Width="400" Margin="0,0,14,14">
+                            <Border Style="{StaticResource Card}" Margin="0">
                                 <StackPanel>
                                     <Grid>
                                         <StackPanel Orientation="Horizontal">
