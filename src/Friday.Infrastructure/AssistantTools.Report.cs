@@ -32,6 +32,19 @@ public sealed partial class AssistantTools
                 text.AppendLine(CultureInfo.InvariantCulture, $"- {day.Date.ToString("dddd d MMMM", Turkish)}: {RhythmText.Compact(day.ActiveMinutes)} bilgisayar başında, {RhythmText.Compact(day.FocusMinutes)} odak, {day.Breaks} mola");
             }
 
+            // Odak hangi işlere gitti (odak başlatılırken söylenen işler).
+            var week = coach.History(7);
+            var byTask = FocusLog.ByTask(week.SelectMany(day => day.Sessions)).Where(group => group.Task.Length > 0).Take(6).ToList();
+            if (byTask.Count > 0)
+            {
+                text.AppendLine();
+                text.AppendLine("Odak hangi işlere gitti:");
+                foreach (var (task, minutes, count) in byTask)
+                {
+                    text.AppendLine(CultureInfo.InvariantCulture, $"- {task}: {RhythmText.Compact(minutes)} ({count} oturum)");
+                }
+            }
+
             text.AppendLine();
         }
 
