@@ -66,7 +66,7 @@ public sealed partial class AssistantTools
                 "uygulama_ac" => FindApp(Arg("ad")) is { } app ? OpenAndRecord(app) : null,
                 "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
-                "ritim" => RhythmCommand(Arg("islem"), Arg("dakika")),
+                "ritim" => RhythmCommand(Arg("islem"), Arg("dakika"), Arg("is"), Arg("donem")),
                 "hatirlatici" => new QuickReply(ReminderCommand(Arg("islem"), Arg("zaman"), Arg("metin"), Arg("tekrar"))),
                 "not" => new QuickReply(NoteCommand(Arg("islem"), Arg("metin"))),
                 "hesap" => SpokenMath.Answer(Arg("soru")) is { } answer ? new QuickReply(answer) : null,
@@ -446,7 +446,7 @@ public sealed partial class AssistantTools
     /// <summary>Dil modeli ritim aracını çağırdıysa okunacak rehberli metin (nefes, esneme); bir kez alınır.</summary>
     public IReadOnlyList<CoachStep>? TakeScript() => Interlocked.Exchange(ref _script, null);
 
-    private QuickReply RhythmCommand(string action, string minutesText)
+    private QuickReply RhythmCommand(string action, string minutesText, string task = "", string period = "")
     {
         if (Rhythm is not { Enabled: true } coach)
         {
@@ -463,6 +463,7 @@ public sealed partial class AssistantTools
             "odakduraklat" => coach.PauseFocus(),
             "odakdevam" => coach.ResumeFocus(),
             "odakuzat" => coach.ExtendFocus(minutes),
+            "odaklar" => coach.FocusSessions(task, period),
             "ertele" => coach.Snooze(minutes),
             "nefes" => RhythmCoach.Breathe(),
             "esneme" => RhythmCoach.Stretch(),

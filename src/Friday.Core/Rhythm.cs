@@ -27,6 +27,9 @@ public sealed class RhythmDay
     public int Water { get; set; }
 
     public List<RhythmSegment> Segments { get; set; } = [];
+
+    /// <summary>Biten odak oturumları ve (söylendiyse) hangi iş için oldukları.</summary>
+    public List<FocusSession> Sessions { get; set; } = [];
 }
 
 public enum RhythmEventKind
@@ -120,6 +123,11 @@ public sealed class RhythmTracker
 
     private TimeSpan? _breakFor;
 
+    /// <summary>Süren odağın işi ("Raporu bitir"); iş söylenmediyse boş.</summary>
+    public string FocusTask { get; private set; } = "";
+
+    private DateTime _focusBegan;
+
     public bool IsAway => _awaySince is not null;
 
     /// <summary>Şu anki aralıksız çalışmanın başlangıcı; çalışılmıyorsa null.</summary>
@@ -195,8 +203,7 @@ public sealed class RhythmTracker
         if (FocusEnd is { } end && FocusPausedAt is null && now >= end)
         {
             var length = end - FocusStart!.Value;
-            FocusStart = null;
-            FocusEnd = null;
+            CloseFocus(end);
             LastSuggestion = now;
             if (SeriesRound == 0)
             {
@@ -254,9 +261,7 @@ public sealed class RhythmTracker
     /// <summary>Mola başlar; süren odak (duraklatılmış olsa da) biter.</summary>
     public void StartBreak(DateTime now, TimeSpan? length = null)
     {
-        FocusStart = null;
-        FocusEnd = null;
-        FocusPausedAt = null;
+        CloseFocus(now);
         BreakStart = now;
         _breakFor = length;
         LastSuggestion = now;
@@ -278,8 +283,9 @@ public sealed class RhythmTracker
         return now - started;
     }
 
-    /// <summary>Odak başlar; süren mola biter.</summary>
-    public void StartFocus(DateTime now, TimeSpan length)
+    /// <summary>Odak başlar; süren mola biter, süren odak (varsa) kaydedilip yerini yenisine bırakır.</summary>
+    /// <param name="task">Odağın işi ("Raporu bitir"); söylenmediyse boş.</param>
+    public void StartFocus(DateTime now, TimeSpan length, string task = "")
     {
         if (BreakStart is not null)
         {
@@ -288,19 +294,38 @@ public sealed class RhythmTracker
             _stretchStart = now;
         }
 
+        CloseFocus(now);
         FocusStart = now;
         FocusEnd = now + length;
         FocusPausedAt = null;
+        FocusTask = task.Trim();
+        _focusBegan = now;
     }
 
     /// <returns>Odakta geçen süre (duraklatılan kısım hariç); odak yoksa sıfır.</returns>
     public TimeSpan EndFocus(DateTime now)
     {
         var spent = FocusStart is { } start ? (FocusPausedAt ?? now) - start : TimeSpan.Zero;
+        CloseFocus(now);
+        return spent;
+    }
+
+    /// <summary>Süren odak biter; bir dakikayı geçtiyse günün oturumlarına yazılır.</summary>
+    private void CloseFocus(DateTime at)
+    {
+        if (FocusStart is { } start)
+        {
+            var minutes = ((FocusPausedAt ?? at) - start).TotalMinutes;
+            if (minutes >= 1)
+            {
+                Today.Sessions.Add(new FocusSession(_focusBegan == default ? start : _focusBegan, Math.Round(minutes, 1), FocusTask));
+            }
+        }
+
         FocusStart = null;
         FocusEnd = null;
         FocusPausedAt = null;
-        return spent;
+        FocusTask = "";
     }
 
     /// <summary>Odak durur (telefon, kapıdaki kurye); kalan süre korunur.</summary>
@@ -346,12 +371,15 @@ public sealed class RhythmTracker
     }
 
     /// <summary>Pomodoro serisi: 25 dakika odak, 5 dakika mola; turlar kendiliğinden ilerler, duraklatma ve bitirme her an geçerlidir.</summary>
-    public void StartSeries(DateTime now, int rounds)
+    public void StartSeries(DateTime now, int rounds, string task = "")
     {
         SeriesRounds = Math.Clamp(rounds, 1, 8);
         SeriesRound = 1;
-        StartFocus(now, SeriesFocus);
+        _seriesTask = task.Trim();
+        StartFocus(now, SeriesFocus, _seriesTask);
     }
+
+    private string _seriesTask = "";
 
     /// <summary>Seri biter; süren odak ya da mola olduğu gibi kalır (onları çağıran bitirir).</summary>
     public void StopSeries()
@@ -369,7 +397,7 @@ public sealed class RhythmTracker
         }
 
         SeriesRound = Math.Min(SeriesRound + 1, SeriesRounds);
-        StartFocus(now, SeriesFocus);
+        StartFocus(now, SeriesFocus, _seriesTask);
     }
 
     public void Snooze(DateTime now, TimeSpan length) => SnoozedUntil = now + length;

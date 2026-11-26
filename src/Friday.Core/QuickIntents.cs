@@ -441,6 +441,11 @@ public static partial class QuickIntents
             return Command("ritim", ("islem", "odak"), ("dakika", minutes.ToString("0.###", CultureInfo.InvariantCulture)));
         }
 
+        if (FocusSpent(sentence) is { } spent)
+        {
+            return spent;
+        }
+
         if (FocusExtend().Match(sentence) is { Success: true } extend)
         {
             var minutes = ParseNumber(extend.Groups["n"].Value) is { } value ? value : 10;
@@ -468,6 +473,38 @@ public static partial class QuickIntents
             _ => ""
         };
         return action.Length > 0 ? Command("ritim", ("islem", action)) : null;
+    }
+
+    /// <summary>
+    /// "bu hafta rapora ne kadar çalıştım", "sunuma kaç saat odaklandım", "bugün neye odaklandım", "bu ay en çok neye çalıştım".
+    /// İş adı olmayan "bugün ne kadar çalıştım" günün özetine kalır.
+    /// </summary>
+    private static QuickCommand? FocusSpent(string sentence)
+    {
+        var period = FocusPeriod().Match(sentence) is { Success: true } said
+            ? said.Value.Trim() switch
+            {
+                "dün" => "dun",
+                "bu hafta" or "bu hafta içinde" or "son bir hafta" or "son bir haftada" => "hafta",
+                "bu ay" or "son bir ay" or "son bir ayda" => "ay",
+                _ => "bugun"
+            }
+            : "";
+        var rest = string.Join(' ', FocusPeriod().Replace(sentence, " ").Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        if (FocusBreakdown().IsMatch(rest))
+        {
+            return Command("ritim", ("islem", "odaklar"), ("is", ""), ("donem", period.Length > 0 ? period : "bugun"));
+        }
+
+        if (FocusOnTaskSpent().Match(rest) is not { Success: true } match)
+        {
+            return null;
+        }
+
+        var task = match.Groups["x"].Value.Trim();
+        return task.Length < 3 || task is "ne" or "neye" or "toplam"
+            ? null
+            : Command("ritim", ("islem", "odaklar"), ("is", task), ("donem", period.Length > 0 ? period : "hafta"));
     }
 
     private static QuickCommand? Routine(string sentence, IEnumerable<string> routines)
@@ -566,6 +603,17 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:odak(?: modu(?:nu)?)?|odağı) (?:bitir|kapat|durdur|sonlandır)$")]
     private static partial Regex FocusEnd();
+
+    [GeneratedRegex(@"(?:^| )(?:bugün|dün|bu hafta(?: içinde)?|son bir hafta(?:da)?|bu ay|son bir ay(?:da)?)(?= |$)")]
+    private static partial Regex FocusPeriod();
+
+    // "neye odaklandım", "en çok neye çalıştım", "neye ne kadar odaklandım", "odak oturumlarım"
+    [GeneratedRegex(@"^(?:en çok )?neye (?:ne kadar )?(?:odaklandım|çalıştım|zaman harcadım)$|^odak (?:oturumlarım|geçmişim|dökümüm)(?: neler| ne)?$|^hangi işlere? (?:ne kadar )?(?:odaklandım|çalıştım)$")]
+    private static partial Regex FocusBreakdown();
+
+    // "rapora ne kadar çalıştım", "sunum için kaç saat odaklandım", "faturalara ne kadar zaman harcadım"
+    [GeneratedRegex(@"^(?<x>\p{L}[\p{L}\d ]{1,40}?)(?:['’]?(?:ya|ye|na|ne|a|e)| için| işine| üzerinde) (?:toplam )?(?:ne kadar|kaç (?:dakika|saat)) (?:zaman )?(?:çalıştım|odaklandım|uğraştım|harcadım)$")]
+    private static partial Regex FocusOnTaskSpent();
 
     // "odağı duraklat", "odağa ara ver", "odağı beklet"
     [GeneratedRegex(@"^(?:odağı|odak(?: modunu)?|pomodoroyu|sayacı) (?:duraklat|beklet|dondur)$|^odağa (?:biraz )?ara ver$")]

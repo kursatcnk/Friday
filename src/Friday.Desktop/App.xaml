@@ -378,6 +378,7 @@
         <local:InverseVisibilityConverter x:Key="Hidden"/>
         <local:ZeroVisibilityConverter x:Key="ZeroVisible"/>
         <local:TextVisibilityConverter x:Key="TextVisible"/>
+        <local:TextHiddenConverter x:Key="TextHidden"/>
         <local:FractionWidthConverter x:Key="Fraction"/>
 
 

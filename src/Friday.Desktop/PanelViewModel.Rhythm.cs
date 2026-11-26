@@ -9,6 +9,9 @@ namespace Friday.Desktop;
 /// <summary>Ritim sayfasındaki haftalık grafikte bir gün.</summary>
 public sealed record WeekBarView(string Day, double Height, string Label, bool IsToday);
 
+/// <summary>Ritim sayfasında bir odak oturumu satırı.</summary>
+public sealed record FocusSessionView(string Time, string Length, string Task);
+
 public sealed partial class PanelViewModel
 {
     // ---------- Büyük halka (saniyede bir) ----------
@@ -100,9 +103,40 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private bool _seriesActive;
 
+    /// <summary>Odak düğmelerinin bağlanacağı iş (isteğe bağlı): yazılırsa oturum o işe sayılır, bitince "bitirdin mi?" sorulur.</summary>
+    [ObservableProperty]
+    private string _focusTaskText = "";
+
+    /// <summary>Bugünkü odak oturumları ("09:10 · 25 dk · Rapor").</summary>
+    public System.Collections.ObjectModel.ObservableCollection<FocusSessionView> FocusSessions { get; } = [];
+
+    [ObservableProperty]
+    private bool _hasFocusSessions;
+
+    [ObservableProperty]
+    private string _focusSessionsSummary = "";
+
     /// <summary>Düğmeler ritim koçunu doğrudan yönetir: sohbete yazılmaz, sesli cevap verilmez.</summary>
     [RelayCommand]
-    private void Control(string key) => RhythmNote = _actions.RhythmControl(key);
+    private void Control(string key)
+    {
+        var task = FocusTaskText.Trim();
+        if (task.Length > 0 && key.StartsWith("odak:", StringComparison.Ordinal)
+            && double.TryParse(key[5..], NumberStyles.Float, CultureInfo.InvariantCulture, out var minutes))
+        {
+            RhythmNote = _actions.FocusOnTask(task, minutes);
+            FocusTaskText = "";
+            return;
+        }
+
+        if (task.Length > 0 && key.StartsWith("pomodoro:", StringComparison.Ordinal))
+        {
+            key += ":" + task;
+            FocusTaskText = "";
+        }
+
+        RhythmNote = _actions.RhythmControl(key);
+    }
 
     private static Color ThemeColor(string key) =>
         System.Windows.Application.Current?.TryFindResource(key) is SolidColorBrush brush ? brush.Color : Color.FromRgb(0x7C, 0x79, 0x73);
@@ -140,6 +174,15 @@ public sealed partial class PanelViewModel
         RhythmLongest = RhythmText.Compact(today.LongestStretchMinutes);
         RhythmWater = today.Water.ToString(CultureInfo.InvariantCulture);
         RhythmSegments = today.Segments;
+        FocusSessions.Clear();
+        foreach (var session in today.Sessions.OrderByDescending(item => item.Start).Take(8))
+        {
+            FocusSessions.Add(new FocusSessionView(session.Start.ToString("HH:mm", CultureInfo.InvariantCulture), RhythmText.Compact(session.Minutes),
+                session.Task.Length > 0 ? session.Task : "İş belirtilmedi"));
+        }
+
+        HasFocusSessions = FocusSessions.Count > 0;
+        FocusSessionsSummary = today.Sessions.Count == 0 ? "" : FocusLog.Describe(today.Sessions, "", "Bugün");
         RhythmNow = DateTime.Now;
         var stretch = snapshot.StretchStart is { } start ? DateTime.Now - start : TimeSpan.Zero;
         RhythmSummary = RhythmCoachLines.Status(today, stretch);
@@ -269,7 +312,7 @@ public sealed partial class PanelViewModel
     {
         if (int.TryParse(CustomFocusMinutes.Trim(), out var minutes) && minutes is >= 5 and <= 240)
         {
-            RhythmNote = _actions.RhythmControl($"odak:{minutes}");
+            Control($"odak:{minutes}");
         }
     }
 

@@ -342,6 +342,7 @@ public sealed partial class App : Application, IDisposable
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
             RhythmControl = key => ControlRhythm(key, "Panelden"),
+            FocusOnTask = (task, minutes) => tools.StartTaskFocus(task, minutes),
             Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
                 tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
             AddToAgenda = async text =>
@@ -663,7 +664,7 @@ public sealed partial class App : Application, IDisposable
         // Ritim düğmeleri (panel, tepsi) koçu doğrudan yönetir: sohbete yazılmaz, sesli cevap verilmez.
         string ControlRhythm(string key, string origin)
         {
-            var parts = key.Split(':', 2);
+            var parts = key.Split(':', 3);
             var minutes = parts.Length > 1 && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : 0;
             var reply = parts[0] switch
             {
@@ -672,7 +673,7 @@ public sealed partial class App : Application, IDisposable
                 "duraklat" => rhythm.PauseFocus(),
                 "devam" => rhythm.ResumeFocus(),
                 "uzat" => rhythm.ExtendFocus(minutes),
-                "pomodoro" => rhythm.StartSeries((int)Math.Max(1, minutes)),
+                "pomodoro" => rhythm.StartSeries((int)Math.Max(1, minutes), parts.Length > 2 ? parts[2] : ""),
                 "seribitti" => rhythm.StopSeries(),
                 "mola" => rhythm.StartBreak(),
                 "molabitti" => rhythm.EndBreak(),

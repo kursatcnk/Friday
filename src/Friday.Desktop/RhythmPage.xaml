@@ -51,7 +51,13 @@
                         <TextBlock Text="{Binding DialSentence}" Style="{StaticResource Body}" FontSize="13.5" LineHeight="21" MaxWidth="480" HorizontalAlignment="Left"/>
 
                         <!-- Kipe göre düğmeler. -->
-                        <WrapPanel Margin="-4,16,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
+                        <Grid Margin="0,16,0,0" MaxWidth="420" HorizontalAlignment="Left" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
+                            <TextBox x:Name="FocusTaskBox" Text="{Binding FocusTaskText, UpdateSourceTrigger=PropertyChanged}" Padding="10,7"
+                                     ToolTip="Yazarsan odak oturumu o işe sayılır; bitince bitirip bitirmediğini sorarım."/>
+                            <TextBlock Text="Ne üzerinde çalışacaksın? (isteğe bağlı)" Foreground="{DynamicResource FaintBrush}" Margin="12,0,0,0" VerticalAlignment="Center"
+                                       IsHitTestVisible="False" Visibility="{Binding FocusTaskText, Converter={StaticResource TextHidden}}"/>
+                        </Grid>
+                        <WrapPanel Margin="-4,8,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
                             <Button Style="{StaticResource AccentButton}" Margin="4" Command="{Binding ControlCommand}" CommandParameter="mola" Padding="16,9">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xEC32;" FontSize="12" Margin="0,0,8,0" Foreground="{DynamicResource AccentInkBrush}"/>
@@ -220,6 +226,26 @@
                         <TextBlock Text="Odak oturumu" Style="{StaticResource Caption}" Margin="6,0,16,0"/>
                         <Rectangle Width="12" Height="6" RadiusX="3" RadiusY="3" Stroke="{DynamicResource LineStrongBrush}" StrokeThickness="1" VerticalAlignment="Center"/>
                         <TextBlock Text="Boşluk = mola ya da uzakta" Style="{StaticResource Caption}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <!-- Bugünkü odak oturumları ve işleri. -->
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding HasFocusSessions, Converter={StaticResource Visible}}">
+                        <TextBlock Text="{Binding FocusSessionsSummary}" Style="{StaticResource Body}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <ItemsControl ItemsSource="{Binding FocusSessions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:FocusSessionView}">
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="56"/>
+                                            <ColumnDefinition Width="72"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Time}" Foreground="{DynamicResource MutedBrush}" FontSize="12.5"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Length}" FontSize="12.5"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Task}" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </StackPanel>
             </Border>

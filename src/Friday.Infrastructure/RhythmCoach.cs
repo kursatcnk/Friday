@@ -74,7 +74,8 @@ public sealed partial class RhythmCoach : IDisposable
                     Breaks = day.Breaks,
                     LongestStretchMinutes = day.LongestStretchMinutes,
                     Water = day.Water,
-                    Segments = [.. day.Segments]
+                    Segments = [.. day.Segments],
+                    Sessions = [.. day.Sessions]
                 };
             }
         }
@@ -188,13 +189,15 @@ public sealed partial class RhythmCoach : IDisposable
             : $"Hoş geldin, {RhythmCoachLines.Span(spent)} mola verdin." + (where is null ? "" : $" Kaldığın yer: {where}."));
     }
 
-    public QuickReply StartFocus(double minutes)
+    /// <param name="task">Odağın işi; oturum bu adla kaydedilir ("bu hafta rapora ne kadar çalıştım").</param>
+    public QuickReply StartFocus(double minutes, string task = "")
     {
         var length = TimeSpan.FromMinutes(Math.Clamp(minutes <= 0 ? 25 : minutes, 5, 240));
         lock (_gate)
         {
             _tracker.StopSeries();
-            _tracker.StartFocus(DateTime.Now, length);
+            _tracker.StartFocus(DateTime.Now, length, task);
+            Save();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -217,6 +220,8 @@ public sealed partial class RhythmCoach : IDisposable
             {
                 _tracker.EndBreak(DateTime.Now);
             }
+
+            Save();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -289,18 +294,44 @@ public sealed partial class RhythmCoach : IDisposable
     }
 
     /// <summary>Pomodoro serisi (25 dk odak + 5 dk mola); turlar ritim koçunun saatiyle ilerler.</summary>
-    public QuickReply StartSeries(int rounds)
+    public QuickReply StartSeries(int rounds, string task = "")
     {
         rounds = Math.Clamp(rounds, 1, 8);
         lock (_gate)
         {
-            _tracker.StartSeries(DateTime.Now, rounds);
+            _tracker.StartSeries(DateTime.Now, rounds, task);
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
         return new QuickReply(rounds == 1
             ? "Bir pomodoro başladı: 25 dakika odak."
             : $"{rounds} pomodoro başladı: 25 dakika odak, 5 dakika mola. İlk tur şimdi.");
+    }
+
+    /// <summary>
+    /// Odak oturumlarının dökümü: iş verilirse o işe harcanan süre ("bu hafta rapora ne kadar çalıştım"), verilmezse işlere
+    /// göre dağılım. Dönem: bugun, dun, hafta (son 7 gün) ya da ay (son 30 gün).
+    /// </summary>
+    public QuickReply FocusSessions(string task, string period)
+    {
+        var (days, label) = period switch
+        {
+            "dun" => (History(2).Take(1).ToList(), "Dün"),
+            "hafta" => (History(7).ToList(), "Bu hafta"),
+            "ay" => (History(30).ToList(), "Son 30 günde"),
+            _ => (History(1).ToList(), "Bugün")
+        };
+        var sessions = days.SelectMany(day => day.Sessions).ToList();
+        lock (_gate)
+        {
+            // Süren odak da (bitmemiş olsa bile) sayılır.
+            if (period is not "dun" && _tracker.FocusStart is { } start && (_tracker.FocusPausedAt ?? DateTime.Now) - start is { TotalMinutes: >= 1 } running)
+            {
+                sessions.Add(new FocusSession(start, Math.Round(running.TotalMinutes, 1), _tracker.FocusTask));
+            }
+        }
+
+        return new QuickReply(FocusLog.Describe(sessions, task, label));
     }
 
     /// <summary>Pomodoro serisi ve süren turu (odak ya da mola) biter.</summary>

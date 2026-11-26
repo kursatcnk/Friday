@@ -208,6 +208,11 @@ internal static class Snapshot
                 new RhythmSegment(day.AddHours(10.95), day.AddHours(12.3), RhythmSegmentKind.Work),
                 new RhythmSegment(day.AddHours(13.2), day.AddHours(13.6), RhythmSegmentKind.Focus),
                 new RhythmSegment(day.AddHours(13.6), day.AddHours(14.4), RhythmSegmentKind.Work),
+            ],
+            Sessions =
+            [
+                new FocusSession(day.AddHours(10.05), 50, "Teklif sunumunu hazırla"),
+                new FocusSession(day.AddHours(13.2), 25, ""),
             ]
         };
         panel.ShowRhythm(rhythmDay, focus);

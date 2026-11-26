@@ -34,6 +34,16 @@ public sealed class TextVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>Boş yazı görünür (yer tutucu), dolu yazı gizlenir.</summary>
+public sealed class TextHiddenConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is string { Length: > 0 } ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>[kesir 0–1, kabın genişliği] → çubuğun genişliği.</summary>
 public sealed class FractionWidthConverter : IMultiValueConverter
 {

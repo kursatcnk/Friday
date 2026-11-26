@@ -93,12 +93,16 @@ public sealed partial class AssistantTools
         _focusTask = todo?.Text ?? TurkishGrammar.Capitalize(task.Trim());
         _focusAt = DateTime.Now;
         SaveFocus();
-        coach.StartFocus(minutes);
+        coach.StartFocus(minutes, _focusTask);
         ledger.Record(DataFlow.Local, "Odak", $"{minutes:0} dk · {_focusTask}");
         // İşe başlarken onunla ilgili not ya da bilgi varsa hatırlatılır ("Dünkü notunda: müşteri mavi tonları istedi.").
         return new QuickReply($"Tamam, {TurkishGrammar.Duration(minutes)} boyunca yalnızca {_focusTask.ToLower(Turkish)}. Bitince soracağım"
             + (todo is null ? "." : "; bitirdiysen listeden düşerim.") + (MomentNote(_focusTask) is { } related ? " " + related : ""));
     }
+
+    /// <summary>Panelden bir işe odak ("Raporu bitir", 50 dk): sesli komuttaki gibi biter ve "bitirdin mi?" diye sorulur.</summary>
+    public string StartTaskFocus(string task, double minutes) =>
+        FocusOnTask(task, minutes.ToString(CultureInfo.InvariantCulture)).Text;
 
     /// <summary>
     /// Odak bitince söylenecek soru ("Faturayı öde işini bitirdin mi?"); "evet" denirse iş yapılacaklardan tamamlanır.

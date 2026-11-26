@@ -181,4 +181,70 @@ public class RhythmControlTests
         Assert.Equal(action, command!.Arguments["islem"]);
         Assert.Equal(minutes, command.Arguments.GetValueOrDefault("dakika", ""));
     }
+
+    [Fact]
+    public void FocusSessionsAreRecordedWithTheirTask()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartFocus(Morning, TimeSpan.FromMinutes(25), "Raporu bitir");
+        Run(tracker, Morning, TimeSpan.FromMinutes(26), TimeSpan.FromSeconds(5));
+        tracker.StartFocus(Morning.AddMinutes(30), TimeSpan.FromMinutes(50));
+        tracker.PauseFocus(Morning.AddMinutes(40));
+        tracker.EndFocus(Morning.AddMinutes(55));
+        // Bir dakikadan kısa odak sayılmaz.
+        tracker.StartFocus(Morning.AddMinutes(60), TimeSpan.FromMinutes(25), "Sunum");
+        tracker.StartBreak(Morning.AddMinutes(60).AddSeconds(30));
+
+        Assert.Equal(2, tracker.Today.Sessions.Count);
+        Assert.Equal(("Raporu bitir", 25.0), (tracker.Today.Sessions[0].Task, tracker.Today.Sessions[0].Minutes));
+        Assert.Equal(("", 10.0), (tracker.Today.Sessions[1].Task, tracker.Today.Sessions[1].Minutes));
+        Assert.Equal("", tracker.FocusTask);
+    }
+
+    [Fact]
+    public void SeriesRoundsKeepTheTask()
+    {
+        var tracker = new RhythmTracker(TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(5));
+        tracker.StartSeries(Morning, 2, "Sunum");
+        Run(tracker, Morning, TimeSpan.FromMinutes(56), TimeSpan.FromSeconds(5));
+        Assert.Equal(2, tracker.Today.Sessions.Count);
+        Assert.All(tracker.Today.Sessions, session => Assert.Equal("Sunum", session.Task));
+    }
+
+    [Fact]
+    public void DescribesWhereTheFocusWent()
+    {
+        FocusSession[] sessions =
+        [
+            new(Morning, 25, "Raporu bitir"),
+            new(Morning.AddHours(1), 50, "raporu bitir"),
+            new(Morning.AddHours(3), 25, "Sunum hazırla"),
+            new(Morning.AddHours(4), 15, ""),
+        ];
+        Assert.Equal("Bu hafta \"raporu bitir\" için 1 sa 15 dk odaklandın, 2 oturumda.", FocusLog.Describe(sessions, "rapora", "Bu hafta"));
+        Assert.Equal("Bugün 4 oturumda toplam 1 sa 55 dk odaklandın: raporu bitir 1 sa 15 dk, sunum hazırla 25 dk, iş belirtmeden 15 dk.",
+            FocusLog.Describe(sessions, "", "Bugün"));
+        Assert.StartsWith("Bugün \"fatura\" için bir odak oturumu yok.", FocusLog.Describe(sessions, "fatura", "Bugün"), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("bu hafta rapora ne kadar çalıştım", "rapor", "hafta")]
+    [InlineData("sunuma kaç saat odaklandım", "sunum", "hafta")]
+    [InlineData("bugün faturalar için ne kadar çalıştım", "faturalar", "bugun")]
+    [InlineData("bugün neye odaklandım", "", "bugun")]
+    [InlineData("bu ay en çok neye çalıştım", "", "ay")]
+    [InlineData("odak oturumlarım", "", "bugun")]
+    public void AsksWhereTheFocusWent(string sentence, string task, string period)
+    {
+        var command = QuickIntents.Match(sentence);
+        Assert.Equal("ritim", command?.Tool);
+        Assert.Equal("odaklar", command!.Arguments["islem"]);
+        Assert.Equal(task, command.Arguments.GetValueOrDefault("is", ""));
+        Assert.Equal(period, command.Arguments["donem"]);
+    }
+
+    [Theory]
+    [InlineData("bugün ne kadar çalıştım", "durum")]
+    [InlineData("bu hafta ne kadar çalıştım", "hafta")]
+    public void LeavesTheDaySummaryAlone(string sentence, string action) => Assert.Equal(action, QuickIntents.Match(sentence)?.Arguments["islem"]);
 }
