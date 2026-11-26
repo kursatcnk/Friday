@@ -1456,11 +1456,13 @@ public sealed class FridayAssistant : IDisposable
         // Okunmuş bir belgeye değinen soru: belge hatırlatılır ve okuduklarim aracı da gönderilir.
         var reading = smallTalk ? "" : _tools.ReadingContext(question);
         IReadOnlyList<string> readingTool = reading.Length > 0 ? ["okuduklarim"] : [];
+        // "İlki nerede" gibi son cevaba dönük kısa sorulara günün durumu ve kişisel kayıtlar eklenmez (bkz. ConversationStyle.RefersToLastAnswer).
+        var backReference = ConversationStyle.RefersToLastAnswer(question) && _memory.Messages.Any(message => message.Role == ChatRole.Assistant);
         var recalled = MemoryRecall.Context(MemoryRecall.Relevant(memories, question, MemoryRecall.PinnedItems(memories, DateOnly.FromDateTime(DateTime.Now))))
-            + _tools.PersonalContext(question)
+            + (backReference ? "" : _tools.PersonalContext(question))
             + _tools.ConversationContext(question, _memory.Messages.Where(message => message.Role == ChatRole.User).Select(message => message.Content).ToHashSet(StringComparer.Ordinal))
-            + _tools.Situation(DateTime.Now)
-            + (smallTalk ? "" : _tools.AgendaContext(question, DateTime.Now) + _tools.WeeklyContext(question, DateTime.Now))
+            + (backReference ? "" : _tools.Situation(DateTime.Now))
+            + (smallTalk || backReference ? "" : _tools.AgendaContext(question, DateTime.Now) + _tools.WeeklyContext(question, DateTime.Now))
             + reading
             + (_tools.Style?.Hint is { } style ? "\n" + style : "");
 

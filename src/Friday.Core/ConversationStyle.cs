@@ -26,6 +26,17 @@ public static partial class ConversationStyle
     }
 
     /// <summary>
+    /// Kısa, bir önceki cevaba dönük soru mu? ("ilki nerede", "ikincisi ne kadar", "orası uzak mı", "bunlardan hangisi
+    /// ucuz"). Bu sorulara günün durumu ve kişisel kayıtlar eklenmez: model "ilki"ni son cevabındaki liste yerine durum
+    /// satırındaki işlere bağlayıp "Kirayı ödemen gerekiyor" diyebiliyordu.
+    /// </summary>
+    public static bool RefersToLastAnswer(string text)
+    {
+        var sentence = Spaces().Replace(Punctuation().Replace(text.ToLower(Turkish), " "), " ").Trim();
+        return sentence.Length > 0 && sentence.Split(' ').Length <= 6 && BackReference().IsMatch(sentence);
+    }
+
+    /// <summary>
     /// Yapay zekâ kalıbı kapanış cümlesi mi? ("Başka bir şeye ihtiyacın var mı?", "Size nasıl yardımcı olabilirim?",
     /// "Yardımcı olmak için buradayım.") Talimata rağmen model ara sıra ekliyor; okunmadan ayıklanır.
     /// </summary>
@@ -63,4 +74,7 @@ public static partial class ConversationStyle
     /// <summary>Espri isteğinde bile bir iş varsa (ör. "espri yap ve not defterini aç") düşünme açık kalır.</summary>
     [GeneratedRegex(@"\b(?:aç|kapat|ara|bul|oku|yaz|kaydet|hatırla|unut|hava|saat|ekran|pano|dosya|internet|haber|kur|çevir|özetle)\b")]
     private static partial Regex NeedsTool();
+
+    [GeneratedRegex(@"(?:^| )(?:ilki|ilkini|ilkinin|ilkine|birincisi|birincisini|ikincisi|ikincisini|ikincisinin|üçüncüsü|üçüncüsünü|üçüncüsünün|sonuncusu|sonuncusunu|sonuncusunun|ortadaki|orası|oranın|oraya|orada|oradan|bunlardan|onlardan|hangisi|hangisini)(?: |$)")]
+    private static partial Regex BackReference();
 }

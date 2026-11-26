@@ -90,7 +90,8 @@ internal static class Cases
             new("devam", ["347 çarpı 28 kaç", "bunu ikiye böl"], @"4[.,]?858"),
             new("devam", ["yarın dişçim var mı", "saat kaçtaydı"], @"\b0?9\b|09:00|dokuz"),
             new("devam", ["Ela için doğum günü hediyesi öner", "daha ucuz bir şey olsun"], ""),
-            new("devam", ["İzmir'de gezilecek üç yer söyle", "ilki nerede"], ""),
+            new("devam", ["İzmir'de gezilecek üç yer söyle", "ilki nerede"], "", Forbid: "(?i)kira|ödeme|fatura"),
+            new("devam", ["bana üç kolay akşam yemeği öner", "ikincisi nasıl yapılır"], "", Forbid: "(?i)kira|ödeme|fatura|form"),
 
             // Zor: önceki sohbetlerde kaydedilenler, birimler, dönemler, düzeltmeler
             new("zor", ["Mert'in toplantısı hangi güne kaydı"], "[Pp]erşembe"),
