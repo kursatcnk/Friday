@@ -88,7 +88,22 @@ public sealed partial class AssistantTools
             default:
                 var open = todos.Open;
                 var today = DateOnly.FromDateTime(now);
-                string Spoken(TodoItem todo) => todo.Due is { } until ? $"{todo.Text} ({DueSpoken(until, today)})" : todo.Text;
+                // Önemli işler sözle de işaretlenir: eskiden yıldız yalnızca kartta vardı, "önemli işim var mı" bilinemiyordu.
+                string Spoken(TodoItem todo)
+                {
+                    var notes = new List<string>();
+                    if (todo.Important)
+                    {
+                        notes.Add("önemli");
+                    }
+
+                    if (todo.Due is { } until)
+                    {
+                        notes.Add(DueSpoken(until, today));
+                    }
+
+                    return notes.Count == 0 ? todo.Text : $"{todo.Text} ({string.Join(", ", notes)})";
+                }
                 ShowListCard("Yapılacaklar", "", open.Select(todo => new CardRow((todo.Important ? "★ " : "") + todo.Text, TodoDue.Label(todo.Due, today))));
                 return new QuickReply(open.Count switch
                 {
