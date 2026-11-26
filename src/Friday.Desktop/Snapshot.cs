@@ -267,6 +267,7 @@ internal static class Snapshot
     private static IReadOnlyList<AgendaItem> SampleAgenda(DateTime now)
     {
         var today = DateOnly.FromDateTime(now);
+        var monday = today.AddDays(((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7 is 0 ? 7 : ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7);
         return
         [
             new AgendaItem(today, null, AgendaKind.Overdue, "Kirayı öde", "t1"),
@@ -274,11 +275,11 @@ internal static class Snapshot
             new AgendaItem(today, new TimeOnly(18, 0), AgendaKind.Reminder, "Mert'i ara", "r1"),
             new AgendaItem(today.AddDays(1), new TimeOnly(9, 0), AgendaKind.Reminder, "Dişçi randevusu", "r2"),
             new AgendaItem(today.AddDays(1), null, AgendaKind.Deadline, "Ela'nın okul formunu imzala", "t2"),
-            new AgendaItem(today.AddDays(1), null, AgendaKind.Weekly, "Pazartesi ve çarşamba akşamları yüzmeye gidiyor"),
             new AgendaItem(today.AddDays(2), null, AgendaKind.Bill, "İnternet ödemesi"),
             new AgendaItem(today.AddDays(3), null, AgendaKind.Deadline, "Sunum slaytlarını bitir", "t3"),
             new AgendaItem(today.AddDays(3), new TimeOnly(19, 0), AgendaKind.Reminder, "Ela'yı yüzmeden al", "r3"),
             new AgendaItem(today.AddDays(5), null, AgendaKind.SpecialDay, "Mert'in doğum günü"),
+            new AgendaItem(monday, null, AgendaKind.Weekly, "Pazartesi ve çarşamba akşamları yüzmeye gidiyor"),
         ];
     }
 

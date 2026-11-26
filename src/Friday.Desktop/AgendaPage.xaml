@@ -43,12 +43,12 @@
                 <ItemsControl ItemsSource="{Binding AgendaDays}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <local:AdaptiveGrid MinItemWidth="240" Gap="14" Margin="0,0,0,14"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:AgendaDayView}">
-                            <Border x:Name="Card" Style="{StaticResource Card}" Width="262" MinHeight="150" Margin="0,0,14,14">
+                            <Border x:Name="Card" Style="{StaticResource Card}" MinHeight="150" Margin="0">
                                 <StackPanel>
                                     <Grid Margin="0,0,0,10">
                                         <StackPanel>
