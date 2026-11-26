@@ -12,7 +12,7 @@ public static partial class TextToolCall
 {
     /// <summary>Metin (şimdiye kadar gelen kısmıyla) bilinen bir aracın çağrısı gibi mi başlıyor?</summary>
     public static bool Starts(string text, IReadOnlySet<string> names) =>
-        Head().Match(Unwrap(text)) is { Success: true } head && names.Contains(head.Groups["n"].Value);
+        Head().Match(Unwrap(text)) is { Success: true } head && Resolve(head.Groups["n"].Value, names) is not null;
 
     /// <summary>
     /// Şimdiye kadar gelen metin henüz karar verilemeyecek kadar kısa ve bir araç adına benziyor mu ("eposta_tas",
@@ -25,7 +25,7 @@ public static partial class TextToolCall
     {
         var body = Unwrap(text);
         var head = Head().Match(body);
-        if (!head.Success || !names.Contains(head.Groups["n"].Value))
+        if (!head.Success || Resolve(head.Groups["n"].Value, names) is not { } name)
         {
             return null;
         }
@@ -43,7 +43,25 @@ public static partial class TextToolCall
             arguments[pair.Groups["k"].Value] = value;
         }
 
-        return new ToolCall(head.Groups["n"].Value, arguments);
+        return new ToolCall(name, arguments);
+    }
+
+    /// <summary>
+    /// Yazılan adın gerçek araç adı: tam eşleşme, yoksa tire ve alt çizgi farkı yok sayılarak ("e-posta_taslagi",
+    /// "e_posta_taslagi" → "eposta_taslagi"). Ölçümde model uzun e-posta isteğinde aracı bu adlarla metin olarak yazdı ve
+    /// çağrı okunup geçildi. Birden çok araca uyuyorsa hiçbiri seçilmez.
+    /// </summary>
+    private static string? Resolve(string written, IReadOnlySet<string> names)
+    {
+        if (names.Contains(written))
+        {
+            return written;
+        }
+
+        static string Plain(string name) => name.Replace("_", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal);
+        var plain = Plain(written);
+        var matches = names.Where(name => Plain(name) == plain).Take(2).ToList();
+        return matches.Count == 1 ? matches[0] : null;
     }
 
     /// <summary>Kod çiti, "tool_code", "print(" ve "default_api." sarmalarını atar.</summary>
@@ -85,10 +103,10 @@ public static partial class TextToolCall
         return text.ToString();
     }
 
-    [GeneratedRegex(@"^(?<n>[a-z_]{2,40})\(")]
+    [GeneratedRegex(@"^(?<n>[a-z][a-z_-]{1,40})\(")]
     private static partial Regex Head();
 
-    [GeneratedRegex(@"^(?:`*|[a-z_]*)$")]
+    [GeneratedRegex(@"^(?:`*|[a-z_-]*)$")]
     private static partial Regex Partial();
 
     [GeneratedRegex(@"(?<k>[a-z_]+)\s*[=:]\s*(?:""(?<q>(?:[^""\\]|\\.)*)""|'(?<q>(?:[^'\\]|\\.)*)'|(?<v>[^,)]+))")]

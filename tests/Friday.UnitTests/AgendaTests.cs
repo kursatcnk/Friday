@@ -277,6 +277,16 @@ public class ModelGuardTests
         Assert.Equal("Sayın Ahmet Bey,\nYarın izinliyim.", call.Arguments["metin"]);
     }
 
+    [Theory]
+    [InlineData("e-posta_taslagi(alici='Ahmet Bey', metin='Sayın Ahmet Bey')")]
+    [InlineData("e_posta_taslagi(alici='Ahmet Bey', metin='Sayın Ahmet Bey')")]
+    public void AMisspelledToolNameStillBecomesACall(string text)
+    {
+        Assert.True(TextToolCall.MaybeStarts(text[..11]));
+        Assert.True(TextToolCall.Starts(text, Names));
+        Assert.Equal("eposta_taslagi", TextToolCall.Parse(text, Names)?.Name);
+    }
+
     [Fact]
     public void GemmasToolCodeFormIsUnderstood()
     {
