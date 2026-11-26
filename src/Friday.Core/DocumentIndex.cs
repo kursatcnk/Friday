@@ -336,8 +336,15 @@ public static partial class AgentPlan
     public static bool ClaimsAction(string sentence)
     {
         var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
-        return Claims.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
+        return Claims.Any(phrase => text.Contains(phrase, StringComparison.Ordinal)) || NamedTool().IsMatch(text);
     }
+
+    /// <summary>
+    /// Cevapta bir aracın adı geçiyor ("eposta_taslagi aracına aktarıyorum"): araç çağrılmadan çağrılmış gibi anlatılıyor.
+    /// Ölçümde uzun e-posta isteğinde böyle bir cümle söylendi, taslak açılmadı.
+    /// </summary>
+    [GeneratedRegex(@"\b(?<n>[a-z]+(?:_[a-z]+)+) arac[ıi]")]
+    private static partial Regex NamedTool();
 
     /// <summary>Kullanıcı yeni bir iş değil, Friday'in önceden yaptığı bir işi mi soruyor? (O zaman "ekledim" doğrudur.)</summary>
     public static bool AsksWhatWasDone(string question)
@@ -368,7 +375,8 @@ public static partial class AgentPlan
     public static IReadOnlyList<string> ClaimedTools(string text)
     {
         var lower = text.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
-        return [.. ClaimTools.Where(item => item.Phrases.Any(phrase => lower.Contains(phrase, StringComparison.Ordinal))).Select(item => item.Tool).Distinct()];
+        return [.. ClaimTools.Where(item => item.Phrases.Any(phrase => lower.Contains(phrase, StringComparison.Ordinal))).Select(item => item.Tool)
+            .Concat(NamedTool().Matches(lower).Select(match => match.Groups["n"].Value)).Distinct()];
     }
 
     /// <summary>Araç çağrılmadan "yaptım" diyen bir cevabın yinelenmesinde soruya eklenen uyarı; iddianın aracı biliniyorsa adıyla.</summary>

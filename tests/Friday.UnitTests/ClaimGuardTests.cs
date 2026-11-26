@@ -44,6 +44,7 @@ public class ClaimGuardTests
     [InlineData("Anladım, Mert'i aramanı içeren 23:30 hatırlatmasını siliyorum.", "hatirlatici")]
     [InlineData("Sunum işini önemli olarak işaretledim.", "yapilacaklar")]
     [InlineData("Sistemler hazır, hemen kaldığın yerden devam ediyoruz.", "ritim")]
+    [InlineData("Ahmet Bey'e iletmek istediğin detayları eposta_taslagi aracına aktarıyorum.", "eposta_taslagi")]
     public void KnowsWhichToolAClaimNeeds(string sentence, string tool)
     {
         var tools = AgentPlan.ClaimedTools(sentence);
