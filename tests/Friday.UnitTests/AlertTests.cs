@@ -103,6 +103,18 @@ public sealed class AlertToolTests : IDisposable
         Assert.Equal(" Geçen ayın aynı dönemine göre yüzde 50 fazla; en çok yeme-içme arttı.", AssistantTools.MonthComparison(book, book.Between(from, to), now));
     }
 
+    [Fact]
+    public async Task ASummaryNamesTheBiggestSingleExpense()
+    {
+        var book = _tools.Expenses!;
+        var now = DateTime.Now;
+        book.Add(850, "market", now.AddSeconds(-3));
+        book.Add(2100, "market büyük alışveriş", now.AddSeconds(-2));
+        book.Add(430, "eczane", now.AddSeconds(-1));
+        var reply = await _tools.RunQuickAsync(new QuickCommand("harcama", new Dictionary<string, string> { ["islem"] = "ozet", ["donem"] = "ay" }), CancellationToken.None);
+        Assert.Contains("En büyük tek harcama market büyük alışveriş, 2.100 lira", reply!.Text, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         _tools.Dispose();

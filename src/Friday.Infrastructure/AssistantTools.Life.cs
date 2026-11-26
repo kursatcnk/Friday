@@ -248,6 +248,12 @@ public sealed partial class AssistantTools
         var groups = items.GroupBy(item => item.Category).Select(group => (group.Key, Sum: group.Sum(item => item.Amount))).OrderByDescending(group => group.Sum).ToList();
         var top = TurkishGrammar.Join([.. groups.Take(3).Select(group => $"{group.Key.ToLower(Turkish)} {ExpenseBook.Spoken(group.Sum)}")]);
         var text = $"{label} toplam {ExpenseBook.Spoken(total)} harcadın; en çok {top}.";
+        // Tek tek en büyük harcama da söylenir: "en pahalı alışverişim" sorusu kategori toplamıyla karışmasın.
+        if (items.Count >= 2 && items.MaxBy(item => item.Amount) is { } biggest)
+        {
+            var name = biggest.Note.Length > 0 ? biggest.Note.ToLower(Turkish) : biggest.Category.ToLower(Turkish);
+            text += $" En büyük tek harcama {name}, {ExpenseBook.Spoken(biggest.Amount)} ({biggest.When.ToString("d MMMM", Turkish)}).";
+        }
         if (period is "" or "ay")
         {
             text += MonthComparison(book, items, now);
