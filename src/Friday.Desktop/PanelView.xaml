@@ -335,10 +335,21 @@
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock Text="{Binding DialSentence}" Style="{StaticResource Body}" FontSize="12" Margin="0,10,0,12"/>
-                                    <WrapPanel Margin="-4,0,0,0">
+                                    <WrapPanel Margin="-4,0,0,0" Visibility="{Binding IsWorkMode, Converter={StaticResource Visible}}">
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="Mola ver" Command="{Binding ControlCommand}" CommandParameter="mola"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="25 dk odak" Command="{Binding ControlCommand}" CommandParameter="odak:25"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="4" Content="Nefes" Command="{Binding RhythmCommand}" CommandParameter="Nefes egzersizi yapalım"/>
+                                    </WrapPanel>
+                                    <WrapPanel Margin="-4,0,0,0" Visibility="{Binding IsFocusMode, Converter={StaticResource Visible}}">
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Duraklat" Command="{Binding ControlCommand}" CommandParameter="duraklat" Visibility="{Binding FocusPaused, Converter={StaticResource Hidden}}"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Devam et" Command="{Binding ControlCommand}" CommandParameter="devam" Visibility="{Binding FocusPaused, Converter={StaticResource Visible}}"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Odağı bitir" Command="{Binding ControlCommand}" CommandParameter="odakbitti" Visibility="{Binding SeriesActive, Converter={StaticResource Hidden}}"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Seriyi bitir" Command="{Binding ControlCommand}" CommandParameter="seribitti" Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
+                                    </WrapPanel>
+                                    <WrapPanel Margin="-4,0,0,0" Visibility="{Binding IsBreakMode, Converter={StaticResource Visible}}">
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Moladan döndüm" Command="{Binding ControlCommand}" CommandParameter="molabitti" Visibility="{Binding SeriesActive, Converter={StaticResource Hidden}}"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Sıradaki tura geç" Command="{Binding ControlCommand}" CommandParameter="molabitti" Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="4" Content="Seriyi bitir" Command="{Binding ControlCommand}" CommandParameter="seribitti" Visibility="{Binding SeriesActive, Converter={StaticResource Visible}}"/>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
