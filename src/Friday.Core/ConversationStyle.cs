@@ -33,7 +33,7 @@ public static partial class ConversationStyle
     public static bool RefersToLastAnswer(string text)
     {
         var sentence = Spaces().Replace(Punctuation().Replace(text.ToLower(Turkish), " "), " ").Trim();
-        return sentence.Length > 0 && sentence.Split(' ').Length <= 6 && BackReference().IsMatch(sentence);
+        return sentence.Length > 0 && sentence.Split(' ').Length <= 6 && (BackReference().IsMatch(sentence) || SubjectlessPast().IsMatch(sentence));
     }
 
     /// <summary>
@@ -77,4 +77,9 @@ public static partial class ConversationStyle
 
     [GeneratedRegex(@"(?:^| )(?:ilki|ilkini|ilkinin|ilkine|birincisi|birincisini|ikincisi|ikincisini|ikincisinin|üçüncüsü|üçüncüsünü|üçüncüsünün|sonuncusu|sonuncusunu|sonuncusunun|ortadaki|orası|oranın|oraya|orada|oradan|bunlardan|onlardan|hangisi|hangisini)(?: |$)")]
     private static partial Regex BackReference();
+
+    // Öznesiz geçmiş zaman sorusu son cevaptaki şeyi sorar: "saat kaçtaydı", "peki ne zamandı". Durum satırındaki şu anki
+    // saat eklenince model "Saat 21:42'ydi" diyordu.
+    [GeneratedRegex(@"^(?:peki |o |ve )?(?:saat )?(?:kaçtaydı|kaçtaymış|kaçtaydı ki|ne zamandı|ne zamanmış|hangi gündü|hangi gündeymiş|hangi gündeydi|neredeydi|neredeymiş)$")]
+    private static partial Regex SubjectlessPast();
 }
