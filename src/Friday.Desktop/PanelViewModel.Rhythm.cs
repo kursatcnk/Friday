@@ -162,7 +162,11 @@ public sealed partial class PanelViewModel
             RhythmMode.Break => "CalmBrush",
             _ => "FaintBrush"
         });
-        RhythmRule = $"Her {TurkishGrammar.Duration(snapshot.BreakEvery.TotalMinutes)} aralıksız çalışmada mola önerir · mola {TurkishGrammar.Duration(snapshot.BreakLength.TotalMinutes)}";
+        // Seri molası (5 dk) sürerken kural satırı ayardaki mola süresini göstermeye devam eder.
+        if (snapshot.SeriesRound == 0 || snapshot.BreakStart is null)
+        {
+            RhythmRule = $"Her {TurkishGrammar.Duration(snapshot.BreakEvery.TotalMinutes)} aralıksız çalışmada mola önerir · mola {TurkishGrammar.Duration(snapshot.BreakLength.TotalMinutes)}";
+        }
     }
 
     /// <summary>Ritim koçundan gelen günün özeti.</summary>
