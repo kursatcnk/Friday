@@ -90,6 +90,11 @@ public sealed partial class AssistantTools
                 var movedSubject = TurkishGrammar.ToYou(move.New.Text.Trim());
                 return $"Tamam, {TurkishTime.Describe(move.New.Due, now)} {(movedSubject.Length == 0 ? "haber veririm" : $"{movedSubject} hatırlatırım")} (önce {TurkishTime.Describe(move.Old.Due, now)} idi).";
             default:
+                if (repeat.Length == 0 && RepeatRule.FromPhrase(when) is var (phraseRule, phraseWhen))
+                {
+                    (repeat, when) = (phraseRule, phraseWhen);
+                }
+
                 if (TurkishTime.Parse(when, now) is not { } due || due <= now)
                 {
                     return "Ne zaman hatırlatacağımı anlayamadım; ör. 'yarın 9'da' ya da 'akşam 8'de' de.";

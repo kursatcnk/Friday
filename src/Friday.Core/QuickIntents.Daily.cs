@@ -79,7 +79,13 @@ public static partial class QuickIntents
 
     private static QuickCommand? RecurringReminder(string sentence)
     {
+        // "Her sabah sekizde": saat sözle söylenmişse rakama çevrilip yeniden denenir.
         var match = RecurringRequest().Match(sentence);
+        if (!match.Success)
+        {
+            match = RecurringRequest().Match(TurkishTime.Spoken(sentence));
+        }
+
         if (!match.Success)
         {
             return null;
@@ -198,7 +204,7 @@ public static partial class QuickIntents
     private static partial Regex TodoComplete();
 
     // "her gün 9'da ilacımı hatırlat", "her sabah 8'de su içmeyi hatırlat", "hafta içi her gün 18'de spor için hatırlat"
-    [GeneratedRegex(@"^(?:(?<wd>hafta içi|hafta sonu) )?her (?<r>gün|sabah|akşam|gece|öğlen|pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|hafta|ay)(?: günü)? (?<when>(?:saat ?)?\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?) (?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|uyar|haber ver)$")]
+    [GeneratedRegex(@"^(?:(?<wd>hafta içi|hafta sonu) )?her (?<r>gün|sabah|akşam|gece|öğlen|pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|hafta|ay)(?: günü)? (?<when>(?:saat ?)?\d{1,2}(?:[:.]\d{2})?(?:['’]?(?:de|da|te|ta))?) (?:bana )?(?<note>.+?) (?:için )?(?:beni |bana )?(?:hatırlat|hatırlatır mısın|hatırlatsana|uyar|uyarır mısın|haber ver|haber verir misin)$")]
     private static partial Regex RecurringRequest();
 
     [GeneratedRegex(@"^(?:(?<n>[\p{L}\d]+(?: [\p{L}]+)?) dakika(?:lık)? )?(?<k>yağmur|beyaz gürültü|pembe gürültü|kahverengi gürültü|odak|dalga|deniz|okyanus|şömine|rüzgar|rüzgâr)(?: sesi(?:ni)?)? aç$")]

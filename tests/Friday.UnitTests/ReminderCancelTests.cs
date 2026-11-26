@@ -10,6 +10,7 @@ public class ReminderCancelTests
     [InlineData("dişçi hatırlatmasını iptal et", "dişçi")]
     [InlineData("dişçiyle ilgili hatırlatmayı sil", "dişçi")]
     [InlineData("dişçi hatırlatmasına gerek yok", "dişçi")]
+    [InlineData("bu akşamki Mert hatırlatmasına gerek kalmadı", "bu akşamki Mert")]
     [InlineData("dişçi hatırlatmasını unut", "dişçi")]
     [InlineData("annemi arama hatırlatmasını kaldır", "annemi arama")]
     public void UnderstandsCancelling(string said, string which)
@@ -33,6 +34,11 @@ public class ReminderCancelTests
             Assert.Equal(1, store.Cancel("dişçi"));
             Assert.Equal(1, store.Cancel("annemi arama"));
             Assert.Equal(0, store.Cancel("kira"));
+            // Zaman sözleri metinde aranmaz; yalnızca en yakın eşleşen silinir.
+            store.Add(now.AddHours(9), "Mert'i ara", now);
+            store.Add(now.AddDays(2), "Mert'i ara", now);
+            Assert.Equal(1, store.Cancel("bu akşamki Mert"));
+            Assert.Equal(now.AddDays(2), Assert.Single(store.Upcoming).Due);
         }
         finally
         {

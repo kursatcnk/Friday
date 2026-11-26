@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Friday.Core;
 
@@ -24,7 +25,7 @@ public sealed record Reminder(string Id, DateTime Due, string Text, DateTime Cre
 }
 
 /// <summary>Tekrarlayan hatırlatmaların kuralları: her gün, hafta içi, hafta sonu, her hafta, her ay.</summary>
-public static class RepeatRule
+public static partial class RepeatRule
 {
     public static readonly IReadOnlyList<string> Known = ["gunluk", "haftaici", "haftasonu", "haftalik", "aylik"];
 
@@ -46,6 +47,34 @@ public static class RepeatRule
         time.TimeOfDay < DayStart ? time.Date + DayStart
         : time.TimeOfDay >= DayEnd ? time.Date.AddDays(1) + DayStart
         : time;
+
+    /// <summary>
+    /// Zaman ifadesindeki tekrar: "her sabah 08:00" → ("gunluk", "sabah 08:00"), "her pazartesi 10'da" → ("haftalik",
+    /// "pazartesi 10'da"), "hafta içi her gün 8:30" → ("haftaici", "8:30"). Tekrar yoksa null. Dil modeli tekrarı zaman
+    /// alanına yazıyordu ("her sabah 08:00") ve hatırlatma tek seferlik "yarın 08:00" olarak kuruluyordu.
+    /// </summary>
+    public static (string Rule, string When)? FromPhrase(string when)
+    {
+        var match = RepeatPhrase().Match(when.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR")));
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var unit = match.Groups["wd"].Success ? match.Groups["wd"].Value : match.Groups["r"].Value;
+        if (FromWords(unit) is not { } rule)
+        {
+            return null;
+        }
+
+        var part = match.Groups["r"].Value;
+        var keep = part is "sabah" or "akşam" or "gece" or "öğlen" or "pazartesi" or "salı" or "çarşamba" or "perşembe" or "cuma" or "cumartesi" or "pazar";
+        var rest = match.Groups["rest"].Value.Trim();
+        return (rule, ((keep ? part + " " : "") + rest).Trim());
+    }
+
+    [GeneratedRegex(@"^(?:(?<wd>hafta içi|hafta sonu) )?her (?<r>gün|sabah|akşam|gece|öğlen|pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|hafta|ay)(?: günü)?(?<rest>.*)$")]
+    private static partial Regex RepeatPhrase();
 
     /// <summary>"gün" → "gunluk", "hafta içi" → "haftaici", "pazartesi" → "haftalik"; tanınmazsa null.</summary>
     public static string? FromWords(string words) => words.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR")) switch
@@ -353,6 +382,13 @@ public sealed class ReminderStore : IRestorableStore
     }
 
     /// <summary>"dişçi" → "dişçiyi aramamı", "annemi arama" → "annemi aramayı": metin ya da sözcük kökleri tutuyor mu?</summary>
+    /// <summary>Hatırlatmanın metninde değil zamanında geçen sözler ("bu akşamki", "yarınki").</summary>
+    private static readonly HashSet<string> TimeWords = new(StringComparer.Ordinal)
+    {
+        "bu", "şu", "bugün", "bugünkü", "yarın", "yarınki", "dün", "dünkü", "sabah", "sabahki", "öğlen", "öğlenki", "öğleki",
+        "akşam", "akşamki", "gece", "geceki", "haftaki", "haftaya", "saat", "için"
+    };
+
     private static bool Mentions(string text, string needle)
     {
         var lower = text.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
@@ -364,12 +400,30 @@ public sealed class ReminderStore : IRestorableStore
     public int Cancel(string query)
     {
         var needle = query.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        // "Bu akşamki Mert hatırlatması": zaman sözleri metinde geçmez, aranmaz; o zaman yalnızca en yakın eşleşen silinir.
+        var tokens = needle.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var content = tokens.Where(token => !TimeWords.Contains(token)).ToList();
+        var timed = content.Count > 0 && content.Count < tokens.Length;
+        if (timed)
+        {
+            needle = string.Join(' ', content);
+        }
+
         int removed;
         lock (_gate)
         {
-            removed = needle.Length == 0
-                ? 0
-                : _items.RemoveAll(item => Mentions(item.Text, needle));
+            if (timed)
+            {
+                var first = _items.Where(item => Mentions(item.Text, needle)).MinBy(item => item.Due);
+                removed = first is not null && _items.Remove(first) ? 1 : 0;
+            }
+            else
+            {
+                removed = needle.Length == 0
+                    ? 0
+                    : _items.RemoveAll(item => Mentions(item.Text, needle));
+            }
+
             if (removed > 0)
             {
                 Save();

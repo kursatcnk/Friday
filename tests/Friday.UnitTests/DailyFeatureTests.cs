@@ -59,6 +59,7 @@ public class RecurringReminderTests
     [Theory]
     [InlineData("her gün 9'da ilacımı hatırlat", "9'da", "ilacımı", "gunluk")]
     [InlineData("her sabah 8'de su içmeyi hatırlat", "sabah 8'de", "su içmeyi", "gunluk")]
+    [InlineData("her sabah sekizde su içmemi hatırlatır mısın", "sabah 8'de", "su içmemi", "gunluk")]
     [InlineData("hafta içi her gün 18'de spora gitmeyi hatırlat", "18'de", "spora gitmeyi", "haftaici")]
     [InlineData("her pazartesi 10'da toplantıyı hatırlat", "pazartesi 10'da", "toplantıyı", "haftalik")]
     public void ParsesRecurringReminders(string sentence, string when, string text, string rule)
