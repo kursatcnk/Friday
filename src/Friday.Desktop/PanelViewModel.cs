@@ -359,7 +359,7 @@ public sealed partial class PanelViewModel : ObservableObject
     // ---------- Durum ----------
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StateBrush))]
+    [NotifyPropertyChangedFor(nameof(StateBrush), nameof(PageSubtitle))]
     private AssistantState _state = AssistantState.Starting;
 
     [ObservableProperty]
