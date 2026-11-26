@@ -341,28 +341,7 @@ public sealed partial class App : Application, IDisposable
             ExportMemories = () => ExportMemory(paths, memory, settings.AssistantName),
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
-            RhythmControl = key =>
-            {
-                var parts = key.Split(':', 2);
-                var minutes = parts.Length > 1 && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : 0;
-                var reply = parts[0] switch
-                {
-                    "odak" => rhythm.StartFocus(minutes),
-                    "odakbitti" => rhythm.EndFocus(),
-                    "duraklat" => rhythm.PauseFocus(),
-                    "devam" => rhythm.ResumeFocus(),
-                    "uzat" => rhythm.ExtendFocus(minutes),
-                    "pomodoro" => rhythm.StartSeries((int)Math.Max(1, minutes)),
-                    "seribitti" => rhythm.StopSeries(),
-                    "mola" => rhythm.StartBreak(),
-                    "molabitti" => rhythm.EndBreak(),
-                    "durdur" => rhythm.PauseSuggestions(parts.Length > 1 && parts[1] == "gun" ? null : TimeSpan.FromMinutes(minutes <= 0 ? 60 : minutes)),
-                    "surdur" => rhythm.ResumeSuggestions(),
-                    _ => new QuickReply("")
-                };
-                ledger.Record(DataFlow.Local, "Ritim", $"Panelden: {key}");
-                return reply.Text;
-            },
+            RhythmControl = key => ControlRhythm(key, "Panelden"),
             Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
                 tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
             AddToAgenda = async text =>
@@ -663,6 +642,8 @@ public sealed partial class App : Application, IDisposable
         _hud = new HudWindow(hud);
         _tray = new TrayIcon(settings.AssistantName, _window.ShowFromTray, ExitFriday);
         _tray.AddSubmenu("Rutinler", () => settings.Routines.Keys, name => assistant.SubmitText(name));
+        // Ritim paneli açmadan da yönetilir: menü o anki duruma göre kurulur.
+        _tray.AddActions("Ritim", () => RhythmMenu(rhythm.Snapshot()));
         _tray.AddItem(
             () => assistant.QuietUntil is { } until ? $"Rahatsız etmeyi kapat ({until:HH:mm})" : "Rahatsız etme (1 saat)",
             () => assistant.SetQuiet(assistant.QuietUntil is null ? TimeSpan.FromHours(1) : null));
@@ -678,6 +659,70 @@ public sealed partial class App : Application, IDisposable
         }
 
         RegisterRoutineKeys();
+
+        // Ritim düğmeleri (panel, tepsi) koçu doğrudan yönetir: sohbete yazılmaz, sesli cevap verilmez.
+        string ControlRhythm(string key, string origin)
+        {
+            var parts = key.Split(':', 2);
+            var minutes = parts.Length > 1 && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : 0;
+            var reply = parts[0] switch
+            {
+                "odak" => rhythm.StartFocus(minutes),
+                "odakbitti" => rhythm.EndFocus(),
+                "duraklat" => rhythm.PauseFocus(),
+                "devam" => rhythm.ResumeFocus(),
+                "uzat" => rhythm.ExtendFocus(minutes),
+                "pomodoro" => rhythm.StartSeries((int)Math.Max(1, minutes)),
+                "seribitti" => rhythm.StopSeries(),
+                "mola" => rhythm.StartBreak(),
+                "molabitti" => rhythm.EndBreak(),
+                "durdur" => rhythm.PauseSuggestions(parts.Length > 1 && parts[1] == "gun" ? null : TimeSpan.FromMinutes(minutes <= 0 ? 60 : minutes)),
+                "surdur" => rhythm.ResumeSuggestions(),
+                _ => new QuickReply("")
+            };
+            ledger.Record(DataFlow.Local, "Ritim", $"{origin}: {key}");
+            return reply.Text;
+        }
+
+        IEnumerable<(string, Action)> RhythmMenu(RhythmSnapshot state)
+        {
+            if (!state.Enabled)
+            {
+                return [];
+            }
+
+            (string, Action) Do(string label, string key) => (label, () => ControlRhythm(key, "Tepsiden"));
+            if (state.FocusEnd is not null)
+            {
+                return
+                [
+                    state.FocusPausedAt is null ? Do("Odağı duraklat", "duraklat") : Do("Odağa devam et", "devam"),
+                    Do("10 dakika uzat", "uzat:10"),
+                    state.SeriesRound > 0 ? Do("Pomodoro serisini bitir", "seribitti") : Do("Odağı bitir", "odakbitti"),
+                    Do("Mola ver", "mola"),
+                ];
+            }
+
+            if (state.BreakStart is not null)
+            {
+                return state.SeriesRound > 0
+                    ? [Do("Sıradaki tura geç", "molabitti"), Do("Pomodoro serisini bitir", "seribitti")]
+                    : [Do("Moladan döndüm", "molabitti")];
+            }
+
+            var silenced = state.SnoozedUntil is { } until && until > DateTime.Now;
+            return
+            [
+                Do("Mola ver", "mola"),
+                Do("25 dakika odak", "odak:25"),
+                Do("50 dakika odak", "odak:50"),
+                Do("4 pomodoro", "pomodoro:4"),
+                ("", () => { }),
+                .. silenced
+                    ? new[] { Do("Mola önerilerini yeniden aç", "surdur") }
+                    : [Do("Önerileri 1 saat sustur", "durdur:60"), Do("Önerileri bugünlük sustur", "durdur:gun")],
+            ];
+        }
 
         // Show() kısayolu kaydeder. Ayardaki kısayol başka bir uygulamadaysa yedeklerden biri kullanılır.
         if (_window.ActiveHotkey is { } active)

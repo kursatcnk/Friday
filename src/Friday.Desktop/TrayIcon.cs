@@ -56,6 +56,33 @@ public sealed class TrayIcon : IDisposable
         };
     }
 
+    /// <summary>
+    /// "Çıkış"ın üstüne, her açılışta o anki duruma göre yeniden kurulan bir alt menü ekler (ör. ritim: odaktayken
+    /// duraklat/uzat/bitir, moladayken döndüm). Boş etiket ayraçtır; liste boşsa alt menü soluk görünür.
+    /// </summary>
+    public void AddActions(string label, Func<IEnumerable<(string Label, Action Click)>> items)
+    {
+        var parent = new System.Windows.Forms.ToolStripMenuItem(label);
+        _menu.Items.Insert(Math.Max(0, _menu.Items.Count - 1), parent);
+        _menu.Opening += (_, _) =>
+        {
+            parent.DropDownItems.Clear();
+            foreach (var (text, click) in items())
+            {
+                if (text.Length == 0)
+                {
+                    parent.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
+                    continue;
+                }
+
+                var action = click;
+                parent.DropDownItems.Add(text, null, (_, _) => action());
+            }
+
+            parent.Enabled = parent.DropDownItems.Count > 0;
+        };
+    }
+
     /// <summary>Uygulamanın simgesi; tepsi için ekranın DPI'ına uygun boyuttaki kare seçilir.</summary>
     private static System.Drawing.Icon DrawIcon()
     {
