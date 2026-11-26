@@ -54,9 +54,12 @@ public sealed partial class AssistantTools
         {
             var reply = quick.Tool switch
             {
-                "saat_ve_tarih" => new QuickReply(Arg("odak") == "tarih"
-                    ? $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}."
-                    : $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."),
+                "saat_ve_tarih" => new QuickReply(Arg("odak") switch
+                {
+                    "tarih" => $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}.",
+                    "haftagunu" when TurkishTime.DayOf(Arg("tarih"), DateTime.Now) is { } day => TurkishTime.Weekday(day, DateOnly.FromDateTime(DateTime.Now)),
+                    _ => $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."
+                }),
                 "hava_durumu" => new QuickReply(await WeatherSpeechAsync(Arg("sehir"), Arg("odak"), Arg("soru") == "yagmur", cancellationToken).ConfigureAwait(false)),
                 "doviz" => Arg("miktar").Length > 0
                     ? await ConvertCurrencyAsync(Arg("miktar"), Arg("kaynak"), Arg("hedef")).ConfigureAwait(false)

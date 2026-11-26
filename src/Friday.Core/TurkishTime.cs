@@ -324,6 +324,38 @@ public static partial class TurkishTime
         return null;
     }
 
+    /// <summary>
+    /// İfadedeki takvim günü ("15 Mart 2027", "23.11.2026", "ayın 5'i"); yıl söylenmezse en yakın gelecek. Yoksa null.
+    /// </summary>
+    public static DateOnly? DayOf(string phrase, DateTime now) =>
+        DateIn(Spoken(Spaces().Replace(phrase.ToLower(Turkish).Trim(), " ")), now) is var (date, _) ? DateOnly.FromDateTime(date) : null;
+
+    /// <summary>
+    /// "15 Mart 2027 pazartesiye denk geliyor, 109 gün sonra." Geçmiş bir gün için "denk gelmişti". Hesap koddadır; model bu
+    /// soruda 14 sn düşünüyordu.
+    /// </summary>
+    public static string Weekday(DateOnly day, DateOnly today)
+    {
+        var name = day.ToString("dddd", Turkish).ToLower(Turkish);
+        var dative = name switch
+        {
+            "salı" => "salıya",
+            "çarşamba" => "çarşambaya",
+            "cuma" => "cumaya",
+            "pazar" => "pazara",
+            _ => name + "ye"
+        };
+        var label = day.ToString(day.Year == today.Year ? "d MMMM" : "d MMMM yyyy", Turkish);
+        var distance = day.DayNumber - today.DayNumber;
+        return distance switch
+        {
+            0 => $"Bugün, {label}, {name}.",
+            1 => $"Yarın, {label}, {name}.",
+            > 1 => $"{label} {dative} denk geliyor, {distance} gün sonra.",
+            _ => $"{label} {dative} denk gelmişti."
+        };
+    }
+
     /// <summary>"bugün 15:30", "yarın 09:00", "pazartesi 10:00", "23 Kasım 14:00".</summary>
     public static string Describe(DateTime when, DateTime now)
     {

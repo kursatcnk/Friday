@@ -268,6 +268,12 @@ public static partial class QuickIntents
 
     private static QuickCommand? Clock(string sentence)
     {
+        // "15 Mart 2027 hangi güne denk geliyor", "23 Nisan ne günü", "ayın 5'i haftanın hangi günü"
+        if (WeekdayQuestion().Match(sentence) is { Success: true } weekday && TurkishTime.DayOf(weekday.Groups["d"].Value, DateTime.Now) is not null)
+        {
+            return Command("saat_ve_tarih", ("odak", "haftagunu"), ("tarih", weekday.Groups["d"].Value.Trim()));
+        }
+
         if (TimeQuestion().IsMatch(sentence))
         {
             return Command("saat_ve_tarih", ("odak", "saat"));
@@ -609,6 +615,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:odak(?: modu(?:nu)?)?|odağı) (?:bitir|kapat|durdur|sonlandır)$")]
     private static partial Regex FocusEnd();
+
+    [GeneratedRegex(@"^(?<d>.+?)(?:['’]?(?:da|de|ta|te|ı|i|u|ü|sı|si|su|sü))? (?:hangi güne (?:denk )?(?:geliyor|gelir|düşüyor|rastlıyor)|hangi gün(?:e)? (?:denk geliyor|oluyor|düşüyor)|ne günü|ne güne (?:denk )?geliyor|haftanın hangi günü|hangi gün)(?: acaba)?$")]
+    private static partial Regex WeekdayQuestion();
 
     [GeneratedRegex(@"(?:^| )(?:bugün|dün|bu hafta(?: içinde)?|son bir hafta(?:da)?|bu ay|son bir ay(?:da)?)(?= |$)")]
     private static partial Regex FocusPeriod();
