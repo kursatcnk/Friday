@@ -93,6 +93,17 @@ internal static class Cases
             new("devam", ["İzmir'de gezilecek üç yer söyle", "ilki nerede"], "", Forbid: "(?i)kira|ödeme|fatura"),
             new("devam", ["bana üç kolay akşam yemeği öner", "ikincisi nasıl yapılır"], "", Forbid: "(?i)kira|ödeme|fatura|form"),
 
+            // Gündelik söyleyiş: aynı kayıtlar başka sözlerle soruluyor
+            new("gunluk", ["bu ay en çok neye para gitti"], "(?i)market"),
+            new("gunluk", ["eşimin adı ne"], "Mert"),
+            new("gunluk", ["bu ayın en pahalı alışverişi hangisiydi"], @"2[.]?100|büyük alışveriş"),
+            new("gunluk", ["geçenlerde not aldığım kitap neydi"], "Kürk Mantolu"),
+            new("gunluk", ["bu akşam saat kaçta Mert'i arayacaktım"], @"23[:.]30|on bir buçuk"),
+            new("gunluk", ["önemli olarak işaretlediğim bir iş var mı"], "(?i)kira"),
+            new("gunluk", ["eczaneye ne kadar verdim"], @"\b430\b"),
+            new("gunluk", ["benzine bu ay ne kadar gitti"], @"1[.]?500"),
+            new("gunluk", ["kızımın öğretmeni kimdi"], "(?i)selin|bilmiyorum|kayıtlı değil|bulamadım|bulunmuyor|bilgi yok|kaydetmemişsin|söylemedin"),
+
             // Zor: önceki sohbetlerde kaydedilenler, birimler, dönemler, düzeltmeler
             new("zor", ["Mert'in toplantısı hangi güne kaydı"], "[Pp]erşembe"),
             new("zor", ["Selin Hanım kimdi"], "öğretmen"),
@@ -105,16 +116,15 @@ internal static class Cases
             new("zor", ["bu akşam Mert'i arama hatırlatmasını yarın akşama al"], "", Tools: "hatirlatici"),
             new("zor", ["Ela'nın okul formunu ne zamana kadar imzalamam lazım"], "[Yy]arın|" + today.AddDays(1).ToString("d MMMM", Turkish)),
 
-            // Gündelik söyleyiş: aynı kayıtlar başka sözlerle soruluyor
-            new("gunluk", ["bu ay en çok neye para gitti"], "(?i)market"),
-            new("gunluk", ["eşimin adı ne"], "Mert"),
-            new("gunluk", ["bu ayın en pahalı alışverişi hangisiydi"], @"2[.]?100|büyük alışveriş"),
-            new("gunluk", ["geçenlerde not aldığım kitap neydi"], "Kürk Mantolu"),
-            new("gunluk", ["bu akşam saat kaçta Mert'i arayacaktım"], @"23[:.]30|on bir buçuk"),
-            new("gunluk", ["önemli olarak işaretlediğim bir iş var mı"], "(?i)kira"),
-            new("gunluk", ["eczaneye ne kadar verdim"], @"\b430\b"),
-            new("gunluk", ["benzine bu ay ne kadar gitti"], @"1[.]?500"),
-            new("gunluk", ["kızımın öğretmeni kimdi"], "(?i)selin|bilmiyorum|kayıtlı değil|bulamadım|bulunmuyor|bilgi yok|kaydetmemişsin|söylemedin"),
+            // Komutlar başka sözlerle: doğru araç çağrılmalı
+            new("komut", ["Ela'nın formunu imzaladım"], "", Tools: "yapilacak|yapilacaklar"),
+            new("komut", ["bu akşamki Mert hatırlatmasına gerek kalmadı"], "", Tools: "hatirlatici"),
+            new("komut", ["her sabah sekizde su içmemi hatırlatır mısın"], "", Tools: "hatirlatici"),
+            new("komut", ["markete 230 lira bıraktım"], "", Tools: "harcama"),
+            new("komut", ["az önce yazdığım harcama yanlış, onu sil"], "", Tools: "harcama"),
+            new("komut", ["alışveriş listeme deterjanla çamaşır suyu yaz"], "", Tools: "liste"),
+            new("komut", ["sunum işini önemli olarak işaretle"], "", Tools: "yapilacak|yapilacaklar"),
+            new("komut", ["Mert'in doğum gününün 5 Ağustos olduğunu unutma"], "", Tools: "hatirla"),
 
             // Ritim: kalıba uymayan söyleyişler dil modeli yolundan doğru araca gitmeli
             new("ritim", ["telefon çaldı, odağı bir dakika beklet"], "", Tools: "ritim"),
