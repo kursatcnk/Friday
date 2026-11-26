@@ -242,11 +242,15 @@ public class QuickDetailTests
     [Theory]
     [InlineData("dün akşam ne yemiştim")]
     [InlineData("bugün çok yoruldum")]
+    [InlineData("bu akşam saat kaçta Mert'i arayacaktım")]
+    [InlineData("Mert'i arayacaktım")]
+    [InlineData("tam annemi arıyordum")]
     [InlineData("annemi aradım mı")]
     public void AQuestionOrAFeelingIsNotADoneTask(string said) => Assert.False(DoneStatement.IsDoneStatement(said));
 
     [Theory]
     [InlineData("annemi aradım")]
+    [InlineData("saat üçte annemi aradım")]
     [InlineData("raporu gönderdim")]
     public void ADoneTaskIsStillRecognised(string said) => Assert.True(DoneStatement.IsDoneStatement(said));
 

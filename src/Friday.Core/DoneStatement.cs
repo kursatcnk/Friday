@@ -26,12 +26,20 @@ public static partial class DoneStatement
     /// </summary>
     public static bool IsDoneStatement(string sentence) =>
         Words(sentence) is [.., var last] words && PastFirstPerson().IsMatch(last) && !NegativePast().IsMatch(last)
-        && !PastPerfect().IsMatch(last) && !Undergone().IsMatch(last) && !words.Any(QuestionWords.Contains);
+        && !PastPerfect().IsMatch(last) && !Undergone().IsMatch(last) && !Unfinished().IsMatch(last) && !words.Any(QuestionWords.Contains);
 
     private static readonly HashSet<string> QuestionWords = new(StringComparer.Ordinal)
     {
-        "ne", "neyi", "neden", "niye", "niçin", "nasıl", "kim", "kimi", "kime", "nerede", "nereye", "nereden", "hangi", "kaç", "mı", "mi", "mu", "mü"
+        "ne", "neyi", "neden", "niye", "niçin", "nasıl", "kim", "kimi", "kime", "nerede", "nereye", "nereden", "hangi", "kaç", "mı", "mi", "mu", "mü",
+        "kaçta", "kaçında"
     };
+
+    /// <summary>
+    /// "Arayacaktım", "gidecektim" (niyet) ve "arıyordum" (sürüyordu) işin bittiğini söylemez. "Bu akşam saat kaçta Mert'i
+    /// arayacaktım" sorusu eskiden "Mert'i ara" işini tamamlanmış sayabilecek "yaptım" komutuna gidiyordu.
+    /// </summary>
+    [GeneratedRegex(@"(?:[ae]c[ae]k|[ıiuü]yor)(?:t|d)[ıiuü]m$")]
+    private static partial Regex Unfinished();
 
     [GeneratedRegex(@"m[ıiuü]ş(?:t|d)[ıiuü]m$")]
     private static partial Regex PastPerfect();
@@ -45,7 +53,8 @@ public static partial class DoneStatement
     {
         var said = Words(sentence).Where(word => !Fillers.Contains(word)).ToList();
         var todo = Words(task);
-        if (said.Count < 2 || todo.Count < 2 || NegativePast().IsMatch(said[^1]) || PastFirstPerson().Match(said[^1]) is not { Success: true } past)
+        if (said.Count < 2 || todo.Count < 2 || NegativePast().IsMatch(said[^1]) || Unfinished().IsMatch(said[^1])
+            || PastFirstPerson().Match(said[^1]) is not { Success: true } past)
         {
             return false;
         }
