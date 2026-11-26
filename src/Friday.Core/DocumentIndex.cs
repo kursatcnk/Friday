@@ -309,7 +309,9 @@ public static partial class AgentPlan
         "hatırlatacağım", "hatırlatırım", "haber vereceğim", "haber veririm", "aklımda tut", "unutmayacağım", "uyandıracağım",
         "uyandırırım", "takip edeceğim", "dürteceğim", "seslenirim", "sesleneceğim", "kaydedeceğim", "ekleyeceğim", "not edeceğim",
         "kaydediyorum", "ekliyorum", "not ediyorum", "kuruyorum", "hatırlatıyorum", "yazdım bile", "listene attım", "listeye attım",
-        "hatırlayacağım", "bilgilendireceğim", "bilgilendiririm", "uyaracağım", "uyarırım"
+        "hatırlayacağım", "bilgilendireceğim", "bilgilendiririm", "uyaracağım", "uyarırım",
+        "taslağını hazırladım", "taslağı hazırladım", "taslak hazırladım", "e-postayı hazırladım", "e-postanı hazırladım", "maili hazırladım",
+        "mailini hazırladım", "taslağını açtım", "taslağı açtım"
     ];
 
     /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>
@@ -347,7 +349,8 @@ public static partial class AgentPlan
         (["not ettim", "not aldım", "notunu", "not düştüm", "kenara yazdım", "kenara not", "not edeceğim", "not ediyorum", "notlarına", "yazdım bile"], "not"),
         (["hatırlatıcı", "hatırlatırım", "hatırlatacağım", "hatırlatıyorum", "haber vereceğim", "haber veririm", "uyandır", "dürt", "seslen",
           "uyar", "bilgilendir", "alarm"], "hatirlatici"),
-        (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla")
+        (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla"),
+        (["taslağ", "taslak", "e-posta", "eposta", "maili"], "eposta_taslagi")
     ];
 
     /// <summary>Bir iddia cümlesinin denk geldiği araçlar, en belirginden başlayarak; tanınmazsa boş.</summary>

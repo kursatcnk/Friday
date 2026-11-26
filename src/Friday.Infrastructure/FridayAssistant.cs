@@ -1529,7 +1529,7 @@ public sealed class FridayAssistant : IDisposable
             var replyStart = reply.Length;
             var unable = false;
             var held = false;
-            var guardClaims = !claimRetried && !smallTalk && round < maxRounds && tools.Count > 0 && _turnCalls.Count == 0
+            var guardClaims = !claimRetried && !smallTalk && round < maxRounds && tools.Count > 0
                               && !AgentPlan.AsksWhatWasDone(question);
             var thinking = 0;
             var truncated = false;
@@ -1577,7 +1577,7 @@ public sealed class FridayAssistant : IDisposable
                     }
 
                     // "Not ettim" gibi bir iş iddiası, araç çağrısı gelene kadar okunmaz (bkz. AgentPlan.ClaimsAction).
-                    held |= guardClaims && AgentPlan.ClaimsAction(sentence);
+                    held |= guardClaims && Unbacked(sentence);
                     if (!held && !textCall)
                     {
                         SayUnlessFiller(sentence);
@@ -1640,7 +1640,7 @@ public sealed class FridayAssistant : IDisposable
             }
             else if (chunker.Flush() is { } rest)
             {
-                held |= guardClaims && AgentPlan.ClaimsAction(rest);
+                held |= guardClaims && Unbacked(rest);
                 if (!held)
                 {
                     SayUnlessFiller(rest);
@@ -1908,6 +1908,15 @@ public sealed class FridayAssistant : IDisposable
     }
 
     private DateOnly _celebrated;
+
+    /// <summary>
+    /// Araçla desteklenmeyen bir iş iddiası mı? Turda hiç araç çağrılmadıysa her iddia; çağrıldıysa yalnızca iddianın kendi
+    /// aracı çağrılmamışsa. Ölçümde model uzun e-posta isteğinde önce kayıtlarda arama yapıp ardından e-posta aracını hiç
+    /// çağırmadan "E-posta taslağını hazırladım" dedi; tur araç çağrıldı diye korunmuyordu.
+    /// </summary>
+    private bool Unbacked(string sentence) =>
+        AgentPlan.ClaimsAction(sentence)
+        && (_turnCalls.Count == 0 || AgentPlan.ClaimedTools(sentence).Any(tool => _turnCalls.All(call => call.Name != tool && !(tool == "eposta_taslagi" && call.Name == "yazi"))));
 
     private readonly Queue<(DateTime At, string Name)> _recentTools = new();
 

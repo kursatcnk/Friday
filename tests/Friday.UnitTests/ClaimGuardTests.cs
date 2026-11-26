@@ -16,6 +16,7 @@ public class ClaimGuardTests
     [InlineData("Hemen ekliyorum.")]
     [InlineData("Notunu aldım Patron.")]
     [InlineData("Bir kenara yazdım.")]
+    [InlineData("E-posta taslağını hazırladım, kontrol etmen için taslak penceresi açık.")]
     public void HearsAClaimedAction(string sentence) => Assert.True(AgentPlan.ClaimsAction(sentence), sentence);
 
     [Theory]
@@ -34,6 +35,7 @@ public class ClaimGuardTests
     [InlineData("Faturayı yapılacaklar listene ekledim.", "yapilacaklar")]
     [InlineData("Yumurtayı market listene ekledim.", "liste")]
     [InlineData("Yarın yedide seni uyandırırım.", "hatirlatici")]
+    [InlineData("E-posta taslağını hazırladım.", "eposta_taslagi")]
     public void KnowsWhichToolAClaimNeeds(string sentence, string tool)
     {
         var tools = AgentPlan.ClaimedTools(sentence);
