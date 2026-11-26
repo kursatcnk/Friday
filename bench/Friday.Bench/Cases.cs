@@ -105,6 +105,17 @@ internal static class Cases
             new("zor", ["bu akşam Mert'i arama hatırlatmasını yarın akşama al"], "", Tools: "hatirlatici"),
             new("zor", ["Ela'nın okul formunu ne zamana kadar imzalamam lazım"], "[Yy]arın|" + today.AddDays(1).ToString("d MMMM", Turkish)),
 
+            // Gündelik söyleyiş: aynı kayıtlar başka sözlerle soruluyor
+            new("gunluk", ["bu ay en çok neye para gitti"], "(?i)market"),
+            new("gunluk", ["eşimin adı ne"], "Mert"),
+            new("gunluk", ["bu ayın en pahalı alışverişi hangisiydi"], @"2[.]?100|büyük alışveriş"),
+            new("gunluk", ["geçenlerde not aldığım kitap neydi"], "Kürk Mantolu"),
+            new("gunluk", ["bu akşam saat kaçta Mert'i arayacaktım"], @"23[:.]30|on bir buçuk"),
+            new("gunluk", ["önemli olarak işaretlediğim bir iş var mı"], "(?i)kira"),
+            new("gunluk", ["eczaneye ne kadar verdim"], @"\b430\b"),
+            new("gunluk", ["benzine bu ay ne kadar gitti"], @"1[.]?500"),
+            new("gunluk", ["kızımın öğretmeni kimdi"], "(?i)selin|bilmiyorum|kayıtlı değil|bulamadım|bulunmuyor|bilgi yok|kaydetmemişsin|söylemedin"),
+
             // Ritim: kalıba uymayan söyleyişler dil modeli yolundan doğru araca gitmeli
             new("ritim", ["telefon çaldı, odağı bir dakika beklet"], "", Tools: "ritim"),
             new("ritim", ["tamam döndüm, kaldığım yerden odaklanmaya devam edelim"], "", Tools: "ritim"),
