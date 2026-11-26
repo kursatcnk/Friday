@@ -83,6 +83,9 @@ public class AgentPlanTests
     [InlineData("hava nasıl", false)]
     [InlineData("spotify'ı aç", false)]
     [InlineData("bu hafta ne kadar çalıştım", false)]
+    [InlineData("az önce yazdığım harcama yanlış, onu sil", false)]
+    [InlineData("10 dakika sonra çayı kontrol etmemi hatırlat", false)]
+    [InlineData("raporu bul, sonra masaüstüne kaydet", true)]
     public void RecognisesMultiStepRequests(string question, bool multiStep) => Assert.Equal(multiStep, AgentPlan.IsMultiStep(question));
 }
 

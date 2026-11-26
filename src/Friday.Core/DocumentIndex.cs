@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Friday.Core;
 
@@ -219,6 +220,9 @@ public static partial class AgentPlan
 
     private static readonly string[] Connectors = [" sonra ", "ardından", "sonrasında", " önce ", "en son", "daha sonra"];
 
+    [GeneratedRegex(@" (?:az|biraz|hemen|demin|kısa süre) önce | (?:saniye|dakika|saat|gün|hafta|ay|yıl)(?:lık)? (?:sonra|önce) ")]
+    private static partial Regex TimeOffset();
+
     /// <summary>Modele verilen ek talimat (yalnızca çok adımlı isteklerde).</summary>
     public const string Instruction =
         "Bu istek birden çok adımlı bir görev. Önce tek kısa cümleyle planı söyle (ör. \"Üç adımda yapıyorum: bulup özetleyip notlarına ekliyorum.\"), " +
@@ -314,7 +318,8 @@ public static partial class AgentPlan
         "mailini hazırladım", "taslağını açtım", "taslağı açtım",
         "beklettim", "duraklattım", "askıya aldım", "devam ettiriyorum", "devam ettirdim", "molanı uzattım", "molayı uzattım", "odağı uzattım",
         "odağı başlattım", "odak başlattım", "odağı bitirdim", "aktif ettim", "duraklatıyorum", "bekletiyorum", "askıya alıyorum",
-        "beklemeye alıyorum", "beklemeye aldım", "sürdürüyorum", "durduruyorum", "daha uzattım", "dakika uzattım"
+        "beklemeye alıyorum", "beklemeye aldım", "sürdürüyorum", "durduruyorum", "daha uzattım", "dakika uzattım",
+        "işaretledim", "işaretliyorum", "siliyorum", "sildim", "iptal ettim", "iptal ediyorum", "kaldırdım", "kaldırıyorum"
     ];
 
     /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>
@@ -348,10 +353,11 @@ public static partial class AgentPlan
     private static readonly (string[] Phrases, string Tool)[] ClaimTools =
     [
         (["listene", "listeye", "listesine"], "liste"),
-        (["yapılacak", "işlerine", "görevlerine"], "yapilacaklar"),
+        (["yapılacak", "işlerine", "görevlerine", "önemli olarak"], "yapilacaklar"),
+        (["harcama"], "harcama"),
         (["not ettim", "not aldım", "notunu", "not düştüm", "kenara yazdım", "kenara not", "not edeceğim", "not ediyorum", "notlarına", "yazdım bile"], "not"),
         (["hatırlatıcı", "hatırlatırım", "hatırlatacağım", "hatırlatıyorum", "haber vereceğim", "haber veririm", "uyandır", "dürt", "seslen",
-          "uyar", "bilgilendir", "alarm"], "hatirlatici"),
+          "uyar", "bilgilendir", "alarm", "hatırlatma"], "hatirlatici"),
         (["hafızama", "aklımda", "aklıma", "hatırlayacağım", "unutmayacağım", "kaydettim", "kaydedeceğim", "kaydediyorum"], "hatirla"),
         (["taslağ", "taslak", "e-posta", "eposta", "maili"], "eposta_taslagi"),
         (["odak", "odağ", "mola", "pomodoro", "sayac", "sayaç", "beklet", "duraklat", "askıya al", "beklemeye al"], "ritim")
@@ -394,7 +400,9 @@ public static partial class AgentPlan
 
     public static bool IsMultiStep(string question)
     {
-        var text = $" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ";
+        // "Az önce", "10 dakika sonra", "iki gün önce" bir zaman sözüdür, adımları sıralamaz. "Az önce yazdığım harcamayı sil"
+        // ajan moduna giriyor, araç sonucundan sonra model alakasız bir tanıtım söylüyordu.
+        var text = TimeOffset().Replace($" {question.ToLower(CultureInfo.GetCultureInfo("tr-TR"))} ", " ");
         var verbs = 0;
         var acting = 0;
         foreach (var word in text.Split([' ', ',', '.', ';', '!', '?'], StringSplitOptions.RemoveEmptyEntries))

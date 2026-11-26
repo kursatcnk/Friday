@@ -41,6 +41,8 @@ public class ClaimGuardTests
     [InlineData("Tabii, sayacı durduruyorum. Kapıdaki durum ne?", "ritim")]
     [InlineData("Tabii, odak oturumunu beklemeye alıyorum.", "ritim")]
     [InlineData("Molanı 5 dakika daha uzattım, tadını çıkar.", "ritim")]
+    [InlineData("Anladım, Mert'i aramanı içeren 23:30 hatırlatmasını siliyorum.", "hatirlatici")]
+    [InlineData("Sunum işini önemli olarak işaretledim.", "yapilacaklar")]
     public void KnowsWhichToolAClaimNeeds(string sentence, string tool)
     {
         var tools = AgentPlan.ClaimedTools(sentence);
