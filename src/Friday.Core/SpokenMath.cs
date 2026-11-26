@@ -34,7 +34,44 @@ public static partial class SpokenMath
     {
         var text = Spaces().Replace(sentence.ToLower(Turkish).Trim().TrimEnd('?', '.', '!'), " ");
         text = Lead().Replace(text, "");
-        return Percent(text) ?? Convert(text) ?? Arithmetic(text);
+        return Vat(text) ?? Percent(text) ?? Convert(text) ?? Arithmetic(text);
+    }
+
+    /// <summary>
+    /// KDV: "KDV dahil 1180 lira, yüzde 18 KDV'siz fiyatı ne" → 1.000; "1000 liraya yüzde 20 KDV eklenince kaç olur" → 1.200.
+    /// Oran söylenmezse genel oran (yüzde 20) kullanılır ve söylenir. Ölçümde model 1180'in KDV'siz hâline 1.011,11 dedi.
+    /// </summary>
+    private static string? Vat(string text)
+    {
+        if (!text.Contains("kdv", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var toNet = VatOff().IsMatch(text);
+        var toGross = !toNet && VatOn().IsMatch(text);
+        if (!toNet && !toGross)
+        {
+            return null;
+        }
+
+        var rateMatch = VatRate().Match(text);
+        var rate = rateMatch.Success ? Number(rateMatch.Groups["r"].Value) : 20;
+        var rest = rateMatch.Success ? text.Remove(rateMatch.Index, rateMatch.Length) : text;
+        if (rate is not (> 0 and < 100) || Amount().Match(rest) is not { Success: true } amount || Number(amount.Value) is not { } value || value <= 0)
+        {
+            return null;
+        }
+
+        var rateText = $"yüzde {Format(rate.Value)}" + (rateMatch.Success ? "" : ", genel oran");
+        if (toNet)
+        {
+            var net = value / (1 + (rate.Value / 100));
+            return $"KDV'siz fiyat {Format(Math.Round(net, 2))} lira; KDV {Format(Math.Round(value - net, 2))} lira ({rateText}).";
+        }
+
+        var gross = value * (1 + (rate.Value / 100));
+        return $"KDV dahil {Format(Math.Round(gross, 2))} lira; KDV {Format(Math.Round(gross - value, 2))} lira ({rateText}).";
     }
 
     public static string Format(double value)
@@ -162,6 +199,20 @@ public static partial class SpokenMath
 
         return QuickIntents.ParseNumber(text);
     }
+
+    // "KDV'siz", "KDV hariç", "KDV'yi çıkar", "matrahı" → verilen tutar KDV dahildir.
+    [GeneratedRegex(@"kdv['’]?siz|kdvsiz|kdv hariç|kdv['’]?yi? (?:çıkar|düş)|matrah")]
+    private static partial Regex VatOff();
+
+    // "KDV'li", "artı KDV", "KDV ekle(nince)", "KDV dahil kaç" → verilen tutar KDV hariçtir.
+    [GeneratedRegex(@"kdv['’]?li|artı kdv|\+ ?kdv|kdv (?:ekle|eklen|bindir)|kdv dahil (?:kaç|ne kadar|fiyat|hali|tutar)")]
+    private static partial Regex VatOn();
+
+    [GeneratedRegex(@"(?:yüzde|%) ?(?<r>\d+(?:[.,]\d+)?)|(?<r>\d+(?:[.,]\d+)?) ?%")]
+    private static partial Regex VatRate();
+
+    [GeneratedRegex(@"\d[\d.]*(?:,\d+)?")]
+    private static partial Regex Amount();
 
     [GeneratedRegex(@"^(?:hesapla|hesaplar mısın|bir hesap yap|söyle bakalım)[, ]+")]
     private static partial Regex Lead();

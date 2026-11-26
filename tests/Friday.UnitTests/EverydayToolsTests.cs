@@ -107,7 +107,17 @@ public class SpokenMathTests
     [InlineData("5 mil kaç kilometre", "5 mil, 8,0467 kilometre eder.")]
     [InlineData("70 kilo kaç pound", "70 kilogram, 154,32 pound eder.")]
     [InlineData("30 derece kaç fahrenheit", "30 santigrat derece, 86 fahrenheit eder.")]
+    [InlineData("KDV dahil 1180 lira, yüzde 18 KDV'siz fiyatı ne", "KDV'siz fiyat 1.000 lira; KDV 180 lira (yüzde 18).")]
+    [InlineData("1200 liranın KDV'siz hali", "KDV'siz fiyat 1.000 lira; KDV 200 lira (yüzde 20, genel oran).")]
+    [InlineData("1000 liraya yüzde 20 KDV eklenince kaç olur", "KDV dahil 1.200 lira; KDV 200 lira (yüzde 20).")]
+    [InlineData("2.500 lira artı KDV ne eder", "KDV dahil 3.000 lira; KDV 500 lira (yüzde 20, genel oran).")]
+    [InlineData("%10 KDV'li 550 liranın KDV'siz fiyatı", "KDV'siz fiyat 500 lira; KDV 50 lira (yüzde 10).")]
     public void CalculatesExactly(string question, string answer) => Assert.Equal(answer, SpokenMath.Answer(question));
+
+    [Theory]
+    [InlineData("KDV dahil 1180 lira, yüzde 18 KDV'siz fiyatı ne")]
+    [InlineData("Friday, 2500 lira artı KDV ne eder")]
+    public void VatQuestionsNeverReachTheModel(string question) => Assert.Equal("hesap", QuickIntents.Match(question)?.Tool);
 
     [Theory]
     [InlineData("Saat kaç?")]
