@@ -6,23 +6,23 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <!-- Yalnızca sistem tepsisi simgesi (NotifyIcon) için. -->
+    <!-- YalnÄ±zca sistem tepsisi simgesi (NotifyIcon) iÃ§in. -->
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- Exe, görev çubuğu, Alt+Tab ve tepsi aynı simgeyi kullanır. -->
+    <!-- Exe, gÃ¶rev Ã§ubuÄŸu, Alt+Tab ve tepsi aynÄ± simgeyi kullanÄ±r. -->
     <ApplicationIcon>Assets\Friday.ico</ApplicationIcon>
     <AssemblyName>Friday</AssemblyName>
-    <Version>0.35.0</Version>
-    <!-- Arka planda bekleyen bir asistan: eşzamanlı GC'nin ayrı yığını ve iş parçacığı gereksiz; bellek sıkı tutulur. -->
+    <Version>0.36.0</Version>
+    <!-- Arka planda bekleyen bir asistan: eÅŸzamanlÄ± GC'nin ayrÄ± yÄ±ÄŸÄ±nÄ± ve iÅŸ parÃ§acÄ±ÄŸÄ± gereksiz; bellek sÄ±kÄ± tutulur. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>true</TieredPGO>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- WinForms'un örtük using'leri WPF türleriyle çakışır; tepsi kodunda tam adlar kullanılır. -->
+    <!-- WinForms'un Ã¶rtÃ¼k using'leri WPF tÃ¼rleriyle Ã§akÄ±ÅŸÄ±r; tepsi kodunda tam adlar kullanÄ±lÄ±r. -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
   </ItemGroup>
@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 0–9: yüksek değer, biraz daha sık GC karşılığında yığının boşta daha az RAM tutması demek. -->
+    <!-- 0â€“9: yÃ¼ksek deÄŸer, biraz daha sÄ±k GC karÅŸÄ±lÄ±ÄŸÄ±nda yÄ±ÄŸÄ±nÄ±n boÅŸta daha az RAM tutmasÄ± demek. -->
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
   </ItemGroup>
 
