@@ -38,7 +38,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Width="200" Height="200" Margin="0,0,30,0">
-                        <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="11"/>
+                        <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="5"/>
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding DialClock}" FontFamily="{StaticResource DisplayFont}" FontSize="42" FontWeight="SemiBold"
                                        HorizontalAlignment="Center" Typography.NumeralAlignment="Tabular"/>

@@ -48,7 +48,9 @@ public sealed class ProgressDial : FrameworkElement
 
         var center = new Point(ActualWidth / 2, ActualHeight / 2);
         var radius = (size - Thickness) / 2;
-        drawingContext.DrawEllipse(null, new Pen(TrackBrush, Thickness), center, radius, radius);
+        // Boş halka temanın iz renginde (açık temada da görünsün).
+        var track = TryFindResource("TrackBrush") as Brush ?? TrackBrush;
+        drawingContext.DrawEllipse(null, new Pen(track, Thickness), center, radius, radius);
 
         var progress = Math.Clamp(Progress, 0, 1);
         if (progress <= 0.001)
@@ -74,14 +76,7 @@ public sealed class ProgressDial : FrameworkElement
         var geometry = new PathGeometry([figure]);
         geometry.Freeze();
 
-        // Yayın arkasında hafif bir parıltı.
-        var glow = new Pen(Freeze(new SolidColorBrush(Color.FromArgb(0x30, Color.R, Color.G, Color.B))), Thickness * 2.2)
-        {
-            StartLineCap = PenLineCap.Round,
-            EndLineCap = PenLineCap.Round
-        };
-        glow.Freeze();
-        drawingContext.DrawGeometry(null, glow, geometry);
+        // Parıltı yok: düz, ince bir yay.
         drawingContext.DrawGeometry(null, pen, geometry);
     }
 

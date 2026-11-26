@@ -85,6 +85,9 @@ public sealed partial class PanelViewModel
     private string _weekAverage = "";
 
     /// <summary>Saniyede bir (Ritim ya da Bugün sayfası açıkken): halka, saat ve açıklama.</summary>
+    private static Color ThemeColor(string key) =>
+        System.Windows.Application.Current?.TryFindResource(key) is SolidColorBrush brush ? brush.Color : Color.FromRgb(0x7C, 0x79, 0x73);
+
     public void TickRhythm(RhythmSnapshot snapshot)
     {
         var display = RhythmText.Describe(snapshot, DateTime.Now);
@@ -94,14 +97,15 @@ public sealed partial class PanelViewModel
         DialCaption = display.ClockCaption;
         DialProgress = display.Progress;
         DialSentence = display.Sentence;
-        DialColor = display.Mode switch
+        // Renkler temadan: odakta vurgu, molada sakin yeşil, uzun çalışmada uyarı, olağan çalışmada yazı rengi.
+        DialColor = ThemeColor(display.Mode switch
         {
-            RhythmMode.Working => Color.FromRgb(0xF2, 0xCC, 0x8F),
-            RhythmMode.Overdue => Color.FromRgb(0xFF, 0xB8, 0x6B),
-            RhythmMode.Focus => Color.FromRgb(0xFF, 0x8A, 0x5B),
-            RhythmMode.Break => Color.FromRgb(0x7F, 0xD4, 0xB0),
-            _ => Color.FromRgb(0x6E, 0x6C, 0x67)
-        };
+            RhythmMode.Working => "TextBrush",
+            RhythmMode.Overdue => "WarningBrush",
+            RhythmMode.Focus => "AccentBrush",
+            RhythmMode.Break => "CalmBrush",
+            _ => "FaintBrush"
+        });
         RhythmRule = $"Her {TurkishGrammar.Duration(snapshot.BreakEvery.TotalMinutes)} aralıksız çalışmada mola önerir · mola {TurkishGrammar.Duration(snapshot.BreakLength.TotalMinutes)}";
     }
 

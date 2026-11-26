@@ -325,7 +325,7 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <Grid Width="64" Height="64" Margin="0,0,14,0">
-                                            <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="6"/>
+                                            <local:ProgressDial Progress="{Binding DialProgress}" Color="{Binding DialColor}" Thickness="4"/>
                                             <TextBlock Text="{Binding DialClock}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5"
                                                        FontWeight="SemiBold" Typography.NumeralAlignment="Tabular"/>
                                         </Grid>
