@@ -271,8 +271,10 @@ public sealed partial class App : Application, IDisposable
         var ollama = new OllamaServer(paths, _http);
         var chat = new OllamaChatClient(_http, ollama);
         var rhythm = new RhythmCoach(Path.Combine(paths.Data, "rhythm"), ledger);
+        var chronometer = new Chronometer(Path.Combine(paths.Data, "chronometer.json"));
         var tools = new AssistantTools(_http, chat, memory, ledger, chats, reminders, notes) { SaveSettings = store.Save, Todos = todos, Habits = habits, HabitBook = habitBook, Expenses = expenses, Nudges = new NudgePolicy(Path.Combine(paths.Data, "nudges.json")),
-            Reading = new ReadingLog(Path.Combine(paths.Data, "reading.json")), WritingStyle = new WritingStyle(Path.Combine(paths.Data, "writing-style.json")) };
+            Reading = new ReadingLog(Path.Combine(paths.Data, "reading.json")), WritingStyle = new WritingStyle(Path.Combine(paths.Data, "writing-style.json")),
+            Chronometer = chronometer };
         StoreApps.Warm();
         _tools = tools;
         var assistant = _assistant = new FridayAssistant(
@@ -342,6 +344,25 @@ public sealed partial class App : Application, IDisposable
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
             RhythmControl = key => ControlRhythm(key, "Panelden"),
+            ChronometerControl = key =>
+            {
+                var now = DateTime.Now;
+                switch (key)
+                {
+                    case "baslat":
+                        _ = chronometer.Start(now);
+                        break;
+                    case "durdur":
+                        _ = chronometer.Pause(now);
+                        break;
+                    case "tur":
+                        _ = chronometer.Lap(now);
+                        break;
+                    default:
+                        chronometer.Reset();
+                        break;
+                }
+            },
             FocusOnTask = (task, minutes) => tools.StartTaskFocus(task, minutes),
             Agenda = now => DayAgenda.Build(DateOnly.FromDateTime(now), DateOnly.FromDateTime(now).AddDays(7), now,
                 tools.Calendar.Cached(now, now.Date.AddDays(7)), reminders.Upcoming, todos.Open, memory.Items, expenses.Bills),
@@ -464,6 +485,11 @@ public sealed partial class App : Application, IDisposable
             if (_window is { IsVisible: true, WindowState: not WindowState.Minimized } && (panel.IsRhythm || panel.IsToday))
             {
                 panel.TickRhythm(rhythm.Snapshot());
+                if (panel.IsToday && chronometer.Running)
+                {
+                    panel.ShowChronometer(chronometer.Elapsed(DateTime.Now), true, chronometer.Laps);
+                }
+
                 // Odak sürerken Ritim sayfasında, o odakta hangi uygulamada ne kadar kalındığı 5 sn'de bir tazelenir.
                 if (panel.IsRhythm && _screenTimeTicks % 5 == 0)
                 {
@@ -550,6 +576,8 @@ public sealed partial class App : Application, IDisposable
         };
         planClock.Start();
         ShowToday();
+        chronometer.Changed += (_, _) => Ui(() => panel.ShowChronometer(chronometer.Elapsed(DateTime.Now), chronometer.Running, chronometer.Laps));
+        panel.ShowChronometer(chronometer.Elapsed(DateTime.Now), chronometer.Running, chronometer.Laps);
         panel.ShowNotes(notes.All);
         async Task RefreshWeatherAsync()
         {

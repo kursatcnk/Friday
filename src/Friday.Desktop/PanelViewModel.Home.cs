@@ -29,6 +29,7 @@ public sealed partial class PanelViewModel
         ("upcoming", "Yaklaşanlar"),
         ("plan", "Günün planı"),
         ("rhythm", "Ritim"),
+        ("stopwatch", "Kronometre"),
         ("todos", "Yapılacaklar"),
         ("habits", "Alışkanlıklar"),
         ("spending", "Harcamalar"),

@@ -154,6 +154,9 @@ public static partial class QuickIntents
     {
         _ when StopwatchStart().IsMatch(sentence) => Command("kronometre", ("islem", "baslat")),
         _ when StopwatchStop().IsMatch(sentence) => Command("kronometre", ("islem", "durdur")),
+        _ when StopwatchResume().IsMatch(sentence) => Command("kronometre", ("islem", "devam")),
+        _ when StopwatchLap().IsMatch(sentence) => Command("kronometre", ("islem", "tur")),
+        _ when StopwatchReset().IsMatch(sentence) => Command("kronometre", ("islem", "sifirla")),
         _ when StopwatchStatus().IsMatch(sentence) => Command("kronometre", ("islem", "durum")),
         _ => null
     };
@@ -238,11 +241,21 @@ public static partial class QuickIntents
     [GeneratedRegex(@"^(?<a>\d+) (?:ile|ve) (?<b>\d+) arasında (?:bir )?sayı (?:tut|seç|söyle)$")]
     private static partial Regex NumberPick();
 
-    [GeneratedRegex(@"^kronometre(?:yi)? aç$")]
+    [GeneratedRegex(@"^(?:kronometre(?:yi)?|süre tutmaya) (?:aç|başlat|başla)$|^süre tut(?:ar mısın|alım)?$")]
     private static partial Regex StopwatchStart();
 
-    [GeneratedRegex(@"^kronometre(?:yi)? (?:durdur|kapat|bitir)$")]
+    [GeneratedRegex(@"^kronometre(?:yi)? (?:durdur|duraklat|kapat|bitir|beklet)$")]
     private static partial Regex StopwatchStop();
+
+    [GeneratedRegex(@"^kronometre(?:ye|yi)? (?:devam(?: et)?|sürdür|devam ettir)$")]
+    private static partial Regex StopwatchResume();
+
+    // "tur", "tur at", "turu kaydet", "kronometrede tur", "ara zaman"
+    [GeneratedRegex(@"^(?:tur(?: at| al| kaydet)?|turu (?:kaydet|al)|kronometrede tur(?: al| at)?|ara zaman(?: al)?)$")]
+    private static partial Regex StopwatchLap();
+
+    [GeneratedRegex(@"^kronometre(?:yi)? (?:sıfırla|temizle)$")]
+    private static partial Regex StopwatchReset();
 
     [GeneratedRegex(@"^kronometre(?: kaç| ne kadar| ne durumda)?(?: oldu| gösteriyor)?$")]
     private static partial Regex StopwatchStatus();

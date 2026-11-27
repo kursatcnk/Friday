@@ -7,7 +7,8 @@ namespace Friday.Infrastructure;
 public sealed partial class AssistantTools
 {
     private readonly Random _random = new();
-    private DateTime? _stopwatch;
+    /// <summary>Kronometre (App kalıcı olanını verir; verilmezse bellekte çalışır).</summary>
+    public Chronometer Chronometer { get; set; } = new();
     private WatchService? _watches;
 
     /// <summary>Ekran görüntülerinin kaydedileceği klasör (D:\Friday\data\captures).</summary>
@@ -167,23 +168,51 @@ public sealed partial class AssistantTools
         });
     }
 
+    /// <summary>Kronometre: başlat (duraklatılmışsa sürdürür), durdur/duraklat, devam, tur, sıfırla, durum.</summary>
     private QuickReply StopwatchCommand(string action)
     {
         var now = DateTime.Now;
+        var watch = Chronometer;
+        var elapsed = watch.Elapsed(now);
+        void Card(string caption) => ShowCard(new AnswerCard("Kronometre", "\uE916") { Big = Chronometer.Clock(watch.Elapsed(now)), BigCaption = caption });
         switch (Simplify(action))
         {
-            case "baslat":
-                _stopwatch = now;
-                return new QuickReply("Kronometre başladı.");
-            case "durdur" when _stopwatch is { } started:
-                _stopwatch = null;
-                ShowCard(new AnswerCard("Kronometre", "\uE916") { Big = RhythmText.Clock(now - started), BigCaption = "durdu" });
-                return new QuickReply($"Kronometreyi durdurdum: {SpokenDuration.Of(now - started)}.");
-            case "durum" when _stopwatch is { } started:
-                ShowCard(new AnswerCard("Kronometre", "\uE916") { Big = RhythmText.Clock(now - started), BigCaption = "çalışıyor" });
-                return new QuickReply($"Kronometre {SpokenDuration.Of(now - started)} gösteriyor.");
+            case "baslat" or "devam" or "surdur":
+                if (watch.Running)
+                {
+                    return new QuickReply($"Kronometre zaten çalışıyor: {SpokenDuration.Of(elapsed)}.");
+                }
+
+                watch.Start(now);
+                return new QuickReply(elapsed > TimeSpan.Zero ? $"Kronometre kaldığı yerden sürüyor: {SpokenDuration.Of(elapsed)}." : "Kronometre başladı.");
+            case "durdur" or "duraklat" or "bitir":
+                if (!watch.Pause(now))
+                {
+                    return new QuickReply(elapsed > TimeSpan.Zero ? $"Kronometre zaten durmuş: {SpokenDuration.Of(elapsed)}." : "Çalışan bir kronometre yok.");
+                }
+
+                Card("durdu");
+                return new QuickReply($"Kronometreyi durdurdum: {SpokenDuration.Of(elapsed)}." + (watch.Laps.Count > 0 ? $" {watch.Laps.Count} tur var." : ""));
+            case "tur":
+                if (watch.Lap(now) is not { } lap)
+                {
+                    return new QuickReply("Kronometre çalışmıyor; önce \"kronometreyi başlat\" de.");
+                }
+
+                return new QuickReply(lap.Number == 1
+                    ? $"1. tur: {SpokenDuration.Of(lap.Split)}."
+                    : $"{lap.Number}. tur: {SpokenDuration.Of(lap.Split)}, toplam {SpokenDuration.Of(lap.Total)}.");
+            case "sifirla":
+                watch.Reset();
+                return new QuickReply(elapsed > TimeSpan.Zero ? $"Kronometreyi sıfırladım; {SpokenDuration.Of(elapsed)} göstermişti." : "Kronometre zaten sıfırda.");
             default:
-                return new QuickReply("Çalışan bir kronometre yok. \"Kronometreyi başlat\" diyebilirsin.");
+                if (elapsed <= TimeSpan.Zero)
+                {
+                    return new QuickReply("Çalışan bir kronometre yok. \"Kronometreyi başlat\" diyebilirsin.");
+                }
+
+                Card(watch.Running ? "çalışıyor" : "durdu");
+                return new QuickReply($"Kronometre {SpokenDuration.Of(elapsed)} gösteriyor" + (watch.Running ? "." : "; şu an durmuş."));
         }
     }
 

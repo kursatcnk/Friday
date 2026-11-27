@@ -129,7 +129,10 @@ internal static class Snapshot
             new TodoItem("t4", "Spor salonu", now.AddHours(-8), now.AddHours(-1)),
         ]);
         home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 }, working);
+        home.ShowChronometer(TimeSpan.FromSeconds(754), true,
+            [new ChronometerLap(1, TimeSpan.FromSeconds(312), TimeSpan.FromSeconds(312)), new ChronometerLap(2, TimeSpan.FromSeconds(298), TimeSpan.FromSeconds(610))]);
         RenderPanel(home, folder, "panel-today");
+        RenderPanel(home, folder, "panel-today-full", 1700);
 
         var intro = new PanelViewModel(new FridaySettings(), new PanelActions()) { State = AssistantState.Idle, StatusText = "Hazır" };
         RenderPanel(intro, folder, "panel-today-intro");

@@ -37,6 +37,7 @@ public static class ToolRouter
         (["haber", "gündem", "ne oldu"], ["haberler"]),
         (["rutin", "mod"], ["rutin", "rutin_zamanla"]),
         (["hatırlat", "unutma", "zamanlayıcı", "alarm", "dakika say", "saniye say", "geri say", "dönünce", "açınca"], ["zamanlayici", "kosullu_hatirlatici", "doviz_alarmi"]),
+        (["kronometre", "süre tut", "tur at", "ara zaman"], ["kronometre"]),
         (["uyku", "yatma", "uyu"], ["uyku_saati"]),
         (["e-posta", "eposta", "mail", "mektup"], ["eposta_taslagi"]),
         (["liste", "market", "alışveriş", "kontrol"], ["liste", "kontrol_listesi"]),
