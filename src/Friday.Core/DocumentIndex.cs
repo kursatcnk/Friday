@@ -320,7 +320,7 @@ public static partial class AgentPlan
         "odağı başlattım", "odak başlattım", "odağı bitirdim", "aktif ettim", "duraklatıyorum", "bekletiyorum", "askıya alıyorum",
         "beklemeye alıyorum", "beklemeye aldım", "sürdürüyorum", "durduruyorum", "daha uzattım", "dakika uzattım",
         "işaretledim", "işaretliyorum", "siliyorum", "sildim", "iptal ettim", "iptal ediyorum", "kaldırdım", "kaldırıyorum",
-        "devam ediyoruz", "kaldığın yerden devam", "uzatıyorum", "aktarıyorum", "kontrol ettim", "baktım"
+        "devam ediyoruz", "kaldığın yerden devam", "uzatıyorum", "aktarıyorum", "kaydedildi", "hafızaya alındı", "kontrol ettim", "baktım"
     ];
 
     /// <summary>Kullanıcının, Friday'in daha önce yaptığı bir işi sorduğu kalıplar ("listeye ne ekledin?").</summary>

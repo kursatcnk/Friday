@@ -136,6 +136,12 @@ internal static class Cases
             new("ritim", ["son bir haftada hangi işlere ne kadar emek vermişim"], "", Tools: "ritim"),
             new("ritim", ["15 mart 2027 ne güne geliyor"], "(?i)pazartesi"),
 
+            // Saat, kronometre ve zamanlayıcı
+            new("saat", ["Tokyo'da saat kaç"], "Tokyo'da saat"),
+            new("saat", ["kronometreyi başlat", "tur at"], "1[.] tur"),
+            new("saat", ["10 dakika sonra haber ver", "ne kadar kaldı"], "(?i)zamanlayıcının bitmesine (9|10) dakika"),
+            new("saat", ["kronometreyi sıfırla"], "(?i)sıfırladım|sıfırda"),
+
             // Uzun üretim: üretim sınırına takılsa da tamamlanmalı
             new("uzun", ["patronum Ahmet Bey'e yarın izin istediğimi, projenin son durumunu ve dönünce yapacaklarımı anlatan uzun ve resmi bir e-posta taslağı hazırla"], "",
                 Tools: "eposta_taslagi|yazi"),

@@ -15,6 +15,7 @@ public class ClaimGuardTests
     [InlineData("Sabah yedide alarm kurdum.")]
     [InlineData("Hemen ekliyorum.")]
     [InlineData("Notunu aldım Patron.")]
+    [InlineData("Ela'nın yeni öğretmeninin adı Selin Hanım olarak kaydedildi.")]
     [InlineData("Bir kenara yazdım.")]
     [InlineData("E-posta taslağını hazırladım, kontrol etmen için taslak penceresi açık.")]
     public void HearsAClaimedAction(string sentence) => Assert.True(AgentPlan.ClaimsAction(sentence), sentence);
