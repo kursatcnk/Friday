@@ -115,6 +115,22 @@ public sealed class AlertToolTests : IDisposable
         Assert.Contains("En büyük tek harcama market büyük alışveriş, 2.100 lira", reply!.Text, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("ne kadar kaldı")]
+    [InlineData("zamanlayıcıda ne kadar kaldı")]
+    [InlineData("kaç dakika kaldı")]
+    public void AsksHowMuchTimeIsLeft(string sentence) => Assert.Equal("kalan", QuickIntents.Match(sentence)?.Arguments["islem"]);
+
+    [Fact]
+    public async Task SaysTheTimeLeftOnRunningTimers()
+    {
+        var none = await _tools.RunQuickAsync(QuickIntents.Match("ne kadar kaldı")!, CancellationToken.None);
+        Assert.Equal("Çalışan bir zamanlayıcı ya da odak yok.", none!.Text);
+        await _tools.RunQuickAsync(QuickIntents.Match("10 dakika sonra haber ver")!, CancellationToken.None);
+        var left = await _tools.RunQuickAsync(QuickIntents.Match("ne kadar kaldı")!, CancellationToken.None);
+        Assert.StartsWith("Zamanlayıcının bitmesine 9 dakika", left!.Text, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         _tools.Dispose();

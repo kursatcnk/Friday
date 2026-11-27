@@ -332,6 +332,12 @@ public static partial class QuickIntents
 
     private static QuickCommand? Timer(string sentence)
     {
+        // "Ne kadar kaldı", "zamanlayıcıda ne kadar kaldı": çalışan zamanlayıcıların ve odağın kalan süresi.
+        if (TimeLeftQuestion().IsMatch(sentence))
+        {
+            return Command("zamanlayici", ("islem", "kalan"));
+        }
+
         var match = TimerRequest().Match(sentence);
         if (!match.Success)
         {
@@ -623,6 +629,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?<d>.+?)(?:['’]?(?:da|de|ta|te|ı|i|u|ü|sı|si|su|sü))? (?:hangi güne (?:denk )?(?:geliyor|gelir|düşüyor|rastlıyor)|hangi gün(?:e)? (?:denk geliyor|oluyor|düşüyor)|ne günü|ne güne (?:denk )?geliyor|haftanın hangi günü|hangi gün)(?: acaba)?$")]
     private static partial Regex WeekdayQuestion();
+
+    [GeneratedRegex(@"^(?:peki |daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcıda|zamanlayıcıya|zamanlayıcının bitmesine|sayaçta|geri sayımda) (?:daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcı|geri sayım) (?:ne durumda|kaç dakika kaldı)$|^kaç dakika kaldı$")]
+    private static partial Regex TimeLeftQuestion();
 
     // "sunum işini önemli olarak işaretle", "kirayı önemli yap", "raporu yıldızla"
     [GeneratedRegex(@"^(?<x>.+?)(?: işini| görevini)? (?:önemli (?:olarak )?(?:işaretle|yap|say)|yıldızla)$")]

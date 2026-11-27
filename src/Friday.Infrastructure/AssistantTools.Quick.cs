@@ -65,7 +65,7 @@ public sealed partial class AssistantTools
                     ? await ConvertCurrencyAsync(Arg("miktar"), Arg("kaynak"), Arg("hedef")).ConfigureAwait(false)
                     : new QuickReply(await CurrencySpeechAsync(Arg("birim"), cancellationToken).ConfigureAwait(false)),
                 "medya" => await MediaReplyAsync(Arg("komut"), Arg("deger")).ConfigureAwait(false),
-                "zamanlayici" => new QuickReply(TimerSpeech(Arg("dakika"), Arg("not"))),
+                "zamanlayici" => Arg("islem") == "kalan" ? TimeLeft(DateTime.Now) : new QuickReply(TimerSpeech(Arg("dakika"), Arg("not"))),
                 "uygulama_ac" => FindApp(Arg("ad")) is { } app ? OpenAndRecord(app) : null,
                 "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
@@ -401,6 +401,24 @@ public sealed partial class AssistantTools
             "sessiz" => new QuickReply("Ses kapatıldı.", Silent: true),
             _ => new QuickReply(result)
         };
+    }
+
+    /// <summary>"Ne kadar kaldı": çalışan zamanlayıcılar (en fazla üç) ve süren odak.</summary>
+    internal QuickReply TimeLeft(DateTime now)
+    {
+        var parts = Countdowns.Active(reminders.Upcoming, now).Take(3)
+            .Select(item => item.Text.Trim().Length == 0
+                ? $"zamanlayıcının bitmesine {SpokenDuration.Of(item.Due - now)} var"
+                : $"{TurkishGrammar.ToYou(item.Text.Trim())} için {SpokenDuration.Of(item.Due - now)} kaldı")
+            .ToList();
+        if (Rhythm?.Snapshot() is { FocusEnd: { } end, FocusPausedAt: null } && end > now)
+        {
+            parts.Add($"odağın bitmesine {SpokenDuration.Of(end - now)} var");
+        }
+
+        return new QuickReply(parts.Count == 0
+            ? "Çalışan bir zamanlayıcı ya da odak yok."
+            : TurkishGrammar.Capitalize(TurkishGrammar.Join(parts)) + ".");
     }
 
     private string TimerSpeech(string minutesText, string note)
