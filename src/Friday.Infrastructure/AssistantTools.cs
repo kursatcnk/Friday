@@ -571,7 +571,7 @@ public sealed partial class AssistantTools(
     }
 
     /// <summary>Panelden zamanlayıcı ("5 dk"); sesli "5 dakika sonra haber ver" ile aynı yol.</summary>
-    public string StartPanelTimer(double minutes) => TimerSpeech(minutes.ToString(CultureInfo.InvariantCulture), "");
+    public string StartPanelTimer(double minutes, string note = "") => TimerSpeech(minutes.ToString(CultureInfo.InvariantCulture), note.Trim());
 
     private string StartTimer(string minutesText, string note)
     {

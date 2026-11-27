@@ -397,6 +397,13 @@
                                         <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="5 dk" Command="{Binding AddCountdownCommand}" CommandParameter="5"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="10 dk" Command="{Binding AddCountdownCommand}" CommandParameter="10"/>
                                         <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="25 dk" Command="{Binding AddCountdownCommand}" CommandParameter="25"/>
+                                        <Grid Width="170" Margin="4,0,0,0">
+                                            <TextBox Text="{Binding CountdownLabel, UpdateSourceTrigger=PropertyChanged}" Padding="8,5" FontSize="12"
+                                                     ToolTip="Yazarsan dolunca bu adla haber veririm"/>
+                                            <TextBlock Text="Ne için? (isteğe bağlı)" Foreground="{DynamicResource FaintBrush}" FontSize="12" Margin="10,0,0,0"
+                                                       VerticalAlignment="Center" IsHitTestVisible="False"
+                                                       Visibility="{Binding CountdownLabel, Converter={StaticResource TextHidden}}"/>
+                                        </Grid>
                                     </StackPanel>
                                     <ItemsControl ItemsSource="{Binding Countdowns}" Margin="0,8,0,0" Visibility="{Binding HasCountdowns, Converter={StaticResource Visible}}">
                                         <ItemsControl.ItemTemplate>

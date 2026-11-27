@@ -107,7 +107,7 @@ public sealed class PanelActions
     public Func<string, string> RhythmControl { get; init; } = _ => "";
 
     /// <summary>Panelden zamanlayıcı (dakika); söylenecek onay cümlesi.</summary>
-    public Func<double, string> StartTimer { get; init; } = _ => "";
+    public Func<double, string, string> StartTimer { get; init; } = (_, _) => "";
 
     /// <summary>Kronometre: "baslat", "durdur", "tur", "sifirla".</summary>
     public Action<string> ChronometerControl { get; init; } = _ => { };

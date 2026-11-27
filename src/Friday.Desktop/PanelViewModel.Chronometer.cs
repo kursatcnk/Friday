@@ -63,6 +63,10 @@ public sealed partial class PanelViewModel
     [ObservableProperty]
     private string _countdownNote = "";
 
+    /// <summary>Kurulacak zamanlayıcının adı (isteğe bağlı): "çay", "fırındaki kek"; dolunca bu adla haber verilir.</summary>
+    [ObservableProperty]
+    private string _countdownLabel = "";
+
     /// <summary>Saniyede bir: zamanlayıcıların kalan süreleri.</summary>
     public void ShowCountdowns(IReadOnlyList<Reminder> active, DateTime now)
     {
@@ -92,7 +96,8 @@ public sealed partial class PanelViewModel
     {
         if (double.TryParse(minutes, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value))
         {
-            CountdownNote = _actions.StartTimer(value);
+            CountdownNote = _actions.StartTimer(value, CountdownLabel);
+            CountdownLabel = "";
         }
     }
 

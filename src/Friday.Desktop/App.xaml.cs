@@ -344,7 +344,7 @@ public sealed partial class App : Application, IDisposable
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
             RhythmControl = key => ControlRhythm(key, "Panelden"),
-            StartTimer = minutes => tools.StartPanelTimer(minutes),
+            StartTimer = (minutes, note) => tools.StartPanelTimer(minutes, note),
             ChronometerControl = key =>
             {
                 var now = DateTime.Now;
