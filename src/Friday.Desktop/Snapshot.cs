@@ -131,6 +131,7 @@ internal static class Snapshot
         home.ShowRhythm(new RhythmDay { Date = DateOnly.FromDateTime(now), ActiveMinutes = 186, FocusMinutes = 50, Breaks = 2 }, working);
         home.ShowChronometer(TimeSpan.FromSeconds(754), true,
             [new ChronometerLap(1, TimeSpan.FromSeconds(312), TimeSpan.FromSeconds(312)), new ChronometerLap(2, TimeSpan.FromSeconds(298), TimeSpan.FromSeconds(610))]);
+        home.ShowCountdowns([new Reminder("c1", now.AddMinutes(7).AddSeconds(18), "Çayı demle", now.AddMinutes(-2.7)), new Reminder("c2", now.AddMinutes(24), "", now.AddMinutes(-1))], now);
         RenderPanel(home, folder, "panel-today");
         RenderPanel(home, folder, "panel-today-full", 1700);
 

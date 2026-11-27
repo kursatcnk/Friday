@@ -106,6 +106,9 @@ public sealed class PanelActions
     /// <summary>Ritim koçunu sesli cevap olmadan doğrudan yönetir ("odak:25", "mola", "durdur:60"…); sonucu anlatan cümle.</summary>
     public Func<string, string> RhythmControl { get; init; } = _ => "";
 
+    /// <summary>Panelden zamanlayıcı (dakika); söylenecek onay cümlesi.</summary>
+    public Func<double, string> StartTimer { get; init; } = _ => "";
+
     /// <summary>Kronometre: "baslat", "durdur", "tur", "sifirla".</summary>
     public Action<string> ChronometerControl { get; init; } = _ => { };
 

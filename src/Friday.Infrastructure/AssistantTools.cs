@@ -570,6 +570,9 @@ public sealed partial class AssistantTools(
                string.Join('\n', forecast.Days.Select(Day));
     }
 
+    /// <summary>Panelden zamanlayıcı ("5 dk"); sesli "5 dakika sonra haber ver" ile aynı yol.</summary>
+    public string StartPanelTimer(double minutes) => TimerSpeech(minutes.ToString(CultureInfo.InvariantCulture), "");
+
     private string StartTimer(string minutesText, string note)
     {
         if (!double.TryParse(minutesText, NumberStyles.Float, CultureInfo.InvariantCulture, out var minutes) || minutes <= 0 || minutes > 24 * 60)

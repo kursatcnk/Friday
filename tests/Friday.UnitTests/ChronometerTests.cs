@@ -74,4 +74,19 @@ public class ChronometerTests
         Assert.Equal("kronometre", command?.Tool);
         Assert.Equal(action, command!.Arguments["islem"]);
     }
+
+    [Fact]
+    public void ShowsOnlyShortLivedRemindersAsCountdowns()
+    {
+        var now = Start;
+        Reminder[] reminders =
+        [
+            new("a", now.AddMinutes(10), "çay", now.AddMinutes(-5)),
+            new("b", now.AddDays(1), "dişçi", now.AddDays(-2)),
+            new("c", now.AddHours(2), "toplantı", now.AddDays(-3)),
+            new("d", now.AddMinutes(3), "", now.AddMinutes(-1)),
+            new("e", now.AddMinutes(30), "su iç", now.AddMinutes(-1)) { Repeat = "gunluk" },
+        ];
+        Assert.Equal(["d", "a"], Countdowns.Active(reminders, now).Select(item => item.Id));
+    }
 }

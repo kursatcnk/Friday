@@ -344,6 +344,7 @@ public sealed partial class App : Application, IDisposable
             DeleteReminder = id => Recorded("bir hatırlatıcıyı silme", () => reminders.Remove(id)),
             WarmForTyping = assistant.WarmForTyping,
             RhythmControl = key => ControlRhythm(key, "Panelden"),
+            StartTimer = minutes => tools.StartPanelTimer(minutes),
             ChronometerControl = key =>
             {
                 var now = DateTime.Now;
@@ -488,6 +489,11 @@ public sealed partial class App : Application, IDisposable
                 if (panel.IsToday && chronometer.Running)
                 {
                     panel.ShowChronometer(chronometer.Elapsed(DateTime.Now), true, chronometer.Laps);
+                }
+
+                if (panel.IsToday)
+                {
+                    panel.ShowCountdowns(Countdowns.Active(reminders.Upcoming, DateTime.Now), DateTime.Now);
                 }
 
                 // Odak sürerken Ritim sayfasında, o odakta hangi uygulamada ne kadar kalındığı 5 sn'de bir tazelenir.

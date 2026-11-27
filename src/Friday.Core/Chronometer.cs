@@ -2,6 +2,19 @@ using System.Text.Json;
 
 namespace Friday.Core;
 
+/// <summary>
+/// Ana ekranda geri sayımı gösterilecek kısa süreli hatırlatmalar: tekrarlamayan, koşulsuz, 3 saat içinde dolan ve en
+/// fazla 6 saat önce kurulmuş ("10 dakika sonra haber ver", "çayı 15 dakika sonra hatırlat"). Uzak tarihli olanlar
+/// Yaklaşanlar'da kalır.
+/// </summary>
+public static class Countdowns
+{
+    public static IReadOnlyList<Reminder> Active(IEnumerable<Reminder> reminders, DateTime now) =>
+        [.. reminders.Where(item => !item.Repeats && item.Trigger is null && item.Due > now && item.Due - now <= TimeSpan.FromHours(3)
+                && item.Due - item.Created <= TimeSpan.FromHours(6))
+            .OrderBy(item => item.Due)];
+}
+
 /// <summary>Bir tur: kaçıncı, önceki turdan bu yana geçen süre ve o ana kadarki toplam.</summary>
 public sealed record ChronometerLap(int Number, TimeSpan Split, TimeSpan Total);
 

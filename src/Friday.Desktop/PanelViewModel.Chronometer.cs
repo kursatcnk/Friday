@@ -5,6 +5,9 @@ using Friday.Core;
 
 namespace Friday.Desktop;
 
+/// <summary>Çalışan bir zamanlayıcı: ne için, kalan süre ve dolmuşluk (0–1).</summary>
+public sealed record CountdownView(string Id, string Label, string Left, double Progress);
+
 /// <summary>Kronometre kartında bir tur satırı ("3. tur · 1:05 · 3:12").</summary>
 public sealed record LapView(string Number, string Split, string Total);
 
@@ -49,6 +52,55 @@ public sealed partial class PanelViewModel
 
             HasChronoLaps = ChronoLaps.Count > 0;
         }
+    }
+
+    /// <summary>Çalışan zamanlayıcılar, en yakın biteni üstte.</summary>
+    public ObservableCollection<CountdownView> Countdowns { get; } = [];
+
+    [ObservableProperty]
+    private bool _hasCountdowns;
+
+    [ObservableProperty]
+    private string _countdownNote = "";
+
+    /// <summary>Saniyede bir: zamanlayıcıların kalan süreleri.</summary>
+    public void ShowCountdowns(IReadOnlyList<Reminder> active, DateTime now)
+    {
+        var views = active.Select(item => new CountdownView(item.Id, item.Text.Length > 0 ? TurkishGrammar.Capitalize(item.Text) : "Zamanlayıcı",
+            Chronometer.Clock(item.Due - now), Math.Clamp((now - item.Created).TotalSeconds / Math.Max(1, (item.Due - item.Created).TotalSeconds), 0, 1))).ToList();
+        if (views.Count != Countdowns.Count || views.Where((view, index) => Countdowns[index].Id != view.Id).Any())
+        {
+            Countdowns.Clear();
+            foreach (var view in views)
+            {
+                Countdowns.Add(view);
+            }
+        }
+        else
+        {
+            for (var index = 0; index < views.Count; index++)
+            {
+                Countdowns[index] = views[index];
+            }
+        }
+
+        HasCountdowns = Countdowns.Count > 0;
+    }
+
+    [RelayCommand]
+    private void AddCountdown(string minutes)
+    {
+        if (double.TryParse(minutes, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            CountdownNote = _actions.StartTimer(value);
+        }
+    }
+
+    [RelayCommand]
+    private void CancelCountdown(CountdownView item)
+    {
+        _actions.DeleteReminder(item.Id);
+        CountdownNote = "";
     }
 
     [RelayCommand]

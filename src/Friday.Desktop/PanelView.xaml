@@ -357,7 +357,7 @@
                             <Border local:CardFlowPanel.Key="stopwatch" local:CardFlowPanel.Wide="True" Style="{StaticResource TodaySection}">
                                 <StackPanel>
                                     <Grid>
-                                        <TextBlock Text="Kronometre" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock Text="Kronometre ve zamanlayıcı" Style="{StaticResource SectionTitle}"/>
                                         <TextBlock Text="{Binding ChronoState}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                     </Grid>
                                     <Grid Margin="0,8,0,0">
@@ -391,6 +391,39 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    <!-- Zamanlayıcılar: "10 dakika sonra haber ver" ve buradan kurulanlar, kalan süreyle. -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                        <TextBlock Text="Zamanlayıcı" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="5 dk" Command="{Binding AddCountdownCommand}" CommandParameter="5"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="10 dk" Command="{Binding AddCountdownCommand}" CommandParameter="10"/>
+                                        <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0" Padding="10,5" Content="25 dk" Command="{Binding AddCountdownCommand}" CommandParameter="25"/>
+                                    </StackPanel>
+                                    <ItemsControl ItemsSource="{Binding Countdowns}" Margin="0,8,0,0" Visibility="{Binding HasCountdowns, Converter={StaticResource Visible}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:CountdownView}">
+                                                <Grid Margin="0,3">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Label}" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="3" Margin="0,4,12,0"
+                                                                     Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource TrackBrush}" BorderThickness="0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Left}" FontFamily="{StaticResource DisplayFont}" FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                    <Button Grid.Column="2" Style="{StaticResource IconButton}" ToolTip="İptal et" Padding="5" VerticalAlignment="Center"
+                                                            Command="{Binding DataContext.CancelCountdownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="9"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding CountdownNote}" Foreground="{DynamicResource CalmBrush}" FontSize="12" Margin="0,6,0,0"
+                                               Visibility="{Binding CountdownNote, Converter={StaticResource TextVisible}}"/>
                                 </StackPanel>
                             </Border>
                             <!-- Yapılacaklar. -->
