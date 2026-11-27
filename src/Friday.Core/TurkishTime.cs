@@ -330,6 +330,44 @@ public static partial class TurkishTime
     public static DateOnly? DayOf(string phrase, DateTime now) =>
         DateIn(Spoken(Spaces().Replace(phrase.ToLower(Turkish).Trim(), " ")), now) is var (date, _) ? DateOnly.FromDateTime(date) : null;
 
+    /// <summary>"45 gün sonra 11 Ocak 2027, pazartesi." / "100 gün önce 19 Ağustos, salıydı."</summary>
+    public static string Offset(int days, DateOnly today)
+    {
+        var day = today.AddDays(days);
+        var label = day.ToString(day.Year == today.Year ? "d MMMM" : "d MMMM yyyy", Turkish);
+        var name = day.ToString("dddd", Turkish).ToLower(Turkish);
+        return days >= 0
+            ? $"{Math.Abs(days)} gün sonra {label}, {name}."
+            : $"{Math.Abs(days)} gün önce {label}, {name}{(name.EndsWith('i') || name.EndsWith('e') ? "ydi" : name.EndsWith('a') || name.EndsWith('ı') ? "ydı" : "dı")}.";
+    }
+
+    /// <summary>
+    /// İki tarih arası: "3 Mart ile 15 Nisan arasında 43 gün var (6 hafta 1 gün)." İkinci tarih yılsız söylenip ilkinden
+    /// önce kalıyorsa ertesi yılın o günü sayılır. Tarihlerden biri anlaşılmazsa null.
+    /// </summary>
+    public static string? Between(string first, string second, DateTime now)
+    {
+        if (DayOf(first, now) is not { } from || DayOf(second, now) is not { } to)
+        {
+            return null;
+        }
+
+        if (to < from && !Year().IsMatch(second))
+        {
+            to = to.AddYears(1);
+        }
+
+        var days = to.DayNumber - from.DayNumber;
+        var weeks = Math.Abs(days) / 7;
+        var rest = Math.Abs(days) % 7;
+        var split = weeks == 0 ? "" : rest == 0 ? $" ({weeks} hafta)" : $" ({weeks} hafta {rest} gün)";
+        string Label(DateOnly day) => day.ToString(day.Year == DateOnly.FromDateTime(now).Year ? "d MMMM" : "d MMMM yyyy", Turkish);
+        return $"{Label(from)} ile {Label(to)} arasında {Math.Abs(days)} gün var{split}.";
+    }
+
+    [GeneratedRegex(@"\b\d{4}\b")]
+    private static partial Regex Year();
+
     /// <summary>
     /// "15 Mart 2027 pazartesiye denk geliyor, 109 gün sonra." Geçmiş bir gün için "denk gelmişti". Hesap koddadır; model bu
     /// soruda 14 sn düşünüyordu.

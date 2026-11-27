@@ -274,6 +274,20 @@ public static partial class QuickIntents
             return Command("saat_ve_tarih", ("odak", "dunya"), ("yer", world.Groups["p"].Value.Trim()));
         }
 
+        // "Bugünden 45 gün sonra hangi gün", "2 hafta sonra ne tarih", "100 gün önce hangi gündü"
+        if (DateOffsetQuestion().Match(sentence) is { Success: true } offset && ParseNumber(offset.Groups["n"].Value) is { } amount && amount is > 0 and <= 36500)
+        {
+            var days = (int)(amount * (offset.Groups["u"].Value switch { "hafta" => 7, "ay" => 30, "yıl" => 365, _ => 1 }));
+            return Command("saat_ve_tarih", ("odak", "ileri"), ("gun", (offset.Groups["d"].Value == "önce" ? -days : days).ToString(CultureInfo.InvariantCulture)));
+        }
+
+        // "3 Mart ile 15 Nisan arası kaç gün", "3 Mart'tan 15 Nisan'a kaç gün var"
+        if (DateSpanQuestion().Match(sentence) is { Success: true } span
+            && TurkishTime.DayOf(span.Groups["a"].Value, DateTime.Now) is not null && TurkishTime.DayOf(span.Groups["b"].Value, DateTime.Now) is not null)
+        {
+            return Command("saat_ve_tarih", ("odak", "aralik"), ("bas", span.Groups["a"].Value.Trim()), ("son", span.Groups["b"].Value.Trim()));
+        }
+
         // "15 Mart 2027 hangi güne denk geliyor", "23 Nisan ne günü", "ayın 5'i haftanın hangi günü"
         if (WeekdayQuestion().Match(sentence) is { Success: true } weekday && TurkishTime.DayOf(weekday.Groups["d"].Value, DateTime.Now) is not null)
         {
@@ -638,6 +652,12 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:peki |daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcıda|zamanlayıcıya|zamanlayıcının bitmesine|sayaçta|geri sayımda) (?:daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcı|geri sayım) (?:ne durumda|kaç dakika kaldı)$|^kaç dakika kaldı$")]
     private static partial Regex TimeLeftQuestion();
+
+    [GeneratedRegex(@"^(?:bugünden |bugünden itibaren )?(?<n>\d+|\p{L}+(?: \p{L}+)?) (?<u>gün|hafta|ay|yıl) (?<d>sonra|önce)(?:sı|ki)? (?:hangi gün(?:dü)?|ne günü|ne tarih|hangi tarih(?:ti)?|ayın kaçı|günlerden ne)(?: olur| oluyor| eder|e denk geliyor)?$")]
+    private static partial Regex DateOffsetQuestion();
+
+    [GeneratedRegex(@"^(?<a>.+?) ile (?<b>.+?) arası(?:nda)? (?:kaç gün|ne kadar zaman)(?: var| eder)?$|^(?<a>.+?)['’]?(?:dan|den|tan|ten) (?<b>.+?)['’]?(?:ya|ye|a|e) (?:kaç gün|ne kadar zaman)(?: var| eder| kaldı)?$")]
+    private static partial Regex DateSpanQuestion();
 
     [GeneratedRegex(@"^(?<p>\p{L}+(?: \p{L}+)?)['’]?(?:da|de|ta|te|nda|nde) (?:şu an |şimdi )?saat kaç(?: oldu)?$|^(?<p>\p{L}+(?: \p{L}+)?) saati(?:yle)? (?:şu an )?(?:kaç|ne)$")]
     private static partial Regex WorldTimeQuestion();

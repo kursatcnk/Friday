@@ -34,4 +34,23 @@ public class WeekdayTests
         Assert.Equal("Yarın, 27 Kasım, cuma.", TurkishTime.Weekday(new DateOnly(2026, 11, 27), Today));
         Assert.Equal("29 Ekim 2023 pazara denk gelmişti.", TurkishTime.Weekday(new DateOnly(2023, 10, 29), Today));
     }
+
+    [Theory]
+    [InlineData("bugünden 45 gün sonra hangi gün", "ileri")]
+    [InlineData("2 hafta sonra ne tarih", "ileri")]
+    [InlineData("100 gün önce hangi gündü", "ileri")]
+    [InlineData("3 Mart ile 15 Nisan arası kaç gün", "aralik")]
+    [InlineData("3 Mart'tan 15 Nisan'a kaç gün var", "aralik")]
+    public void RecognizesDateArithmetic(string sentence, string focus) => Assert.Equal(focus, QuickIntents.Match(sentence)?.Arguments["odak"]);
+
+    [Fact]
+    public void CountsDays()
+    {
+        Assert.Equal("45 gün sonra 10 Ocak 2027, pazar.", TurkishTime.Offset(45, Today));
+        Assert.Equal("14 gün sonra 10 Aralık, perşembe.", TurkishTime.Offset(14, Today));
+        Assert.Equal("100 gün önce 18 Ağustos, salıydı.", TurkishTime.Offset(-100, Today));
+        var now = Today.ToDateTime(new TimeOnly(10, 0));
+        Assert.Equal("3 Mart 2027 ile 15 Nisan 2027 arasında 43 gün var (6 hafta 1 gün).", TurkishTime.Between("3 Mart", "15 Nisan", now));
+        Assert.Equal("20 Aralık ile 5 Ocak 2027 arasında 16 gün var (2 hafta 2 gün).", TurkishTime.Between("20 Aralık", "5 Ocak", now));
+    }
 }

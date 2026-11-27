@@ -59,6 +59,8 @@ public sealed partial class AssistantTools
                     "tarih" => $"Bugün {DateTime.Now.ToString("d MMMM, dddd", Turkish)}.",
                     "haftagunu" when TurkishTime.DayOf(Arg("tarih"), DateTime.Now) is { } day => TurkishTime.Weekday(day, DateOnly.FromDateTime(DateTime.Now)),
                     "dunya" when WorldClock.Describe(Arg("yer"), DateTime.UtcNow, TimeZoneInfo.Local) is { } world => world,
+                    "ileri" when int.TryParse(Arg("gun"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var days) => TurkishTime.Offset(days, DateOnly.FromDateTime(DateTime.Now)),
+                    "aralik" when TurkishTime.Between(Arg("bas"), Arg("son"), DateTime.Now) is { } between => between,
                     _ => $"Saat {DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture)}."
                 }),
                 "hava_durumu" => new QuickReply(await WeatherSpeechAsync(Arg("sehir"), Arg("odak"), Arg("soru") == "yagmur", cancellationToken).ConfigureAwait(false)),
