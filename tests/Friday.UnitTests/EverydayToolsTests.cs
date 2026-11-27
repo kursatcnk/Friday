@@ -112,11 +112,19 @@ public class SpokenMathTests
     [InlineData("1000 liraya yüzde 20 KDV eklenince kaç olur", "KDV dahil 1.200 lira; KDV 200 lira (yüzde 20).")]
     [InlineData("2.500 lira artı KDV ne eder", "KDV dahil 3.000 lira; KDV 500 lira (yüzde 20, genel oran).")]
     [InlineData("%10 KDV'li 550 liranın KDV'siz fiyatı", "KDV'siz fiyat 500 lira; KDV 50 lira (yüzde 10).")]
+    [InlineData("1500 liranın yüzde 20 indirimlisi kaç", "Yüzde 20 indirimle 1.200 olur; indirim 300.")]
+    [InlineData("2000 liraya yüzde 15 zam gelirse kaç olur", "Yüzde 15 zamla 2.300 olur; artış 300.")]
+    [InlineData("200, 800'ün yüzde kaçı", "200, 800 sayısının yüzde 25'i eder.")]
+    [InlineData("500'den 650'ye artış yüzde kaç", "500 ile 650 arasında yüzde 30 artış var.")]
+    [InlineData("1200'den 900'e düşüş yüzde kaç", "1.200 ile 900 arasında yüzde 25 azalış var.")]
     public void CalculatesExactly(string question, string answer) => Assert.Equal(answer, SpokenMath.Answer(question));
 
     [Theory]
     [InlineData("KDV dahil 1180 lira, yüzde 18 KDV'siz fiyatı ne")]
     [InlineData("Friday, 2500 lira artı KDV ne eder")]
+    [InlineData("1500 liranın yüzde 20 indirimlisi kaç")]
+    [InlineData("200, 800'ün yüzde kaçı")]
+    [InlineData("500'den 650'ye artış yüzde kaç")]
     public void VatQuestionsNeverReachTheModel(string question) => Assert.Equal("hesap", QuickIntents.Match(question)?.Tool);
 
     [Theory]

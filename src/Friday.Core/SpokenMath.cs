@@ -34,7 +34,58 @@ public static partial class SpokenMath
     {
         var text = Spaces().Replace(sentence.ToLower(Turkish).Trim().TrimEnd('?', '.', '!'), " ");
         text = Lead().Replace(text, "");
-        return Vat(text) ?? Percent(text) ?? Convert(text) ?? Arithmetic(text);
+        return Vat(text) ?? Discount(text) ?? ShareOf(text) ?? Change(text) ?? Percent(text) ?? Convert(text) ?? Arithmetic(text);
+    }
+
+    /// <summary>
+    /// İndirim ve zam: "1500 liranın yüzde 20 indirimlisi kaç" → 1.200; "2000 liraya yüzde 15 zam gelirse kaç olur" → 2.300.
+    /// </summary>
+    private static string? Discount(string text)
+    {
+        var match = DiscountRequest().Match(text);
+        if (!match.Success || Number(match.Groups["a"].Value) is not { } amount || Number(match.Groups["p"].Value) is not { } percent
+            || percent is <= 0 or >= 1000)
+        {
+            return null;
+        }
+
+        var raise = match.Groups["k"].Value.StartsWith("zam", StringComparison.Ordinal) || match.Groups["k"].Value.StartsWith("art", StringComparison.Ordinal);
+        if (!raise && percent >= 100)
+        {
+            return null;
+        }
+
+        var delta = amount * percent / 100;
+        return raise
+            ? $"Yüzde {Format(percent)} zamla {Format(amount + delta)} olur; artış {Format(delta)}."
+            : $"Yüzde {Format(percent)} indirimle {Format(amount - delta)} olur; indirim {Format(delta)}.";
+    }
+
+    /// <summary>"200, 800'ün yüzde kaçı" → yüzde 25; "800'de 200 yüzde kaç eder" de aynı.</summary>
+    private static string? ShareOf(string text)
+    {
+        var match = ShareRequest().Match(text);
+        if (!match.Success || Number(match.Groups["part"].Value) is not { } part || Number(match.Groups["whole"].Value) is not { } whole || whole == 0)
+        {
+            return null;
+        }
+
+        return $"{Format(part)}, {Format(whole)} sayısının yüzde {Format(Math.Round(part / whole * 100, 2))}'i eder.";
+    }
+
+    /// <summary>"500'den 650'ye artış yüzde kaç" → yüzde 30 artış; düşüşte "yüzde 20 azalış".</summary>
+    private static string? Change(string text)
+    {
+        var match = ChangeRequest().Match(text);
+        if (!match.Success || Number(match.Groups["from"].Value) is not { } from || Number(match.Groups["to"].Value) is not { } to || from == 0)
+        {
+            return null;
+        }
+
+        var change = (to - from) / from * 100;
+        return Math.Abs(change) < 0.005
+            ? "Değişmemiş; ikisi aynı."
+            : $"{Format(from)} ile {Format(to)} arasında yüzde {Format(Math.Round(Math.Abs(change), 2))} {(change > 0 ? "artış" : "azalış")} var.";
     }
 
     /// <summary>
@@ -213,6 +264,18 @@ public static partial class SpokenMath
 
     [GeneratedRegex(@"\d[\d.]*(?:,\d+)?")]
     private static partial Regex Amount();
+
+    // "1500 liranın yüzde 20 indirimlisi kaç", "1500 tl'ye yüzde 20 indirim yapılırsa kaç olur", "2000 liraya yüzde 15 zam gelirse"
+    [GeneratedRegex(@"^(?<a>[\d.,]+)(?: ?(?:lira|tl|₺))?(?:['’]?(?:nın|nin|nun|nün|ın|in|un|ün|ya|ye|a|e|lık|lik))? (?:yüzde|%) ?(?<p>[\d.,]+)(?:['’]?(?:lik|lık|luk|lük))? (?<k>indirim\w*|zam\w*|artış\w*)(?: (?:yapılırsa|uygulanırsa|gelirse|olursa|ile|la|le))?(?: (?:kaç|ne kadar|ne)(?: olur| eder| tutar)?| fiyatı(?: ne| kaç)?| hali(?: ne| kaç)?)?$")]
+    private static partial Regex DiscountRequest();
+
+    // "200, 800'ün yüzde kaçı", "200 sayısı 800'ün yüzde kaçıdır"
+    [GeneratedRegex(@"^(?<part>[\d.,]+)(?: sayısı)?,? (?<whole>[\d.,]+)['’]?(?:ın|in|un|ün|nın|nin|nun|nün) yüzde kaçı(?:dır| eder| ediyor)?$")]
+    private static partial Regex ShareRequest();
+
+    // "500'den 650'ye artış yüzde kaç", "1200'den 900'e düşüş yüzde kaç", "fiyat 500'den 650'ye çıktı, yüzde kaç arttı"
+    [GeneratedRegex(@"(?:^|, |\s)(?<from>[\d.,]+)['’]?(?:den|dan|ten|tan) (?<to>[\d.,]+)['’]?(?:ye|ya|e|a)(?: (?:çıktı|indi|düştü|yükseldi))?,? (?:artış|düşüş|azalış|değişim|fark)?(?: oranı)? ?yüzde kaç(?: arttı| azaldı| düştü| değişti)?$")]
+    private static partial Regex ChangeRequest();
 
     [GeneratedRegex(@"^(?:hesapla|hesaplar mısın|bir hesap yap|söyle bakalım)[, ]+")]
     private static partial Regex Lead();
