@@ -15,7 +15,7 @@
     <!-- Exe, gÃ¶rev Ã§ubuÄŸu, Alt+Tab ve tepsi aynÄ± simgeyi kullanÄ±r. -->
     <ApplicationIcon>Assets\Friday.ico</ApplicationIcon>
     <AssemblyName>Friday</AssemblyName>
-    <Version>0.39.0</Version>
+    <Version>0.40.0</Version>
     <!-- Arka planda bekleyen bir asistan: eÅŸzamanlÄ± GC'nin ayrÄ± yÄ±ÄŸÄ±nÄ± ve iÅŸ parÃ§acÄ±ÄŸÄ± gereksiz; bellek sÄ±kÄ± tutulur. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>true</TieredPGO>

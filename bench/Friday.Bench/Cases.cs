@@ -141,6 +141,9 @@ internal static class Cases
             new("saat", ["kronometreyi başlat", "tur at"], "1[.] tur"),
             new("saat", ["10 dakika sonra haber ver", "ne kadar kaldı"], "(?i)zamanlayıcının bitmesine (9|10) dakika"),
             new("saat", ["kronometreyi sıfırla"], "(?i)sıfırladım|sıfırda"),
+            new("saat", ["1500 liranın yüzde 20 indirimlisi kaç"], @"1[.]?200"),
+            new("saat", ["bugünden 45 gün sonra hangi gün"], "45 gün sonra"),
+            new("saat", ["2 su bardağı kaç ml"], @"\b400\b"),
 
             // Uzun üretim: üretim sınırına takılsa da tamamlanmalı
             new("uzun", ["patronum Ahmet Bey'e yarın izin istediğimi, projenin son durumunu ve dönünce yapacaklarımı anlatan uzun ve resmi bir e-posta taslağı hazırla"], "",
