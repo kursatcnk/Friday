@@ -25,6 +25,11 @@ public static partial class SpokenMath
         ["pound"] = ("ağırlık", 0.45359237, "pound"), ["libre"] = ("ağırlık", 0.45359237, "pound"), ["ons"] = ("ağırlık", 0.028349523, "ons"),
         ["litre"] = ("hacim", 1, "litre"), ["ml"] = ("hacim", 0.001, "mililitre"), ["mililitre"] = ("hacim", 0.001, "mililitre"),
         ["galon"] = ("hacim", 3.785411784, "galon"),
+        // Mutfak ölçüleri (Türkiye'de yaygın değerler): su bardağı 200 ml, çay bardağı 100 ml, kaşıklar 15/10/5 ml.
+        ["su bardağı"] = ("hacim", 0.2, "su bardağı"), ["çay bardağı"] = ("hacim", 0.1, "çay bardağı"),
+        ["yemek kaşığı"] = ("hacim", 0.015, "yemek kaşığı"), ["tatlı kaşığı"] = ("hacim", 0.01, "tatlı kaşığı"),
+        ["çay kaşığı"] = ("hacim", 0.005, "çay kaşığı"), ["kahve fincanı"] = ("hacim", 0.075, "kahve fincanı"),
+        ["cc"] = ("hacim", 0.001, "mililitre"),
         ["celsius"] = ("sıcaklık", 1, "santigrat derece"), ["santigrat"] = ("sıcaklık", 1, "santigrat derece"), ["derece"] = ("sıcaklık", 1, "santigrat derece"),
         ["fahrenheit"] = ("sıcaklık", 1, "fahrenheit"), ["kelvin"] = ("sıcaklık", 1, "kelvin"),
     };
@@ -285,7 +290,7 @@ public static partial class SpokenMath
     private static partial Regex PercentOf();
 
     // "5 mil kaç kilometre", "70 kilo kaç pound eder", "30 derece kaç fahrenheit"
-    [GeneratedRegex(@"^(?<v>[\d.,]+) (?<from>\p{L}+) kaç (?<to>\p{L}+)(?: eder| yapar)?$")]
+    [GeneratedRegex(@"^(?<v>[\d.,]+|yarım|bir buçuk) (?<from>\p{L}+(?: \p{L}+)?) kaç (?<to>\p{L}+(?: \p{L}+)?)(?: eder| yapar| olur)?$")]
     private static partial Regex UnitQuestion();
 
     // "345 çarpı 12 kaç", "12 artı 7 eksi 3 kaç eder", "1500 bölü 4"
