@@ -679,6 +679,33 @@ public sealed partial class App : Application, IDisposable
         _tray.AddSubmenu("Rutinler", () => settings.Routines.Keys, name => assistant.SubmitText(name));
         // Ritim paneli açmadan da yönetilir: menü o anki duruma göre kurulur.
         _tray.AddActions("Ritim", () => RhythmMenu(rhythm.Snapshot()));
+        // Kronometre ve kısa zamanlayıcılar da pencereyi açmadan.
+        _tray.AddActions("Kronometre ve zamanlayıcı", () =>
+        {
+            var now = DateTime.Now;
+            var items = new List<(string, Action)>
+            {
+                chronometer.Running
+                    ? ($"Kronometreyi durdur ({Chronometer.Clock(chronometer.Elapsed(now))})", () => chronometer.Pause(DateTime.Now))
+                    : (chronometer.HasTime(now) ? $"Kronometreye devam et ({Chronometer.Clock(chronometer.Elapsed(now))})" : "Kronometreyi başlat", () => chronometer.Start(DateTime.Now)),
+            };
+            if (chronometer.Running)
+            {
+                items.Add(("Tur", () => chronometer.Lap(DateTime.Now)));
+            }
+
+            if (chronometer.HasTime(now))
+            {
+                items.Add(("Kronometreyi sıfırla", chronometer.Reset));
+            }
+
+            items.Add(("", () => { }));
+            foreach (var minutes in (int[])[5, 10, 25])
+            {
+                items.Add(($"{minutes} dakikalık zamanlayıcı", () => tools.StartPanelTimer(minutes)));
+            }
+            return items;
+        });
         _tray.AddItem(
             () => assistant.QuietUntil is { } until ? $"Rahatsız etmeyi kapat ({until:HH:mm})" : "Rahatsız etme (1 saat)",
             () => assistant.SetQuiet(assistant.QuietUntil is null ? TimeSpan.FromHours(1) : null));
