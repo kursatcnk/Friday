@@ -268,6 +268,12 @@ public static partial class QuickIntents
 
     private static QuickCommand? Clock(string sentence)
     {
+        // "Tokyo'da saat kaç", "Londra'da şu an saat kaç": yalnızca bilinen yerler; bilinmeyen yer dil modeline gider.
+        if (WorldTimeQuestion().Match(sentence) is { Success: true } world && WorldClock.Knows(world.Groups["p"].Value))
+        {
+            return Command("saat_ve_tarih", ("odak", "dunya"), ("yer", world.Groups["p"].Value.Trim()));
+        }
+
         // "15 Mart 2027 hangi güne denk geliyor", "23 Nisan ne günü", "ayın 5'i haftanın hangi günü"
         if (WeekdayQuestion().Match(sentence) is { Success: true } weekday && TurkishTime.DayOf(weekday.Groups["d"].Value, DateTime.Now) is not null)
         {
@@ -632,6 +638,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:peki |daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcıda|zamanlayıcıya|zamanlayıcının bitmesine|sayaçta|geri sayımda) (?:daha )?ne kadar (?:kaldı|var)$|^(?:zamanlayıcı|geri sayım) (?:ne durumda|kaç dakika kaldı)$|^kaç dakika kaldı$")]
     private static partial Regex TimeLeftQuestion();
+
+    [GeneratedRegex(@"^(?<p>\p{L}+(?: \p{L}+)?)['’]?(?:da|de|ta|te|nda|nde) (?:şu an |şimdi )?saat kaç(?: oldu)?$|^(?<p>\p{L}+(?: \p{L}+)?) saati(?:yle)? (?:şu an )?(?:kaç|ne)$")]
+    private static partial Regex WorldTimeQuestion();
 
     // "sunum işini önemli olarak işaretle", "kirayı önemli yap", "raporu yıldızla"
     [GeneratedRegex(@"^(?<x>.+?)(?: işini| görevini)? (?:önemli (?:olarak )?(?:işaretle|yap|say)|yıldızla)$")]
