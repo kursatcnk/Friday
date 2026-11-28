@@ -147,6 +147,16 @@ internal static class Cases
             new("saat", ["1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç"], "362"),
             new("saat", ["100 bin lira kredi aylık yüzde 3 faizle 12 ay taksit kaç"], "10[.]?046"),
 
+            // Karışık gündelik: bir cümlede iki iş, dolaylı sorular, düzeltmeler
+            new("karisik", ["yarın sabah 9'da dişçi var, bir saat önce hatırlat"], @"0?8[:.]00|sekiz", Tools: "hatirlatici"),
+            new("karisik", ["bu hafta kaç kere markete gittim"], @"\b[1-4]\b|kez|kere"),
+            new("karisik", ["Mert'i aramayı unutmayayım, akşam 8'de söyle"], "", Tools: "hatirlatici"),
+            new("karisik", ["listemde ekmek var mı"], "(?i)evet|var|yok|değil|bulunmuyor"),
+            new("karisik", ["kahve için ne kadar harcamışım bu ay"], "", Tools: "harcama"),
+            new("karisik", ["yarın hava güzel olursa yürüyüş yaparım, hatırlatır mısın sabah"], "", Tools: "hatirlatici|kosullu_hatirlatici"),
+            new("karisik", ["dişçiye ne zaman gidiyordum"], "(?i)yarın|09[:.]00|dokuz"),
+            new("karisik", ["kızımın yaşı kaç"], @"\b7\b|yedi"),
+
             // Uzun üretim: üretim sınırına takılsa da tamamlanmalı
             new("uzun", ["patronum Ahmet Bey'e yarın izin istediğimi, projenin son durumunu ve dönünce yapacaklarımı anlatan uzun ve resmi bir e-posta taslağı hazırla"], "",
                 Tools: "eposta_taslagi|yazi"),
