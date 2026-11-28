@@ -112,6 +112,10 @@ public class SpokenMathTests
     [InlineData("1000 liraya yüzde 20 KDV eklenince kaç olur", "KDV dahil 1.200 lira; KDV 200 lira (yüzde 20).")]
     [InlineData("2.500 lira artı KDV ne eder", "KDV dahil 3.000 lira; KDV 500 lira (yüzde 20, genel oran).")]
     [InlineData("%10 KDV'li 550 liranın KDV'siz fiyatı", "KDV'siz fiyat 500 lira; KDV 50 lira (yüzde 10).")]
+    [InlineData("1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç", "Kişi başı 362,5 lira düşer (4 kişi, toplam 1.450).")]
+    [InlineData("900 lirayı 3 kişiye böl", "Kişi başı 300 lira düşer (3 kişi, toplam 900).")]
+    [InlineData("1450 liraya yüzde 10 bahşiş kaç", "Yüzde 10 bahşiş 145 lira; toplam 1.595 lira.")]
+    [InlineData("100 bin lira kredi aylık yüzde 3 faizle 12 ay taksit kaç", "Aylık taksit 10.046,21 lira; 12 ayda toplam 120.554,5 lira, faiz 20.554,5 lira (aylık yüzde 3, vergiler hariç).")]
     [InlineData("2 su bardağı kaç ml", "2 su bardağı, 400 mililitre eder.")]
     [InlineData("3 yemek kaşığı kaç çay kaşığı", "3 yemek kaşığı, 9 çay kaşığı eder.")]
     [InlineData("1 litre kaç su bardağı", "1 litre, 5 su bardağı eder.")]
@@ -128,6 +132,9 @@ public class SpokenMathTests
     [InlineData("1500 liranın yüzde 20 indirimlisi kaç")]
     [InlineData("200, 800'ün yüzde kaçı")]
     [InlineData("500'den 650'ye artış yüzde kaç")]
+    [InlineData("1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç")]
+    [InlineData("1450 liraya yüzde 10 bahşiş kaç")]
+    [InlineData("100 bin lira kredi aylık yüzde 3 faizle 12 ay taksit kaç")]
     public void VatQuestionsNeverReachTheModel(string question) => Assert.Equal("hesap", QuickIntents.Match(question)?.Tool);
 
     [Theory]

@@ -39,7 +39,63 @@ public static partial class SpokenMath
     {
         var text = Spaces().Replace(sentence.ToLower(Turkish).Trim().TrimEnd('?', '.', '!'), " ");
         text = Lead().Replace(text, "");
-        return Vat(text) ?? Discount(text) ?? ShareOf(text) ?? Change(text) ?? Percent(text) ?? Convert(text) ?? Arithmetic(text);
+        return Vat(text) ?? Installment(text) ?? Split(text) ?? Tip(text) ?? Discount(text) ?? ShareOf(text) ?? Change(text) ?? Percent(text)
+               ?? Convert(text) ?? Arithmetic(text);
+    }
+
+    /// <summary>"100 bin" → 100000, "1,5 milyon" → 1500000, "1.450" → 1450.</summary>
+    private static double? Money(string number, string scale) => Number(number) is { } value
+        ? value * (scale.Trim() switch { "bin" => 1_000, "milyon" => 1_000_000, _ => 1 })
+        : null;
+
+    /// <summary>"1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç" → 362,50.</summary>
+    private static string? Split(string text)
+    {
+        var match = SplitRequest().Match(text);
+        if (!match.Success || Money(match.Groups["a"].Value, match.Groups["k"].Value) is not { } total
+            || QuickIntents.ParseNumber(match.Groups["n"].Value) is not { } people || people is < 2 or > 100)
+        {
+            return null;
+        }
+
+        return $"Kişi başı {Format(Math.Round(total / people, 2))} lira düşer ({Format(people)} kişi, toplam {Format(total)}).";
+    }
+
+    /// <summary>"1450 liraya yüzde 10 bahşiş kaç" → bahşiş 145, toplam 1.595.</summary>
+    private static string? Tip(string text)
+    {
+        var match = TipRequest().Match(text);
+        if (!match.Success || Money(match.Groups["a"].Value, match.Groups["k"].Value) is not { } total || Number(match.Groups["p"].Value) is not { } percent
+            || percent is <= 0 or > 100)
+        {
+            return null;
+        }
+
+        var tip = Math.Round(total * percent / 100, 2);
+        return $"Yüzde {Format(percent)} bahşiş {Format(tip)} lira; toplam {Format(total + tip)} lira.";
+    }
+
+    /// <summary>
+    /// Eşit taksitli kredi: "100 bin lira kredi aylık yüzde 3 faizle 12 ay taksit kaç". Faiz aylık kabul edilir ("yıllık"
+    /// denirse 12'ye bölünür); BSMV ve KKDF gibi vergiler hesaba katılmaz ve bu söylenir.
+    /// </summary>
+    private static string? Installment(string text)
+    {
+        if (!InstallmentWords().IsMatch(text) || LoanAmount().Match(text) is not { Success: true } amount
+            || Money(amount.Groups["a"].Value, amount.Groups["k"].Value) is not { } principal
+            || LoanRate().Match(text) is not { Success: true } rateMatch || Number(rateMatch.Groups["r"].Value) is not { } rate
+            || LoanMonths().Match(text) is not { Success: true } monthsMatch || Number(monthsMatch.Groups["n"].Value) is not { } months
+            || principal <= 0 || rate is < 0 or > 100 || months is < 1 or > 480)
+        {
+            return null;
+        }
+
+        var yearly = text.Contains("yıllık", StringComparison.Ordinal);
+        var monthly = (yearly ? rate / 12 : rate) / 100;
+        var payment = monthly == 0 ? principal / months : principal * monthly / (1 - Math.Pow(1 + monthly, -months));
+        var paid = payment * months;
+        return $"Aylık taksit {Format(Math.Round(payment, 2))} lira; {Format(months)} ayda toplam {Format(Math.Round(paid, 2))} lira, "
+               + $"faiz {Format(Math.Round(paid - principal, 2))} lira ({(yearly ? "yıllık" : "aylık")} yüzde {Format(rate)}, vergiler hariç).";
     }
 
     /// <summary>
@@ -281,6 +337,26 @@ public static partial class SpokenMath
     // "500'den 650'ye artış yüzde kaç", "1200'den 900'e düşüş yüzde kaç", "fiyat 500'den 650'ye çıktı, yüzde kaç arttı"
     [GeneratedRegex(@"(?:^|, |\s)(?<from>[\d.,]+)['’]?(?:den|dan|ten|tan) (?<to>[\d.,]+)['’]?(?:ye|ya|e|a)(?: (?:çıktı|indi|düştü|yükseldi))?,? (?:artış|düşüş|azalış|değişim|fark)?(?: oranı)? ?yüzde kaç(?: arttı| azaldı| düştü| değişti)?$")]
     private static partial Regex ChangeRequest();
+
+    // "1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç", "1450 lirayı 4 kişiye böl", "hesap 900 lira 3 kişiyiz kişi başı kaç"
+    [GeneratedRegex(@"^(?:hesap )?(?<a>[\d.,]+)(?<k> bin| milyon)?(?: ?(?:lira|tl|₺))?(?:['’]?(?:lık|lik|yı|yi|ı|i))?,?(?: hesabı| hesap| tutarı)? (?<n>\d+|\p{L}+) kişi(?:ye|yiz| arasında)? ?(?:bölersek|bölüşürsek|paylaşırsak|bölünce|böl|bölüştür|bölüşelim|ödersek)?,?(?: kişi başı(?:na)? (?:kaç|ne kadar)(?: düşer| eder| ödüyoruz)?)?$")]
+    private static partial Regex SplitRequest();
+
+    // "1450 liraya yüzde 10 bahşiş kaç", "1450 lira hesaba yüzde 15 bahşiş ne kadar"
+    [GeneratedRegex(@"^(?<a>[\d.,]+)(?<k> bin)?(?: ?(?:lira|tl|₺))?(?:['’]?(?:ya|ye|a|e|lık|lik))?(?: hesaba| hesap için)? (?:yüzde|%) ?(?<p>[\d.,]+) bahşiş(?: (?:kaç|ne kadar)(?: eder| olur| bırakayım)?)?$")]
+    private static partial Regex TipRequest();
+
+    [GeneratedRegex(@"taksit|kredi")]
+    private static partial Regex InstallmentWords();
+
+    [GeneratedRegex(@"(?<a>[\d.,]+)(?<k> bin| milyon)? ?(?:lira|tl|₺)(?:lık|lik)?(?: kredi)?")]
+    private static partial Regex LoanAmount();
+
+    [GeneratedRegex(@"(?:yüzde|%) ?(?<r>[\d.,]+)")]
+    private static partial Regex LoanRate();
+
+    [GeneratedRegex(@"(?<n>\d+) ay")]
+    private static partial Regex LoanMonths();
 
     [GeneratedRegex(@"^(?:hesapla|hesaplar mısın|bir hesap yap|söyle bakalım)[, ]+")]
     private static partial Regex Lead();
