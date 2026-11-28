@@ -1568,7 +1568,8 @@ public sealed class FridayAssistant : IDisposable
 
                     // Bütün araçlar verilmişken (çok adımlı istek) de "yapamam" diyebiliyor; konusuna uyan aracı varsa
                     // bir kez o araçlar adıyla anılarak yinelenir ("haberler.com.tr'deki haberi oku ve özetle").
-                    if (!reminded && tools.Count > 0 && AgentPlan.SoundsUnable(sentence) && ToolRouter.Topical(question) is { Count: > 0 } topical
+                    if (!reminded && tools.Count > 0 && (AgentPlan.SoundsUnable(sentence) || (_turnCalls.Count == 0 && AgentPlan.OffersInstead(sentence, question)))
+                        && ToolRouter.Topical(question) is { Count: > 0 } topical
                         && topical.Any(name => tools.Any(tool => tool?["function"]?["name"]?.GetValue<string>() == name)))
                     {
                         unable = true;

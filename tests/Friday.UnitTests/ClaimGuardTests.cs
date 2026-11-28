@@ -60,4 +60,12 @@ public class ClaimGuardTests
     [InlineData("Cuma günü Selin'in doğum günü, bunu aklında tut", false)]
     public void KnowsWhenTheUserAsksAboutEarlierWork(string question, bool asked) =>
         Assert.Equal(asked, AgentPlan.AsksWhatWasDone(question));
+
+    [Theory]
+    [InlineData("Yarın sabah yürüyüş yapmanı hatırlatmak için bir hatırlatıcı kurabilirim.", "yarın hava güzel olursa yürüyüş yaparım, hatırlatır mısın sabah", true)]
+    [InlineData("Listene eklememi ister misin?", "markete ekmek ekle", true)]
+    [InlineData("İstersen sana bir hatırlatıcı kurabilirim.", "bugün çok yoruldum", false)]
+    [InlineData("Ne zaman hatırlatayım?", "Mert'i aramayı hatırlat", false)]
+    public void NoticesAnOfferInsteadOfTheRequestedWork(string sentence, string question, bool offers) =>
+        Assert.Equal(offers, AgentPlan.OffersInstead(sentence, question));
 }

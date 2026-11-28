@@ -306,6 +306,25 @@ public static partial class AgentPlan
         return Unable.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Kullanıcı açıkça bir iş istemişken model yapmak yerine teklif mi ediyor ("hatırlatıcı kurabilirim", "eklememi ister
+    /// misin")? Ölçümde "…yürüyüş yaparım, hatırlatır mısın sabah" isteğine hatırlatma kurulmadan "kurabilirim" dendi.
+    /// </summary>
+    public static bool OffersInstead(string sentence, string question)
+    {
+        var text = sentence.ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        return Offers.Any(phrase => text.Contains(phrase, StringComparison.Ordinal)) && Request().IsMatch(question.ToLower(CultureInfo.GetCultureInfo("tr-TR")));
+    }
+
+    private static readonly string[] Offers =
+    [
+        "kurabilirim", "ekleyebilirim", "hatırlatabilirim", "kaydedebilirim", "ayarlayabilirim", "not alabilirim", "belirleyelim",
+        "kurmamı ister", "eklememi ister", "hatırlatmamı ister", "kaydetmemi ister", "ayarlamamı ister"
+    ];
+
+    [GeneratedRegex(@"\b(?:hatırlat|ekle|kaydet|ayarla|not al|not et|kur(?:ar|sana|ver|un)\b)")]
+    private static partial Regex Request();
+
     /// <summary>Bir işi yaptığını ya da yapacağını söyleyen kalıplar ("not ettim", "listene ekledim", "yarın hatırlatırım").</summary>
     private static readonly string[] Claims =
     [
