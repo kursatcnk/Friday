@@ -447,10 +447,19 @@ public static partial class QuickIntents
             return Command("hatirlatici", ("islem", "tasi"), ("metin", move.Groups["x"].Value.Trim()), ("zaman", when));
         }
 
+        // "Dişçiye ne zaman gidiyordum", "Mert'i ne zaman arayacaktım", "toplantı ne zamandı": kayıtlı hatırlatmadan.
+        if (ReminderWhen().Match(sentence) is { Success: true } asked)
+        {
+            return Command("hatirlatici", ("islem", "ne_zaman"), ("metin", asked.Groups["x"].Value.Trim()));
+        }
+
         return ReminderCancel().Match(sentence) is { Success: true } cancel
             ? Command("hatirlatici", ("islem", "sil"), ("metin", cancel.Groups["x"].Value.Trim()))
             : null;
     }
+
+    [GeneratedRegex(@"^(?<x>\p{L}+?)(?:['’]?(?:ya|ye|a|e|yı|yi|ı|i))? ne zaman (?:gidiyordum|gidecektim|gidiyorum|gideceğim|arayacaktım|arıyordum|görüşecektim)$|^(?<x>\p{L}+(?: \p{L}+)?) ne zaman(?:dı|ydı)?$")]
+    private static partial Regex ReminderWhen();
 
     [GeneratedRegex(@"^(?:(?<x>.+?) hatırlatma(?:sını|yı)|hatırlatmayı) (?<when>.+?) (?<v>al|ertele|kaydır|taşı|çek|yap)$")]
     private static partial Regex ReminderMove();

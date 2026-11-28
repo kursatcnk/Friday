@@ -74,6 +74,7 @@ public sealed partial class AssistantTools
                 "rutin" => await RoutineReplyAsync(Arg("ad"), cancellationToken).ConfigureAwait(false),
                 "video_ac" => new QuickReply(await OpenVideoAsync(Arg("arama"), cancellationToken).ConfigureAwait(false)),
                 "ritim" => RhythmCommand(Arg("islem"), Arg("dakika"), Arg("is"), Arg("donem")),
+                "hatirlatici" when Arg("islem") == "ne_zaman" => ReminderCommand(Arg("islem"), "", Arg("metin")) is { Length: > 0 } when ? new QuickReply(when) : null,
                 "hatirlatici" => new QuickReply(ReminderCommand(Arg("islem"), Arg("zaman"), Arg("metin"), Arg("tekrar"))),
                 "not" => new QuickReply(NoteCommand(Arg("islem"), Arg("metin"))),
                 "hesap" => SpokenMath.Answer(Arg("soru")) is { } answer ? new QuickReply(answer) : null,

@@ -200,7 +200,7 @@ public static partial class RepeatRule
 /// Kalıcı hatırlatmalar (D:\Friday\data\reminders.json). "10 dakika sonra" da "yarın 9'da" da buraya yazılır; Friday
 /// kapanıp açılsa bile kaybolmaz. Friday kapalıyken zamanı geçenler açılışta "sen yokken" diye söylenir.
 /// </summary>
-public sealed class ReminderStore : IRestorableStore
+public sealed partial class ReminderStore : IRestorableStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -357,6 +357,51 @@ public sealed class ReminderStore : IRestorableStore
     /// geçenlerin en yakını seçilir; söz boşsa en son kurulan. Yeni zamanı eskisinden hesaplayan <paramref name="retime"/>
     /// null dönerse taşınmaz. Taşınamadıysa null; taşındıysa eski ve yeni hali.
     /// </summary>
+    /// <summary>Metninde aranan sözcükler (kök eşleşmesiyle) geçen en yakın hatırlatma ("dişçi" → "Dişçi randevusu"); yoksa null.</summary>
+    public Reminder? Find(string query, DateTime now)
+    {
+        var needle = query.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR"));
+        if (needle.Length < 2)
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            return _items.Where(item => item.Due > now && item.Text.Length > 0 && Mentions(item.Text, needle)).MinBy(item => item.Due);
+        }
+    }
+
+    /// <summary>
+    /// "Dişçi var, bir saat önce": hatırlatmanın metnindeki "N dakika/saat/gün önce(den)" kısmı; zamandan düşülecek süre ve
+    /// kalan metin. Yoksa null. Eskiden bu söz metne yazılıyor, hatırlatma etkinliğin kendi saatine kuruluyordu.
+    /// </summary>
+    public static (TimeSpan Lead, string Text)? LeadTime(string text)
+    {
+        var match = LeadPhrase().Match(text.Trim());
+        if (!match.Success || QuickIntents.ParseNumber(match.Groups["n"].Value) is not { } amount || amount <= 0)
+        {
+            return null;
+        }
+
+        var lead = match.Groups["u"].Value switch
+        {
+            "saat" => TimeSpan.FromHours(amount),
+            "gün" => TimeSpan.FromDays(amount),
+            _ => TimeSpan.FromMinutes(amount)
+        };
+        var rest = text.Trim()[..match.Index].Trim().TrimEnd(',').Trim();
+        rest = TrailingVar().Replace(rest, "");
+        return (lead, rest);
+    }
+
+    [GeneratedRegex(@"[,]?\s*(?<n>\d+|yarım|\p{L}+(?: \p{L}+)?) (?<u>dakika|saat|gün) önce(?:den)?(?: haber ver| hatırlat)?$")]
+    private static partial Regex LeadPhrase();
+
+    // "dişçi var" → "dişçi": etkinliğin adı kalsın.
+    [GeneratedRegex(@" var$")]
+    private static partial Regex TrailingVar();
+
     public (Reminder Old, Reminder New)? Move(string query, Func<Reminder, DateTime?> retime)
     {
         var needle = query.Trim().ToLower(CultureInfo.GetCultureInfo("tr-TR"));

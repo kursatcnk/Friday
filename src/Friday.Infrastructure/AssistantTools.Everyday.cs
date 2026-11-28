@@ -73,6 +73,11 @@ public sealed partial class AssistantTools
                     ? "Kurulu bir hatırlatma yok."
                     : $"{upcoming.Count} hatırlatma var: " + string.Join("; ", upcoming.Take(6).Select(item =>
                         $"{(item.Repeat is { } rule ? RepeatRule.Describe(item.Due, rule) : TurkishTime.Describe(item.Due, now))} {(item.Text.Length > 0 ? TurkishGrammar.ToYou(item.Text) : "zamanlayıcı")}")) + ".";
+            case "nezaman":
+                // "Dişçiye ne zaman gidiyordum": kayıtlı hatırlatmadan; bulunamazsa soru dil modeline gider (bkz. Quick).
+                return reminders.Find(text, now) is { } found
+                    ? $"{TurkishGrammar.Capitalize(found.Text)}: {TurkishTime.Describe(found.Due, now)}."
+                    : "";
             case "sil":
                 var removed = reminders.Cancel(text);
                 return removed == 0 ? $"'{text}' diye bir hatırlatma bulamadım." : "Tamam, hatırlatmayı sildim.";
@@ -95,10 +100,19 @@ public sealed partial class AssistantTools
                     (repeat, when) = (phraseRule, phraseWhen);
                 }
 
-                if (TurkishTime.Parse(when, now) is not { } due || due <= now)
+                // "Yarın 9'da dişçi var, bir saat önce hatırlat": hatırlatma etkinlikten o kadar önce kurulur.
+                var lead = repeat.Length == 0 && ReminderStore.LeadTime(text) is var (leadTime, leadText) ? leadTime : TimeSpan.Zero;
+                if (lead > TimeSpan.Zero)
+                {
+                    text = ReminderStore.LeadTime(text)!.Value.Text;
+                }
+
+                if (TurkishTime.Parse(when, now) is not { } parsed || parsed - lead <= now)
                 {
                     return "Ne zaman hatırlatacağımı anlayamadım; ör. 'yarın 9'da' ya da 'akşam 8'de' de.";
                 }
+
+                var due = parsed - lead;
 
                 var rule = RepeatRule.IsKnown(repeat) ? repeat : null;
                 var added = reminders.Add(rule is null || RepeatRule.Interval(rule) is not null ? due : RepeatRule.Start(due, when, rule, now), text, now, rule);
@@ -113,6 +127,10 @@ public sealed partial class AssistantTools
 
                 // Aynı saate yakın başka bir hatırlatma varsa kurarken söylenir.
                 var clash = ScheduleConflicts.ForReminder(added.Due, added.Id, reminders.Upcoming) is { } conflict ? " " + conflict : "";
+                if (lead > TimeSpan.Zero)
+                {
+                    clash = $" ({TurkishGrammar.Duration(lead.TotalMinutes)} önce)" + clash;
+                }
                 return (subject.Length == 0
                     ? $"Tamam, {TurkishTime.Describe(due, now)} haber veririm."
                     : $"Tamam, {TurkishTime.Describe(due, now)} {subject} hatırlatırım.") + clash;
