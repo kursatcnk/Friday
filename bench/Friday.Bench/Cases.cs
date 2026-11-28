@@ -144,6 +144,8 @@ internal static class Cases
             new("saat", ["1500 liranın yüzde 20 indirimlisi kaç"], @"1[.]?200"),
             new("saat", ["bugünden 45 gün sonra hangi gün"], "45 gün sonra"),
             new("saat", ["2 su bardağı kaç ml"], @"\b400\b"),
+            new("saat", ["1450 lira hesabı 4 kişi bölüşürsek kişi başı kaç"], "362"),
+            new("saat", ["100 bin lira kredi aylık yüzde 3 faizle 12 ay taksit kaç"], "10[.]?046"),
 
             // Uzun üretim: üretim sınırına takılsa da tamamlanmalı
             new("uzun", ["patronum Ahmet Bey'e yarın izin istediğimi, projenin son durumunu ve dönünce yapacaklarımı anlatan uzun ve resmi bir e-posta taslağı hazırla"], "",
