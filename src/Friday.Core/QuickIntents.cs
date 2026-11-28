@@ -274,6 +274,12 @@ public static partial class QuickIntents
             return Command("saat_ve_tarih", ("odak", "dunya"), ("yer", world.Groups["p"].Value.Trim()));
         }
 
+        // "1990 doğumlu biri kaç yaşında", "15 Mart 1990'da doğan kaç yaşında"
+        if (AgeQuestion().Match(sentence) is { Success: true } age && TurkishTime.Age(age.Groups["d"].Value, DateOnly.FromDateTime(DateTime.Now)) is not null)
+        {
+            return Command("saat_ve_tarih", ("odak", "yas"), ("dogum", age.Groups["d"].Value.Trim()));
+        }
+
         // "Bugünden 45 gün sonra hangi gün", "2 hafta sonra ne tarih", "100 gün önce hangi gündü"
         if (DateOffsetQuestion().Match(sentence) is { Success: true } offset && ParseNumber(offset.Groups["n"].Value) is { } amount && amount is > 0 and <= 36500)
         {
@@ -655,6 +661,9 @@ public static partial class QuickIntents
 
     [GeneratedRegex(@"^(?:bugünden |bugünden itibaren )?(?<n>\d+|\p{L}+(?: \p{L}+)?) (?<u>gün|hafta|ay|yıl) (?<d>sonra|önce)(?:sı|ki)? (?:hangi gün(?:dü)?|ne günü|ne tarih|hangi tarih(?:ti)?|ayın kaçı|günlerden ne)(?: olur| oluyor| eder|e denk geliyor)?$")]
     private static partial Regex DateOffsetQuestion();
+
+    [GeneratedRegex(@"^(?<d>\d{4}|\d{1,2} \p{L}+ \d{4})(?:['’]?(?:da|de|ta|te))? (?:doğumlu|doğan|doğmuş)(?: biri| birisi| kişi| bir kişi| çocuk)? (?:şu an |bugün )?kaç yaşında(?:dır)?$")]
+    private static partial Regex AgeQuestion();
 
     [GeneratedRegex(@"^(?<a>.+?) ile (?<b>.+?) arası(?:nda)? (?:kaç gün|ne kadar zaman)(?: var| eder)?$|^(?<a>.+?)['’]?(?:dan|den|tan|ten) (?<b>.+?)['’]?(?:ya|ye|a|e) (?:kaç gün|ne kadar zaman)(?: var| eder| kaldı)?$")]
     private static partial Regex DateSpanQuestion();

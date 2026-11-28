@@ -330,6 +330,46 @@ public static partial class TurkishTime
     public static DateOnly? DayOf(string phrase, DateTime now) =>
         DateIn(Spoken(Spaces().Replace(phrase.ToLower(Turkish).Trim(), " ")), now) is var (date, _) ? DateOnly.FromDateTime(date) : null;
 
+    /// <summary>
+    /// Yaş: "15 Mart 1990" → "36 yaşında; 37'ye 107 gün var." Yalnız yıl söylenmişse ("1990 doğumlu") doğum gününe göre iki
+    /// ihtimal söylenir. Tarih anlaşılmazsa ya da gelecekteyse null.
+    /// </summary>
+    public static string? Age(string birth, DateOnly today)
+    {
+        var text = birth.Trim();
+        if (YearOnly().Match(text) is { Success: true } year && int.TryParse(year.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var born))
+        {
+            var age = today.Year - born;
+            return age is < 1 or > 130 ? null : $"{born} doğumlu biri bu yıl {age} yaşına girer; doğum günü henüz gelmediyse {age - 1} yaşında.";
+        }
+
+        if (DateIn(Spoken(Spaces().Replace(text.ToLower(Turkish), " ")), today.ToDateTime(TimeOnly.MinValue)) is not var (date, _) || !Year().IsMatch(text))
+        {
+            return null;
+        }
+
+        var day = DateOnly.FromDateTime(date);
+        if (day > today)
+        {
+            return null;
+        }
+
+        var years = today.Year - day.Year - (today < new DateOnly(today.Year, day.Month, Math.Min(day.Day, DateTime.DaysInMonth(today.Year, day.Month))) ? 1 : 0);
+        var next = new DateOnly(today.Year, day.Month, Math.Min(day.Day, DateTime.DaysInMonth(today.Year, day.Month)));
+        if (next <= today)
+        {
+            next = new DateOnly(today.Year + 1, day.Month, Math.Min(day.Day, DateTime.DaysInMonth(today.Year + 1, day.Month)));
+        }
+
+        var until = next.DayNumber - today.DayNumber;
+        return until == 365 || until == 366 || next == today
+            ? $"{years} yaşında; doğum günü bugün."
+            : $"{years} yaşında; {years + 1} yaşına {until} gün var.";
+    }
+
+    [GeneratedRegex(@"^\d{4}$")]
+    private static partial Regex YearOnly();
+
     /// <summary>"45 gün sonra 11 Ocak 2027, pazartesi." / "100 gün önce 19 Ağustos, salıydı."</summary>
     public static string Offset(int days, DateOnly today)
     {

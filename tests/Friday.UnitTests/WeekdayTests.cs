@@ -53,4 +53,18 @@ public class WeekdayTests
         Assert.Equal("3 Mart 2027 ile 15 Nisan 2027 arasında 43 gün var (6 hafta 1 gün).", TurkishTime.Between("3 Mart", "15 Nisan", now));
         Assert.Equal("20 Aralık ile 5 Ocak 2027 arasında 16 gün var (2 hafta 2 gün).", TurkishTime.Between("20 Aralık", "5 Ocak", now));
     }
+
+    [Theory]
+    [InlineData("1990 doğumlu biri kaç yaşında")]
+    [InlineData("15 Mart 1990'da doğan kaç yaşında")]
+    public void RecognizesAgeQuestions(string sentence) => Assert.Equal("yas", QuickIntents.Match(sentence)?.Arguments["odak"]);
+
+    [Fact]
+    public void WorksOutAges()
+    {
+        Assert.Equal("1990 doğumlu biri bu yıl 36 yaşına girer; doğum günü henüz gelmediyse 35 yaşında.", TurkishTime.Age("1990", Today));
+        Assert.Equal("36 yaşında; 37 yaşına 109 gün var.", TurkishTime.Age("15 Mart 1990", Today));
+        Assert.Equal("36 yaşında; doğum günü bugün.", TurkishTime.Age("26 Kasım 1990", Today));
+        Assert.Null(TurkishTime.Age("15 Mart 2030", Today));
+    }
 }
